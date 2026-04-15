@@ -1,3 +1,30 @@
 .title {
     text-align: center;
+    width: 100%;
+}
+
+.header-bar {
+    width: 100%;
+    height: 20vh;
+    position: fixed;
+    top: 0%;
+    background-color: blue;
+    z-index: 1;
+}
+
+.section-container {
+    display: flex;
+    flex-direction: column;
+    width: 99%;
+    position: relative;
+    top: 20vh;
+    gap: 5px;
+    justify-content: center;
+}
+
+.section-container div {
+    border: 1px solid black;
+    width: 100%;
+    height: 20vh;
+    justify-self: center;
 }
