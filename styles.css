@@ -65,6 +65,10 @@ body {
     justify-content: center;
 }
 
+.main-link-div:hover {
+    animation: 'hover-pop-up' 0.25s 1 forwards;
+}
+
 .main-label-div {
     height: 60px;
     width: 300px;
@@ -87,4 +91,29 @@ body {
     position: relative;
     bottom: 10px;
     font-size: 35px;
+}
+
+
+
+
+@keyframes hover-pop-up {
+    0% {
+        transform: translateY(0%);
+    }
+
+    25% {
+        transform: translateY(-1.25px);
+    }
+
+    50% {
+        transform: translateY(-2.5px);
+    }
+
+    75% {
+        transform: translateY(-3.75px);
+    }
+
+    100% {
+        transform: translateY(-5px);
+    }
 }
