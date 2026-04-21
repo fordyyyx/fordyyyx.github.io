@@ -115,5 +115,6 @@ body {
 
     100% {
         transform: translateY(-5px);
+        box-shadow: grey 5px 5px;
     }
 }
