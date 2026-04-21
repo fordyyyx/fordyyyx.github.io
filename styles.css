@@ -1,5 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 
+/*HOME PAGE*/
+
 
 * {
     padding:0;
@@ -13,7 +15,7 @@ body {
     font-family: 'Open Sans', sans-serif;
 }
 
-.title {
+.home-title {
     text-align: center;
     width: 100%;
 }
@@ -117,4 +119,47 @@ body {
         transform: translateY(-5px);
         box-shadow: grey 5px 5px;
     }
+}
+
+
+
+/*RUNNING PAGE*/
+
+.main-navbar {
+    width: 99vw;
+    height: 8vh;
+    background-color: black;
+    color: white;
+    display: flex;
+}
+
+.logo-div {
+    width: 20%;
+    height: 90%;
+}
+
+.nav-buttons {
+    width: 60%;
+    height: 90%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    flex-wrap: nowrap;
+}
+
+.nav-button {
+    width: 10%;
+    text-align: center;
+    border: 1px solid rgba(128, 128, 128, 0.3);
+    padding: 5px;
+}
+
+.nav-button:hover {
+    animation: 'hover-pop-up' 0.25s 1 forwards;
+}
+
+.social-buttons {
+    width: 20%;
+    height: 90%;
 }
