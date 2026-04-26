@@ -177,6 +177,7 @@ body {
 
 .fa {
     border-radius: 100%;
+    padding: 3px;
 }
 
 a:visited {
