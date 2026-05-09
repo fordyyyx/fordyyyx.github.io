@@ -142,7 +142,7 @@ body {
 }
 
 .nav-buttons {
-    width: 60%;
+    width: 90%;
     height: 90%;
     display: flex;
     flex-direction: row;
@@ -156,6 +156,11 @@ body {
     text-align: center;
     border: 1px solid rgba(128, 128, 128, 0.3);
     padding: 5px;
+}
+
+#programming-nav-button {
+    font-size: smaller;
+    padding: 8px;
 }
 
 .nav-button:hover {
