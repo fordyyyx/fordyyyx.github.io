@@ -12,18 +12,18 @@ let cookingDiv = document.getElementById('cooking-div');
 let musicDiv = document.getElementById('music-div');
 
 let linkDivs = [
-    [runningDiv, '/link-pages/sports-pages/running.html'],
-    [cyclingDiv, '/link-pages/sports-pages/cycling.html'],
-    [footballDiv, '/link-pages/sports-pages/football.html'],
-    [experienceDiv, '/link-pages/work-pages/experience.html'],
-    [pdpDiv, '/link-pages/work-pages/pdp.html'],
-    [educationDiv, '/link-pages/work-pages/education.html'],
-    [webDesignDiv, '/link-pages/programming-pages/web-design.html'],
-    [pythonDiv, '/link-pages/programming-pages/python.html'],
-    [gameDevelopmentDiv, '/link-pages/programming-pages/game-development.html'],
-    [gamingDiv, '/link-pages/hobbies-pages/gaming.html'],
-    [cookingDiv, '/link-pages/hobbies-pages/cooking.html'],
-    [musicDiv, '/link-pages/hobbies-pages/music.html']
+    [runningDiv, './link-pages/sports-pages/running.html'],
+    [cyclingDiv, './link-pages/sports-pages/cycling.html'],
+    [footballDiv, './link-pages/sports-pages/football.html'],
+    [experienceDiv, './link-pages/work-pages/experience.html'],
+    [pdpDiv, './link-pages/work-pages/pdp.html'],
+    [educationDiv, './link-pages/work-pages/education.html'],
+    [webDesignDiv, './link-pages/programming-pages/web-design.html'],
+    [pythonDiv, './link-pages/programming-pages/python.html'],
+    [gameDevelopmentDiv, './link-pages/programming-pages/game-development.html'],
+    [gamingDiv, './link-pages/hobbies-pages/gaming.html'],
+    [cookingDiv, './link-pages/hobbies-pages/cooking.html'],
+    [musicDiv, './link-pages/hobbies-pages/music.html']
 ];
 
 for (let div of linkDivs) {
