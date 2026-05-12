@@ -273,3 +273,10 @@ a:visited {
     color: white;
     height: 100px;
 }
+
+.sub-stat-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
