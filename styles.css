@@ -266,12 +266,14 @@ a:visited {
     border-radius: 10px;
     width: 85%;
     position: relative;
+    top: -50px;
     margin: 0 auto;
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
     background-color: #222222;
     color: white;
     height: 100px;
+    box-shadow: 5px 5px 5px black;
 }
 
 
