@@ -274,13 +274,23 @@ a:visited {
     height: 100px;
 }
 
-.stats-image {
-    
-}
 
 .sub-stat-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+
+.stats-image {
+    margin: 5px;
+}
+
+.stats-total {
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.stats-subtitle {
+    font-size: 10px;
 }
