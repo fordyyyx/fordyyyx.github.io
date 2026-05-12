@@ -282,6 +282,11 @@ a:visited {
     justify-content: center;
 }
 
+.sub-stat-container:not(#total-calories) {
+    border-right: 1px solid grey;
+    border-image: linear-gradient(to bottom, transparent 0%, transparent 15%, grey 15%, grey 85%, transparent 85%) 1 100%;
+}
+
 .stats-image {
     margin: 5px;
 }
