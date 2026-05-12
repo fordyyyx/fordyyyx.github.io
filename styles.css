@@ -201,7 +201,7 @@ a:visited {
 }
 
 .running-header-img-div {
-    height: 45%;
+    height: 55%;
     border: 1px solid black;
     display: flex;
     flex-direction: column;
@@ -259,4 +259,17 @@ a:visited {
     top: 40px;
     left: 67px;
     color: white;
+}
+
+.stats-container {
+    border: 1px solid black;
+    border-radius: 10px;
+    width: 85%;
+    position: relative;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    background-color: #222222;
+    color: white;
+    height: 100px;
 }
