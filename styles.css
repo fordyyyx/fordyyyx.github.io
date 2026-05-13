@@ -325,3 +325,48 @@ a:visited {
     box-shadow: 0 0 5px 3px grey;
     border-radius: 10px;
 }
+
+#running-shoes-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.running-shoes-box {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    width: 90%;
+    height: 80%;
+    gap: 10px;
+    align-self: center;
+}
+
+.running-shoes-navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    height: 10%;
+}
+
+.running-content-expand-button {
+    margin: 10px;
+}
+
+.running-shoes-title {
+    margin: 10px;
+}
+
+.running-shoe-image-container {
+    width: 175px;
+    height: 175px;
+}
+
+.running-shoe-description-container {
+    border: 1px solid black;
+    height: 175px;
+}
+
+.running-shoe-image {
+    width: 100%;
+    height: 100%;
+}
