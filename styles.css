@@ -133,6 +133,10 @@ body {
 
 /*RUNNING PAGE*/
 
+.running-body {
+    background-color: lightgray;
+}
+
 .main-navbar {
     width: 99vw;
     height: 8vh;
@@ -262,7 +266,6 @@ a:visited {
 }
 
 .stats-container {
-    border: 1px solid black;
     border-radius: 10px;
     width: 85%;
     position: relative;
@@ -300,4 +303,25 @@ a:visited {
 
 .stats-subtitle {
     font-size: 10px;
+}
+
+.centre-align {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.running-content-container {
+    height: 150vh;
+    width: 80%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.running-sub-content-container {
+    margin: 10px;
+    background-color: white;
+    box-shadow: 0 0 5px 3px grey;
+    border-radius: 10px;
 }
