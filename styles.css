@@ -312,7 +312,7 @@ a:visited {
 }
 
 .running-content-container {
-    height: 100vh;
+    height: 85vh;
     width: 80%;
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -346,10 +346,19 @@ a:visited {
 
 .running-content-expand-button {
     margin: 10px;
+    position: relative;
+    top: -5px;
+    right: 10px;
 }
 
 .running-shoes-title {
     margin: 10px;
+}
+
+.my-running-shoes-text {
+    margin-left: 20px;
+    position: relative;
+    top: -5px;
 }
 
 .running-shoe-sub-container {
@@ -423,5 +432,15 @@ a:visited {
 }
 
 .running-shoe-distance {
+    color: darkgrey;
+}
+
+.running-shoe-quote-container {
+    height: 30px;
+    width: 100%;
+}
+
+.running-shoe-quote {
+    margin-left: 30px;
     color: darkgrey;
 }
