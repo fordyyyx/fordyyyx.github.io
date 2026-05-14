@@ -270,6 +270,10 @@ a:visited {
     color: white;
 }
 
+.strava-button:hover {
+    cursor: pointer;
+}
+
 .stats-container {
     border-radius: 10px;
     width: 85%;
