@@ -181,7 +181,8 @@ body {
     display: inline-block;
 }
 
-.sports-dropdown {
+.sports-dropdown,
+.work-dropdown {
     display: none;
     position: absolute;
     z-index: 1;
@@ -200,7 +201,8 @@ body {
     background-color: darkgrey;
 }
 
-.dropdown:hover .sports-dropdown {
+.dropdown:hover .sports-dropdown,
+.dropdown:hover .work-dropdown {
     display: block;
 }
 
