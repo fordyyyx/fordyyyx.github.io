@@ -6,13 +6,25 @@ let dropdownFootballButton = document.getElementById("dropdown-football-button")
 let dropdownExperienceButton = document.getElementById("dropdown-experience-button");
 let dropdownPdpButton = document.getElementById("dropdown-pdp-button");
 let dropdownEducationButton = document.getElementById("dropdown-education-button");
+let dropdownWebDesignButton = document.getElementById("dropdown-web-design-button");
+let dropdownPythonButton = document.getElementById("dropdown-python-button");
+let dropdownGameDevelopmentButton = document.getElementById("dropdown-game-development-button");
+let dropdownGamingButton = document.getElementById("dropdown-gaming-button");
+let dropdownCookingButton = document.getElementById("dropdown-cooking-button");
+let dropdownMusicButton = document.getElementById("dropdown-music-button");
 
 let dropdownButtons = [[dropdownRunningButton, '../../link-pages/sports-pages/running.html'],
                        [dropdownCyclingButton, '../../link-pages/sports-pages/cycling.html'], 
                        [dropdownFootballButton, '../../link-pages/sports-pages/football.html'],
                        [dropdownExperienceButton, '../../link-pages/work-pages/experience.html'],
                        [dropdownPdpButton, '../../link-pages/work-pages/pdp.html'],
-                       [dropdownEducationButton, '../../link-pages/work-pages/education.html']
+                       [dropdownEducationButton, '../../link-pages/work-pages/education.html'],
+                       [dropdownWebDesignButton, '../../link-pages/programming-pages/web-design.html'],
+                       [dropdownPythonButton, '../../link-pages/programming-pages/python.html'],
+                       [dropdownGameDevelopmentButton, '../../link-pages/programming-pages/game-development.html'],
+                       [dropdownGamingButton, '../../link-pages/hobbies-pages/gaming.html'],
+                       [dropdownCookingButton, '../../link-pages/hobbies-pages/cooking.html'],
+                       [dropdownMusicButton, '../../link-pages/hobbies-pages/music.hmtl']
                     ]
 
 stravaButton.addEventListener("click", function() {
