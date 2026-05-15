@@ -176,13 +176,48 @@ body {
     padding: 5px;
 }
 
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.sports-dropdown {
+    display: none;
+    position: absolute;
+    z-index: 1;
+}
+
+.dropdown-button {
+    color: white;
+    background-color: black;
+    display: block;
+    border: 1px solid grey;
+    padding: 3px;
+}
+
+.dropdown-button:hover {
+    cursor: pointer;
+    background-color: darkgrey;
+}
+
+.dropdown:hover .sports-dropdown {
+    display: block;
+}
+
+.dropdown .dropdown-button:hover {
+    background-color: darkgrey;
+}
+
+#sports-nav-button {
+    width: 100%;
+}
+
 #programming-nav-button {
     font-size: smaller;
     padding: 8px;
 }
 
 .nav-button:hover {
-    animation: 'hover-pop-up' 0.25s 1 forwards;
     cursor: pointer;
 }
 
