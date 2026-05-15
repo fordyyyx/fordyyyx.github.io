@@ -24,7 +24,7 @@ let dropdownButtons = [[dropdownRunningButton, '../sports-pages/running.html'],
                        [dropdownGameDevelopmentButton, '../programming-pages/game-development.html'],
                        [dropdownGamingButton, '../hobbies-pages/gaming.html'],
                        [dropdownCookingButton, '../hobbies-pages/cooking.html'],
-                       [dropdownMusicButton, '../hobbies-pages/music.hmtl']
+                       [dropdownMusicButton, '../hobbies-pages/music.html']
                     ]
 
 stravaButton.addEventListener("click", function() {
