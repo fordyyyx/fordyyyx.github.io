@@ -13,18 +13,18 @@ let dropdownGamingButton = document.getElementById("dropdown-gaming-button");
 let dropdownCookingButton = document.getElementById("dropdown-cooking-button");
 let dropdownMusicButton = document.getElementById("dropdown-music-button");
 
-let dropdownButtons = [[dropdownRunningButton, '../../link-pages/sports-pages/running.html'],
-                       [dropdownCyclingButton, '../../link-pages/sports-pages/cycling.html'], 
-                       [dropdownFootballButton, '../../link-pages/sports-pages/football.html'],
-                       [dropdownExperienceButton, '../../link-pages/work-pages/experience.html'],
-                       [dropdownPdpButton, '../../link-pages/work-pages/pdp.html'],
-                       [dropdownEducationButton, '../../link-pages/work-pages/education.html'],
-                       [dropdownWebDesignButton, '../../link-pages/programming-pages/web-design.html'],
-                       [dropdownPythonButton, '../../link-pages/programming-pages/python.html'],
-                       [dropdownGameDevelopmentButton, '../../link-pages/programming-pages/game-development.html'],
-                       [dropdownGamingButton, '../../link-pages/hobbies-pages/gaming.html'],
-                       [dropdownCookingButton, '../../link-pages/hobbies-pages/cooking.html'],
-                       [dropdownMusicButton, '../../link-pages/hobbies-pages/music.hmtl']
+let dropdownButtons = [[dropdownRunningButton, '../sports-pages/running.html'],
+                       [dropdownCyclingButton, '../sports-pages/cycling.html'], 
+                       [dropdownFootballButton, '../sports-pages/football.html'],
+                       [dropdownExperienceButton, '../work-pages/experience.html'],
+                       [dropdownPdpButton, '../work-pages/pdp.html'],
+                       [dropdownEducationButton, '../work-pages/education.html'],
+                       [dropdownWebDesignButton, '../programming-pages/web-design.html'],
+                       [dropdownPythonButton, '../programming-pages/python.html'],
+                       [dropdownGameDevelopmentButton, '../programming-pages/game-development.html'],
+                       [dropdownGamingButton, '../hobbies-pages/gaming.html'],
+                       [dropdownCookingButton, '../hobbies-pages/cooking.html'],
+                       [dropdownMusicButton, '../hobbies-pages/music.hmtl']
                     ]
 
 stravaButton.addEventListener("click", function() {
