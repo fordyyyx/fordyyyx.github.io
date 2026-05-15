@@ -254,6 +254,17 @@ a:visited {
     color: blue;
 }
 
+.linkedin-link,
+.instagram-link {
+    text-decoration: none;
+    color: white;
+}
+
+.linkedin-link:visited,
+.instagram-link:visited {
+    color: white;
+}
+
 .running-header-img-div {
     height: 55%;
     border: 1px solid black;
