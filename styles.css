@@ -176,6 +176,10 @@ body {
     padding: 5px;
 }
 
+#home-nav-button:hover {
+    animation: 0.2s hover-pop-up forwards;
+}
+
 .dropdown {
     position: relative;
     display: inline-block;
