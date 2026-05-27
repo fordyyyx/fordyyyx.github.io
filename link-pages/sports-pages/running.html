@@ -4,27 +4,57 @@
   <meta charset="UTF-8">
   <title>William Ford | Running</title>
   <link href="../../styles.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <script src="https://kit.fontawesome.com/be00a6369d.js" crossorigin="anonymous"></script>
 </head>
 
-<body>
+<body class="running-body">
     <header>
-        <nav class="main-navbar" id="running-navbar">
-            <div class="logo-div">
-                <a class='logo-home-button' href="../../index.html"><img class="logo-img" src="/assets/white-logo.png" /></a>
-            </div>
-            <div class="nav-buttons">
-                <div class="nav-button" id="home-nav-button">Home</div>
-                <div class="nav-button" id="sports-nav-button">Sports</div>
-                <div class="nav-button" id="work-nav-button">Work</div>
-                <div class="nav-button" id="programming-nav-button">Programming</div>
-                <div class="nav-button" id="hobbies-nav-button">Hobbies</div>
-            </div>
-            <div class="social-buttons">
-                <a class="fa fa-linkedin-square linkedin-badge fa-2x" href="https://www.linkedin.com/in/william-ford-148909284/" target="_blank"></a>
-                <a class="fa fa-instagram instagram-badge fa-2x" href="https://www.instagram.com/will_fxrd/" target="_blank"></a>
-            </div>
-        </nav>
+        <div class="centre-align">
+            <nav class="main-navbar" id="running-navbar">
+                <div class="logo-div">
+                    <a class='logo-home-button' href="../../index.html"><img class="logo-img" src="/assets/white-logo.png" /></a>
+                </div>
+                <div class="nav-buttons">
+                    <div class="nav-button" id="home-nav-button">Home</div>
+                    <div class="dropdown">
+                        <div class="nav-button" id="sports-nav-button">Sports</div>
+                        <div class="sports-dropdown">
+                            <div class="dropdown-button" id="dropdown-running-button">Running</div>
+                            <div class="dropdown-button" id="dropdown-cycling-button">Cycling</div>
+                            <div class="dropdown-button" id="dropdown-football-button">Football</div>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <div class="nav-button" id="work-nav-button">Work</div>
+                        <div class="work-dropdown">
+                            <div class="dropdown-button" id="dropdown-experience-button">Experience</div>
+                            <div class="dropdown-button" id="dropdown-pdp-button">PDP</div>
+                            <div class="dropdown-button" id="dropdown-education-button">Education</div>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <div class="nav-button" id="programming-nav-button">Programming</div>
+                        <div class="programming-dropdown">
+                            <div class="dropdown-button" id="dropdown-web-design-button">Web Design</div>
+                            <div class="dropdown-button" id="dropdown-python-button">Python</div>
+                            <div class="dropdown-button" id="dropdown-game-development-button">Game Development</div>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <div class="nav-button" id="hobbies-nav-button">Hobbies</div>
+                        <div class="hobbies-dropdown">
+                            <div class="dropdown-button" id="dropdown-gaming-button">Gaming</div>
+                            <div class="dropdown-button" id="dropdown-cooking-button">Cooking</div>
+                            <div class="dropdown-button" id="dropdown-music-button">Music</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="social-buttons">
+                    <a class="linkedin-link" href="https://www.linkedin.com/in/william-ford-148909284/" target="_blank"><i class="fa fa-linkedin-square linkedin-badge fa-2x"></i></a>
+                    <a class="instagram-link" href="https://www.instagram.com/will_fxrd/" target="_blank"><i class="fa fa-instagram instagram-badge fa-2x"></i></a>
+                </div>
+            </nav>
+        </div>
     </header>
     <div class="running-header-img-div">
         <div class="running-breadcrumbs-div">
@@ -32,16 +62,91 @@
         </div>
         <h1 class="running-title">Running</h1>
         <p class="running-subtitle">Running clears my mind, builds discipline and pushes me to be a better version of myself every single day.</p>
-        <div class="strava-button"><i class="fab fa-strava"></i> View my Strava</div>
+        <div class="strava-button" id="strava-button"><i class="fab fa-strava"></i> View my Strava</div>
         <p class="strava-button-p">Follow my journey on Strava</p>
     </div>
-    <div class="stats-container-div">
-        <div class="stats-distance"></div>
-        <div class="stats-runs"></div>
-        <div class="stats-time"></div>
-        <div class="stats-races"></div>
-        <div class="stats-calories"></div>
+
+    <div class="stats-container">
+        <div class="sub-stat-container">
+            <img class="stats-image" src="../../assets/running-distance-icon-white.svg" alt="Shoe Icon" />
+            <p class="stats-total">198 km</p>
+            <p class="stats-subtitle">Total Distance</p>
+        </div>
+        <div class="sub-stat-container">
+            <img class="stats-image" src="../../assets/total-activities-icon-white.svg" alt="Calendar Icon" />
+            <p class="stats-total">27</p>
+            <p class="stats-subtitle">Total Runs</p>
+        </div>
+        <div class="sub-stat-container">
+            <img class="stats-image" src="../../assets/total-time-icon-white.svg" alt="Clock Icon" />
+            <p class="stats-total">22h 51m</p>
+            <p class="stats-subtitle">Total Time</p>
+        </div>
+        <div class="sub-stat-container">
+            <img class="stats-image" src="../../assets/total-races-icon-white.svg" alt="Flag Icon" />
+            <p class="stats-total">0</p>
+            <p class="stats-subtitle">Races</p>
+        </div>
+        <div class="sub-stat-container" id="total-calories">
+            <img class="stats-image" src="../../assets/total-calories-white.svg" alt="Fire Icon" />
+            <p class="stats-total">18,894 kcal</p>
+            <p class="stats-subtitle">Total Calories</p>
+        </div>
+    </div>
+    
+    <div class="centre-align">
+        <div class="running-content-container">
+            <div class="running-sub-content-container" id="running-shoes-container">
+                <div class="running-shoes-navbar">
+                    <p class="running-shoes-title"><img class='running-shoes-icon' src="../../assets/running-distance-icon-black.svg" alt="Running Shoe" /><span class="my-running-shoes-text">My Running Shoes</span></p>
+                    <div class="running-content-expand-button" id="view-shoes-button">View All</div>
+                </div>
+                <div class="running-shoes-box">
+                    <div class="running-shoe-sub-container">
+                        <div class="running-shoe-image-container">
+                            <img class="running-shoe-image" src="../../assets/nike-vaporfly-4.png" alt="Nike Vaporfly 4" />
+                        </div>
+                        <div class="running-shoe-description-container">
+                            <p class="running-shoe-brand">Nike</p>
+                            <p class="running-shoe-name">Vaporfly 4</p>
+                            <p class="running-shoe-type red-highlight race-day-shoe">Race Day</p>
+                            <p class="running-shoe-distance">109 km</p>
+                        </div>
+                    </div>
+                    <div class="running-shoe-sub-container">
+                        <div class="running-shoe-image-container">
+                            <img class="running-shoe-image" src="../../assets/nike-streakfly-2.png" alt="Nike Streakfly 2" />
+                        </div>
+                        <div class="running-shoe-description-container">
+                            <p class="running-shoe-brand">Nike</p>
+                            <p class="running-shoe-name">Streakfly 2</p>
+                            <p class="running-shoe-type blue-highlight speed-shoe">Speed / Tempo</p>
+                            <p class="running-shoe-distance">92 km</p>
+                        </div>
+                    </div>
+                    <div class="running-shoe-sub-container">
+                        <div class="running-shoe-image-container">
+                            <img class="running-shoe-image" src="../../assets/adidas-adizero-evo-sl.png" alt="Adidas Adizero Evo SL" />
+                        </div>
+                        <div class="running-shoe-description-container">
+                            <p class="running-shoe-brand">Adidas</p>
+                            <p class="running-shoe-name">Adizero EVO SL</p>
+                            <p class="running-shoe-type green-highlight daily-shoe">Daily Shoe</p>
+                            <p class="running-shoe-distance">162 km</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="running-shoe-quote-container">
+                    <p class="running-shoe-quote">Rotating shoes keeps me healthy and ready to run.</p>
+                </div>
+            </div>
+            <div class="running-sub-content-container" id="running-races-container"></div>
+            <div class="running-sub-content-container" id="running-recent-container"></div>
+            <div class="running-sub-content-container" id="running-goals-container"></div>
+        </div>
     </div>
 </body>
+
+<script src="running.js"></script>
 
 </html>
