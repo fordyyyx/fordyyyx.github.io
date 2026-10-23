@@ -150,3 +150,40 @@ a:hover {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/*
+  Scroll reveal: sections fade and slide up once as they come into view,
+  and the items inside them follow one after another.
+
+  Content is only hidden when the `js-reveal` class is on <html>. A tiny
+  script in BaseLayout adds it, and only if the browser supports the
+  reveal script and the visitor hasn't asked for reduced motion. Without
+  JavaScript, everything is simply visible.
+*/
+.js-reveal [data-reveal],
+.js-reveal [data-reveal] [data-reveal-item] {
+  opacity: 0;
+  transform: translateY(1rem);
+  transition:
+    opacity 600ms ease,
+    transform 600ms ease;
+}
+
+.js-reveal [data-reveal].is-visible,
+.js-reveal [data-reveal].is-visible [data-reveal-item] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Each item waits a little longer than the one before it */
+.js-reveal [data-reveal].is-visible [data-reveal-item] {
+  transition-delay: calc(150ms + var(--reveal-index, 0) * 90ms);
+}
+
+@media print {
+  .js-reveal [data-reveal],
+  .js-reveal [data-reveal] [data-reveal-item] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

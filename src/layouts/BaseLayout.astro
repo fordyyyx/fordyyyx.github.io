@@ -34,6 +34,22 @@ const socialImageAlt = site ? `${site.name}: ${site.headline} ${site.headlineAcc
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!--
+      Runs before the page is drawn, so revealed content is hidden before it
+      can flash on screen. Skipped if the visitor prefers reduced motion.
+      Safety net: if the reveal script hasn't started within 3 seconds,
+      the class is removed and everything is shown.
+    -->
+    <script is:inline>
+      if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const root = document.documentElement;
+        root.classList.add('js-reveal');
+        setTimeout(() => {
+          if (!('revealReady' in root.dataset)) root.classList.remove('js-reveal');
+        }, 3000);
+      }
+    </script>
     <title>{title}</title>
     <meta name="description" content={description} />
     {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
@@ -71,6 +87,36 @@ const socialImageAlt = site ? `${site.name}: ${site.headline} ${site.headlineAcc
     <SiteFooter />
   </body>
 </html>
+
+<script>
+  // Scroll reveal: watches each [data-reveal] section and adds `is-visible`
+  // the first time it scrolls into view (see global.css for the styles).
+  const root = document.documentElement;
+
+  if (root.classList.contains('js-reveal')) {
+    root.dataset.revealReady = '';
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target); // reveal once, then leave it alone
+        }
+      },
+      // Trigger slightly before the section's top reaches the bottom of the screen
+      { rootMargin: '0px 0px -10% 0px' },
+    );
+
+    for (const section of document.querySelectorAll<HTMLElement>('[data-reveal]')) {
+      // Number the items so CSS can stagger them (capped so long lists don't drag)
+      section.querySelectorAll<HTMLElement>('[data-reveal-item]').forEach((item, index) => {
+        item.style.setProperty('--reveal-index', String(Math.min(index, 5)));
+      });
+      observer.observe(section);
+    }
+  }
+</script>
 
 <style>
   /* Off-screen until a keyboard user tabs to it */
