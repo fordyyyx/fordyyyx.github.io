@@ -11,6 +11,7 @@ import SkillGroups from '../components/SkillGroups.astro';
 import LinkList from '../components/LinkList.astro';
 import Certifications from '../components/Certifications.astro';
 import Timeline from '../components/Timeline.astro';
+import ActivityList from '../components/ActivityList.astro';
 
 // Sorts list collections into the order they're written in their YAML file
 const byOrder = (a: { data: { order: number } }, b: { data: { order: number } }) =>
@@ -87,6 +88,7 @@ const person = {
 
   <Section id="outside" title="Outside of code">
     <p class="lead">{outside.data.text}</p>
+    <ActivityList activities={outside.data.activities} />
     <LinkList links={outside.data.links} />
   </Section>
 
@@ -96,7 +98,7 @@ const person = {
       <Section id="cv" title="CV">
         <p class="lead">My education, experience and skills in one document you can save, print or share.</p>
         <p>
-          <a class="cv-link" href={data.cv} download>
+          <a class="cv-link link-sweep" href={data.cv} download>
             Download my CV <span class="file-type">(PDF)</span>
           </a>
         </p>
@@ -107,7 +109,7 @@ const person = {
   <Section id="contact" title="Contact" tone="accent">
     <p class="lead">Email is the best way to reach me.</p>
     <p class="email">
-      <a href={`mailto:${data.email}`}>{data.email}</a>
+      <a class="link-sweep" href={`mailto:${data.email}`}>{data.email}</a>
     </p>
     <LinkList links={data.links} />
   </Section>

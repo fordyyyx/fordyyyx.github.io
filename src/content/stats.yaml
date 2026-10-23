@@ -2,6 +2,9 @@
 # the rest rotate in. Every stat must be true and approved for the site.
 # A chip with `live:` instead of `value:` gets its number at build time
 # (see "Live Strava stats" in the README); it's left out if there's no data.
+# Optional extras for a chip: `icon:` (a line icon from src/icons.ts, shown
+# after the value) and `entrance: charge` (bursts in from the left instead
+# of fading in when it rotates into view).
 - id: imperial-research
   value: 93%
   label: Imperial research project
@@ -26,6 +29,8 @@
 - id: blitz
   value: Running back
   label: Plymouth Blitz American football
+  icon: football
+  entrance: charge
 - id: space-apps
   value: Nov 2026
   label: NASA Space Apps Challenge

@@ -1,0 +1,27 @@
+---
+// One of the line icons from src/icons.ts. Always decorative: whatever it
+// shows is also said in text next to it, so screen readers skip it.
+import { icons, type IconName } from '../icons';
+
+interface Props {
+  name: IconName;
+  class?: string;
+}
+
+const { name, class: className } = Astro.props;
+---
+
+<svg class:list={['icon', className]} viewBox="0 0 24 24" aria-hidden="true" focusable="false" set:html={icons[name]} />
+
+<style>
+  .icon {
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+</style>

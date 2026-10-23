@@ -1,0 +1,67 @@
+---
+// A row of hobbies, each a small line icon with a label (from the
+// `activities` list in outside.yaml). The icons draw themselves in when
+// the section scrolls into view.
+import type { IconName } from '../icons';
+import Icon from './Icon.astro';
+
+interface Props {
+  activities: { label: string; icon: IconName }[];
+}
+
+const { activities } = Astro.props;
+---
+
+{
+  activities.length > 0 && (
+    <ul class="activities">
+      {activities.map((activity) => (
+        <li data-reveal-item>
+          <Icon name={activity.icon} />
+          <span>{activity.label}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+<style>
+  .activities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-8);
+    margin-block: var(--space-6);
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+
+  li :global(.icon) {
+    width: 1.75rem;
+    height: 1.75rem;
+    color: var(--colour-accent);
+  }
+
+  /* Drawing the icons in: each stroke is one dash as long as itself
+     (pathLength="1" in src/icons.ts makes every length 1). Offsetting the
+     dash by its full length hides the stroke; moving it back to 0 draws it.
+     Only while the scroll reveal is active, so the icons are never left
+     undrawn. */
+  :global(.js-reveal [data-reveal]) li :global(.icon *) {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 900ms ease-in-out;
+    transition-delay: calc(350ms + var(--reveal-index, 0) * 150ms);
+  }
+
+  :global(.js-reveal [data-reveal]:not(.is-visible)) li :global(.icon *) {
+    stroke-dashoffset: 1;
+  }
+</style>

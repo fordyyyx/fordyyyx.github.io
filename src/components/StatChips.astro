@@ -8,7 +8,10 @@
 //   if the visitor has asked their system to reduce motion.
 // - Screen readers get the full list once, from a visually hidden list,
 //   rather than hearing the visible chips change.
+// - A chip can have an `icon` after its value, and `entrance: charge` makes
+//   it burst in from the left instead of fading (both set in stats.yaml).
 import type { CollectionEntry } from 'astro:content';
+import Icon from './Icon.astro';
 
 interface Props {
   stats: CollectionEntry<'stats'>[];
@@ -19,8 +22,19 @@ const SLOTS = 3;
 // Opening stats first, otherwise keep the order from stats.yaml
 const pool = [...Astro.props.stats]
   .sort((a, b) => Number(b.data.opening) - Number(a.data.opening) || a.data.order - b.data.order)
-  .map(({ data }) => ({ value: data.value, label: data.label }));
+  .map(({ data }) => ({ value: data.value, label: data.label, icon: data.icon, entrance: data.entrance }));
 const shown = pool.slice(0, SLOTS);
+
+// Splits a value before its last word ("Running back" → "Running ", "back"),
+// so the last word and the icon can be kept together on one line
+const splitLastWord = (value: string) => {
+  const cut = value.lastIndexOf(' ') + 1;
+  return [value.slice(0, cut), value.slice(cut)];
+};
+
+// Each icon used by any chip, rendered once into a <template> that the
+// script copies from when a chip with that icon rotates in
+const iconsUsed = [...new Set(pool.flatMap((stat) => (stat.icon ? [stat.icon] : [])))];
 ---
 
 <div class="stat-chips" data-stat-chips data-pool={JSON.stringify(pool)}>
@@ -33,12 +47,26 @@ const shown = pool.slice(0, SLOTS);
     {
       shown.map((stat) => (
         <li class="chip" data-slot>
-          <span class="value">{stat.value}</span>
+          <span class="value">
+            <span class="value-start">{splitLastWord(stat.value)[0]}</span>
+            <span class="value-end">
+              <span class="value-last">{splitLastWord(stat.value)[1]}</span>
+              <span class="chip-icon">{stat.icon && <Icon name={stat.icon} />}</span>
+            </span>
+          </span>
           <span class="label">{stat.label}</span>
         </li>
       ))
     }
   </ul>
+
+  {
+    iconsUsed.map((name) => (
+      <template data-chip-icon={name}>
+        <Icon name={name} />
+      </template>
+    ))
+  }
 
   <button class="pause" type="button" aria-label="Pause rotating stats" hidden>
     <svg class="icon-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2h3v12H4zM9 2h3v12H9z" /></svg>
@@ -48,7 +76,7 @@ const shown = pool.slice(0, SLOTS);
 </div>
 
 <script>
-  type Stat = { value: string; label: string };
+  type Stat = { value: string; label: string; icon?: string; entrance: 'fade' | 'charge' };
 
   const ROTATE_EVERY_MS = 5000;
   const FADE_MS = 400; // keep in sync with the CSS transition below
@@ -62,7 +90,9 @@ const shown = pool.slice(0, SLOTS);
     const button = root.querySelector<HTMLButtonElement>('.pause')!;
     const buttonText = button.querySelector('.pause-text')!;
 
-    // Stats waiting to be shown; whatever leaves a slot joins the back.
+    // What each slot is showing, and the stats waiting to be shown;
+    // whatever leaves a slot joins the back of the queue.
+    const current = pool.slice(0, slots.length);
     const queue = pool.slice(slots.length);
     let nextSlot = 0;
     let pausedByButton = false;
@@ -84,23 +114,39 @@ const shown = pool.slice(0, SLOTS);
       root.addEventListener('focusin', () => (pausedByPointer = true));
       root.addEventListener('focusout', () => (pausedByPointer = false));
 
+      // The charge is a one-off CSS animation; clear it once it has played
+      for (const slot of slots) {
+        slot.addEventListener('animationend', () => slot.classList.remove('is-charging'));
+      }
+
       setInterval(() => {
         if (pausedByButton || pausedByPointer || document.hidden || reducedMotion.matches) return;
 
-        const slot = slots[nextSlot];
+        const index = nextSlot;
+        const slot = slots[index];
         nextSlot = (nextSlot + 1) % slots.length;
 
-        const valueEl = slot.querySelector('.value')!;
+        const startEl = slot.querySelector('.value-start')!;
+        const lastEl = slot.querySelector('.value-last')!;
+        const iconEl = slot.querySelector('.chip-icon')!;
         const labelEl = slot.querySelector('.label')!;
         const incoming = queue.shift()!;
-        queue.push({ value: valueEl.textContent ?? '', label: labelEl.textContent ?? '' });
+        queue.push(current[index]);
+        current[index] = incoming;
 
-        // Fade out, swap the text, fade back in
+        // Fade out, swap the content, then fade (or charge) back in
         slot.classList.add('is-fading');
         setTimeout(() => {
-          valueEl.textContent = incoming.value;
+          // Same split as splitLastWord above
+          const cut = incoming.value.lastIndexOf(' ') + 1;
+          startEl.textContent = incoming.value.slice(0, cut);
+          lastEl.textContent = incoming.value.slice(cut);
           labelEl.textContent = incoming.label;
+          const template = root.querySelector<HTMLTemplateElement>(`[data-chip-icon="${incoming.icon}"]`);
+          iconEl.replaceChildren(...(incoming.icon && template ? [template.content.cloneNode(true)] : []));
+
           slot.classList.remove('is-fading');
+          if (incoming.entrance === 'charge') slot.classList.add('is-charging');
         }, FADE_MS);
       }, ROTATE_EVERY_MS);
     }
@@ -123,6 +169,7 @@ const shown = pool.slice(0, SLOTS);
   }
 
   .chip {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
@@ -142,6 +189,88 @@ const shown = pool.slice(0, SLOTS);
     font-weight: 600;
     line-height: 1.1;
     color: var(--colour-chip-text);
+  }
+
+  .chip-icon:empty {
+    display: none;
+  }
+
+  /* The last word and the icon never split across lines, so the icon
+     can't end up on a line of its own when a long value wraps */
+  .value-end {
+    white-space: nowrap;
+  }
+
+  .chip-icon {
+    display: inline-block;
+    margin-left: var(--space-2);
+    vertical-align: -0.1em;
+  }
+
+  .chip-icon :global(.icon) {
+    width: 1.625rem;
+    height: 1.625rem;
+    color: var(--colour-chip-label);
+  }
+
+  /*
+    The "charge": the chip bursts in from the left leaning forward, runs a
+    touch past its spot, then settles back, like a running back hitting a
+    gap. Three speed lines (one bar plus two copies made with box-shadow)
+    streak out behind it and fade. It plays once each time the chip
+    rotates in, and never for visitors who prefer reduced motion (the
+    rotation doesn't run for them at all).
+  */
+  @media (prefers-reduced-motion: no-preference) {
+    .chip.is-charging {
+      animation: chip-charge 600ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+    }
+
+    .chip.is-charging::before {
+      content: '';
+      position: absolute;
+      top: 35%;
+      right: calc(100% + var(--space-2));
+      width: 1.5rem;
+      height: 2px;
+      border-radius: 1px;
+      background: var(--colour-chip-label);
+      box-shadow:
+        0.5rem 0.5rem 0 var(--colour-chip-label),
+        0.25rem 1rem 0 var(--colour-chip-label);
+      transform-origin: right;
+      animation: speed-lines 600ms ease-out both;
+    }
+  }
+
+  @keyframes chip-charge {
+    0% {
+      opacity: 0;
+      transform: translateX(-2.5rem) skewX(-10deg);
+    }
+    35% {
+      opacity: 1;
+    }
+    65% {
+      transform: translateX(0.3rem) skewX(-3deg);
+    }
+    100% {
+      transform: none;
+    }
+  }
+
+  @keyframes speed-lines {
+    0% {
+      opacity: 0;
+      transform: translateX(1.5rem) scaleX(0.3);
+    }
+    30% {
+      opacity: 0.8;
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(0) scaleX(1);
+    }
   }
 
   .label {
