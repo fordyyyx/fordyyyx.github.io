@@ -3,7 +3,6 @@ text: >-
   the Plymouth Blitz American football team as a running back. I also play
   sports games like Madden and College Football.
 
-# TODO: add Strava once the profile URL is confirmed, e.g.
-#   - label: Strava
-#     url: https://www.strava.com/athletes/...
-links: []
+links:
+  - label: Strava
+    url: https://www.strava.com/athletes/116195932

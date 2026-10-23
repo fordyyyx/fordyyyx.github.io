@@ -8,7 +8,8 @@
     "build": "astro check && astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "images": "node scripts/generate-images.mjs"
+    "images": "node scripts/generate-images.mjs",
+    "strava": "node --env-file-if-exists=.env scripts/fetch-strava.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

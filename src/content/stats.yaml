@@ -1,5 +1,7 @@
 # Stat chips in the hero. Chips marked `opening: true` are shown first;
 # the rest rotate in. Every stat must be true and approved for the site.
+# A chip with `live:` instead of `value:` gets its number at build time
+# (see "Live Strava stats" in the README); it's left out if there's no data.
 - id: imperial-research
   value: 93%
   label: Imperial research project
@@ -18,6 +20,9 @@
 - id: shifts
   value: 5am–11:15pm
   label: Ran opening and closing shifts
+- id: strava-runs
+  live: stravaRuns
+  label: Runs logged on Strava
 - id: blitz
   value: Running back
   label: Plymouth Blitz American football

@@ -2,6 +2,7 @@
 // and is checked against a schema here. If a file is missing a required
 // field (or has a typo in one), the build fails with a clear error instead
 // of silently publishing a broken page.
+import { existsSync, readFileSync } from 'node:fs';
 import { defineCollection } from 'astro:content';
 import { file, glob } from 'astro/loaders';
 import { z } from 'astro/zod';
@@ -74,13 +75,36 @@ const site = defineCollection({
   }),
 });
 
+// Live values for stat chips, filled in at build time. A chip with
+// `live: stravaRuns` in stats.yaml gets its value from src/data/strava.json,
+// which scripts/fetch-strava.mjs writes just before the build. If that file
+// is missing (no secrets, or Strava was down), the chip is left out.
+const liveValues = (): Record<string, string> => {
+  const path = 'src/data/strava.json';
+  if (!existsSync(path)) return {};
+  const strava = JSON.parse(readFileSync(path, 'utf8'));
+  return { stravaRuns: strava.runs.toLocaleString('en-GB') };
+};
+
 const stats = defineCollection({
-  loader: list('src/content/stats.yaml'),
+  loader: file('src/content/stats.yaml', {
+    parser: (text) => {
+      const live = liveValues();
+      return parse(text)
+        .map((item: Record<string, string>, index: number) => ({
+          ...item,
+          order: index,
+          value: item.live ? live[item.live] : item.value,
+        }))
+        .filter((item: Record<string, unknown>) => item.value !== undefined);
+    },
+  }),
   schema: z.object({
     order,
     value: z.string(),
     label: z.string(),
     opening: z.boolean().default(false),
+    live: z.enum(['stravaRuns']).optional(),
   }),
 });
 
