@@ -127,6 +127,10 @@ All agreed 2026-10-23 unless dated otherwise.
 - Skills shown as groups (Comfortable / Working knowledge / Learning /
   Tools), never ratings or percentage bars.
 - No A-levels. Imperial grades shown rounded (85%, 93%).
+- Certifications live in `src/content/certifications.yaml` and are shown
+  under Education (added 2026-10-23).
+- The public CV (`public/cv/`) must not include my phone number; I keep a
+  separate version with it for direct applications (2026-10-23).
 - Contact: plain mailto link (no contact form), LinkedIn, GitHub.
   Strava linked from "Outside of code".
 - Stat chips: only true, approved facts; no vanity counts (e.g. "projects

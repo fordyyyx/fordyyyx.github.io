@@ -1,0 +1,44 @@
+---
+// GitHub Pages serves this page (built as 404.html) for any address that
+// doesn't exist on the site.
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Page not found · Will Ford" description="This page doesn't exist.">
+  <section class="container not-found">
+    <p class="code">404</p>
+    <h1>This page doesn't exist.</h1>
+    <p>It may have moved, or the link might have a typo.</p>
+    <p class="actions">
+      <a href="/">Go to the homepage</a>
+      <a href="/#projects">See my projects</a>
+    </p>
+  </section>
+</BaseLayout>
+
+<style>
+  .not-found {
+    padding-block: var(--space-24);
+  }
+
+  .code {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--colour-accent);
+  }
+
+  h1 {
+    margin-block: var(--space-2) var(--space-4);
+    font-size: var(--text-hero);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-6);
+    margin-top: var(--space-8);
+    font-weight: 600;
+  }
+</style>

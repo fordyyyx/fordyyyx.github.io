@@ -200,6 +200,14 @@ const { Content } = await render(project);
     margin-top: var(--space-2);
   }
 
+  .prose :global(code) {
+    padding: 0.1em 0.3em;
+    background: var(--colour-surface);
+    border-radius: 4px;
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    font-size: 0.9em;
+  }
+
   .prose :global(table) {
     width: 100%;
     border-collapse: collapse;

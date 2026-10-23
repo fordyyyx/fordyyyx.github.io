@@ -1,11 +1,11 @@
 ---
 title: Freightline
-summary: A freight-company management game. Plan and run deliveries across the country, and eventually the world, on a real map.
+summary: A logistics tycoon game on a real-world map. Grow a local delivery firm into a global distribution network.
 status: In progress
 statusNote: Early development
 order: 1
 tech: [TypeScript, React, Vite, Vitest, Leaflet, SPARQL (Wikidata), GitHub Actions]
-role: Solo project. I design and build it, with Claude (AI) as a pair programmer.
+role: Solo project. I'm the product owner and developer, with Claude (AI) as a pair programmer.
 repo: https://github.com/fordyyyx/freightline
 demo: https://fordyyyx.github.io/freightline/
 image: ../../assets/projects/FreightlineScreenshot-cropped.png
@@ -30,6 +30,11 @@ each new version to GitHub Pages.
 I design and develop the game myself, and use Claude as a pair programmer:
 it reviews my code, suggests improvements, and sometimes writes code when I'm
 working in a language or library I'm less familiar with.
+
+## How I'm running it
+
+I plan the work in agile sprints, acting as both product owner and
+developer. The first playable release is due in December 2026.
 
 ## What's been hard
 

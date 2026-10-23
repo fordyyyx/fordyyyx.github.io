@@ -26,7 +26,7 @@ bio: >-
 email: william.ford.wf2002@gmail.com
 
 # Path to the CV inside public/. Leave commented out until the PDF is added.
-# cv: /cv/will-ford-cv.pdf
+cv: /cv/will-ford-cv.pdf
 
 links:
   - label: GitHub

@@ -99,6 +99,16 @@ const education = defineCollection({
   }),
 });
 
+const certifications = defineCollection({
+  loader: list('src/content/certifications.yaml'),
+  schema: z.object({
+    order,
+    name: z.string(),
+    issuer: z.string(),
+    url: z.url().optional(),
+  }),
+});
+
 const skills = defineCollection({
   loader: list('src/content/skills.yaml'),
   schema: z.object({
@@ -116,4 +126,13 @@ const outside = defineCollection({
   }),
 });
 
-export const collections = { projects, site, stats, experience, education, skills, outside };
+export const collections = {
+  projects,
+  site,
+  stats,
+  experience,
+  education,
+  certifications,
+  skills,
+  outside,
+};

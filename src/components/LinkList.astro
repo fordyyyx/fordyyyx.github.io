@@ -1,0 +1,32 @@
+---
+// A row of plain text links (GitHub, LinkedIn, Strava...). Used in
+// Contact and Outside of code.
+interface Props {
+  links: { label: string; url: string }[];
+}
+
+const { links } = Astro.props;
+---
+
+{
+  links.length > 0 && (
+    <ul class="links">
+      {links.map((link) => (
+        <li>
+          <a href={link.url}>{link.label}</a>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+<style>
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-6);
+    padding: 0;
+    list-style: none;
+    font-weight: 600;
+  }
+</style>
