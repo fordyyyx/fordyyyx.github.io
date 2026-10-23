@@ -3,6 +3,16 @@ text: >-
   the Plymouth Blitz American football team as a running back. I also play
   sports games like Madden and College Football.
 
+# Shown as a row of labelled icons under the text. `icon` is one of the
+# line icons in src/icons.ts.
+activities:
+  - label: Running
+    icon: run
+  - label: Indoor cycling
+    icon: ride
+  - label: American football
+    icon: football
+
 links:
   - label: Strava
     url: https://www.strava.com/athletes/116195932

@@ -13,7 +13,7 @@ const { links } = Astro.props;
     <ul class="links">
       {links.map((link) => (
         <li>
-          <a href={link.url}>{link.label}</a>
+          <a class="link-sweep" href={link.url}>{link.label}</a>
         </li>
       ))}
     </ul>

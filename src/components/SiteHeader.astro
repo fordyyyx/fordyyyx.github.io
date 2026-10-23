@@ -16,7 +16,7 @@ const nav = [
       <ul>
         {nav.map((item) => (
           <li>
-            <a href={item.href}>{item.label}</a>
+            <a class="link-sweep" href={item.href}>{item.label}</a>
           </li>
         ))}
       </ul>
@@ -110,23 +110,25 @@ const nav = [
     list-style: none;
   }
 
+  /* Nav links have no resting underline; it sweeps in on hover/focus
+     (see .link-sweep in global.css) */
   nav a {
+    --sweep-rest: transparent;
+    padding-bottom: 0.3em;
     color: var(--colour-text-muted);
     font-size: var(--text-sm);
     font-weight: 500;
-    text-decoration: none;
   }
 
   nav a:hover {
     color: var(--colour-accent);
-    text-decoration: underline;
   }
 
-  /* The section currently being read */
+  /* The section currently being read keeps its underline drawn in full */
   nav a[aria-current] {
     color: var(--colour-accent);
-    text-decoration: underline;
-    text-decoration-thickness: 2px;
-    text-underline-offset: 0.4em;
+    background-size:
+      100% 2px,
+      100% 1px;
   }
 </style>

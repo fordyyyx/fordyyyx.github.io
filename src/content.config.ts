@@ -7,6 +7,7 @@ import { defineCollection } from 'astro:content';
 import { file, glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 import { parse } from 'yaml';
+import { iconNames } from './icons';
 
 // Some files (site.yaml, outside.yaml) hold a single object rather than a
 // list. Astro's file loader expects a list of entries, so this wraps the
@@ -105,6 +106,10 @@ const stats = defineCollection({
     label: z.string(),
     opening: z.boolean().default(false),
     live: z.enum(['stravaRuns']).optional(),
+    // Optional line icon shown after the value
+    icon: z.enum(iconNames).optional(),
+    // How the chip arrives when it rotates in: the usual fade, or "charge"
+    entrance: z.enum(['fade', 'charge']).default('fade'),
   }),
 });
 
@@ -154,6 +159,7 @@ const outside = defineCollection({
   loader: single('src/content/outside.yaml'),
   schema: z.object({
     text: z.string(),
+    activities: z.array(z.object({ label: z.string(), icon: z.enum(iconNames) })).default([]),
     links: z.array(link).default([]),
   }),
 });

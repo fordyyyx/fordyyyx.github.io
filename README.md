@@ -31,9 +31,10 @@ src/
     education.yaml      qualifications
     certifications.yaml certifications (shown under Education)
     skills.yaml         skill groups
-    outside.yaml        "Outside of code" text and links
+    outside.yaml        "Outside of code" text, hobby icons and links
     projects/*.md       one Markdown file per project
   content.config.ts     schemas: the required fields for each content file
+  icons.ts              small line icons (football, run, ride) used by content
   data/strava.json      generated at build time, not committed (see below)
   components/           reusable pieces (Hero, Section, ProjectList, ...)
   layouts/              the shared page shell (<head>, header, footer)
@@ -59,6 +60,13 @@ Routine changes only touch files in `src/content/`:
   `strava-analysis.md`.
 - **Add a job, qualification, skill or stat chip:** add an item to the
   matching YAML file, in the position you want it to appear.
+- **Give a stat chip an icon or a different entrance:** add `icon:` (a
+  name from `src/icons.ts`) and/or `entrance: charge` (bursts in from the
+  left instead of fading) to it in `stats.yaml`. The Plymouth Blitz chip
+  uses both.
+- **Change the hobby icons in "Outside of code":** edit the `activities`
+  list in `outside.yaml` (a `label` and an `icon` name each). To add a new
+  icon, add its SVG shapes to `src/icons.ts`.
 - **Update the CV:** replace `public/cv/will-ford-cv.pdf` (the public
   version has no phone number).
 - **Change the name or headline:** edit `site.yaml`, then run

@@ -163,6 +163,20 @@ All agreed 2026-10-23 unless dated otherwise.
   behind the hero on wide screens; Experience and Education use a timeline
   rail with dots.
 
+- Personality (2026-10-24), kept subtle: the Plymouth Blitz chip has an
+  outline football icon after its value and "charges in" when it rotates
+  into view (bursts from the left with a lean, small overshoot and fading
+  speed lines, ~600 ms), set per chip with `icon` / `entrance` in
+  stats.yaml. Line icons live in `src/icons.ts` (stroke only, drawn in via
+  pathLength + stroke-dashoffset). Links use the `.link-sweep` underline
+  (thin resting line, thicker line sweeps in from the left on
+  hover/focus; nav links have no resting line). Section headings have a
+  short bar that grows in on reveal. "Outside of code" shows labelled
+  icons for running, indoor cycling and American football (`activities`
+  in outside.yaml; games stay in the text only). The 404 page reads
+  "Fumble." with a ball that tumbles in once. "View projects" has a ↓
+  that nudges on hover/focus. No looping animation anywhere.
+
 ### Stack and deployment
 - Astro (static site generator), TypeScript, plain CSS with custom
   properties (no CSS framework).

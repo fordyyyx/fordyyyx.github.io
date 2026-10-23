@@ -23,7 +23,7 @@ const { Content } = await render(project);
 
 <BaseLayout title={`${data.title} · Will Ford`} description={data.summary} type="article">
   <article class="container project">
-    <a class="back" href="/#projects">← All projects</a>
+    <a class="back link-sweep" href="/#projects">← All projects</a>
 
     <header class="header">
       <h1>{data.title}</h1>
@@ -68,8 +68,8 @@ const { Content } = await render(project);
               <>
                 <dt>Links</dt>
                 <dd class="links">
-                  {data.demo && <a href={data.demo}>Try it</a>}
-                  {data.repo && <a href={data.repo}>Code on GitHub</a>}
+                  {data.demo && <a class="link-sweep" href={data.demo}>Try it</a>}
+                  {data.repo && <a class="link-sweep" href={data.repo}>Code on GitHub</a>}
                 </dd>
               </>
             )
@@ -94,11 +94,8 @@ const { Content } = await render(project);
     margin-bottom: var(--space-8);
     font-size: var(--text-sm);
     font-weight: 600;
-    text-decoration: none;
-  }
-
-  .back:hover {
-    text-decoration: underline;
+    /* No resting underline: the line only sweeps in on hover/focus */
+    --sweep-rest: transparent;
   }
 
   .header {
@@ -190,6 +187,11 @@ const { Content } = await render(project);
     display: grid;
     gap: var(--space-1);
     font-weight: 600;
+  }
+
+  /* Keep each link only as wide as its text, so its underline is too */
+  .links a {
+    justify-self: start;
   }
 
   /* Styles for the Markdown write-up. :global() is needed because the

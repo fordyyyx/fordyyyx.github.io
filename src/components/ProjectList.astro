@@ -55,12 +55,12 @@ const { projects } = Astro.props;
               </p>
               <p class="links">
                 {data.demo && (
-                  <a href={data.demo}>
+                  <a class="link-sweep" href={data.demo}>
                     Try it<span class="visually-hidden">: {data.title}</span>
                   </a>
                 )}
                 {data.repo && (
-                  <a href={data.repo}>
+                  <a class="link-sweep" href={data.repo}>
                     Code<span class="visually-hidden"> for {data.title} on GitHub</span>
                   </a>
                 )}
