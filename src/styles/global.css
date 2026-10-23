@@ -21,6 +21,12 @@
   --colour-chip-text: #0c447c;
   --colour-chip-label: #185fa5;
   --colour-focus: #185fa5;
+  --colour-card: #ffffff;
+  --colour-band: #185fa5;
+  --colour-band-muted: #d6e6f7;
+
+  /* Soft shadow for cards that lift on hover */
+  --shadow-lift: 0 14px 32px -14px rgb(17 20 24 / 0.28);
 
   /* Fonts */
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -66,6 +72,10 @@
     --colour-chip-text: #e6f1fb;
     --colour-chip-label: #b5d4f4;
     --colour-focus: #85b7eb;
+    --colour-card: #1b1f25;
+    --colour-band: #123a63;
+    --colour-band-muted: #c9dcf0;
+    --shadow-lift: 0 16px 36px -14px rgb(0 0 0 / 0.7);
   }
 }
 
@@ -186,4 +196,10 @@ a:hover {
     opacity: 1 !important;
     transform: none !important;
   }
+}
+
+/* When the page ends on a coloured band (Contact), the footer sits
+   directly underneath it rather than after a gap */
+main:has(> .tone-accent:last-child) + .site-footer {
+  margin-top: 0;
 }

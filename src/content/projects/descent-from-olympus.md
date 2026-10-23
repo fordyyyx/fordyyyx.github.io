@@ -3,7 +3,7 @@ title: Descent from Olympus
 summary: A Greek mythology dungeon crawler played in the terminal, with turn-based team combat, built in Python to sharpen my object-oriented programming.
 status: In progress
 statusNote: Playable
-order: 2
+order: 1
 tech: [Python, pytest, GitHub Actions]
 role: Solo project. I designed the game and its class structure; AI wrote much of the implementation, all of the tests and the documentation, with me reviewing and directing.
 repo: https://github.com/fordyyyx/python-dungeon-crawler-project

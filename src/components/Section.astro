@@ -2,29 +2,63 @@
 // Shared wrapper for every homepage section (About, Projects, ...).
 // On wide screens the heading sits in a narrow left column and the
 // content in a wider right column; on phones they simply stack.
+//
+// `tone` gives a section its own full-width background band, which breaks
+// the page into distinct areas instead of one long document:
+// - "default": the page background
+// - "tint":    a light grey band
+// - "accent":  a solid blue band (used to close the page with Contact)
 interface Props {
   id: string;
   title: string;
+  tone?: 'default' | 'tint' | 'accent';
 }
 
-const { id, title } = Astro.props;
+const { id, title, tone = 'default' } = Astro.props;
 const headingId = `${id}-heading`;
 ---
 
-<section id={id} class="container section" aria-labelledby={headingId} data-reveal>
-  <h2 id={headingId}>{title}</h2>
-  <div class="body">
-    <slot />
+<section id={id} class:list={['section', `tone-${tone}`]} aria-labelledby={headingId} data-reveal>
+  <div class="container inner">
+    <h2 id={headingId}>{title}</h2>
+    <div class="body">
+      <slot />
+    </div>
   </div>
 </section>
 
 <style>
   .section {
+    padding-block: var(--space-12);
+    scroll-margin-top: var(--space-4);
+  }
+
+  /* A dividing line between two plain sections (bands don't need one) */
+  .tone-default + .tone-default {
+    border-top: 1px solid var(--colour-border);
+  }
+
+  .tone-tint {
+    background: var(--colour-surface);
+  }
+
+  /* The accent band redefines the colour variables, the same way dark mode
+     does, so everything inside (text, links, focus rings) turns light
+     without any component needing to know it's on blue. */
+  .tone-accent {
+    --colour-text: #ffffff;
+    --colour-text-muted: var(--colour-band-muted);
+    --colour-accent: #ffffff;
+    --colour-accent-hover: var(--colour-band-muted);
+    --colour-focus: #ffffff;
+    --colour-border: rgb(255 255 255 / 0.3);
+    background: var(--colour-band);
+    color: var(--colour-text);
+  }
+
+  .inner {
     display: grid;
     gap: var(--space-4);
-    padding-block: var(--space-12);
-    border-top: 1px solid var(--colour-border);
-    scroll-margin-top: var(--space-4);
   }
 
   /* Section headings act as labels, so they stay smaller than the
@@ -38,11 +72,19 @@ const headingId = `${id}-heading`;
 
   @media (min-width: 48rem) {
     .section {
-      grid-template-columns: 12rem minmax(0, 1fr);
-      gap: var(--space-8);
       padding-block: var(--space-16);
       /* Leave room for the sticky header when jumping to a section */
-      scroll-margin-top: 5rem;
+      scroll-margin-top: 4rem;
+    }
+
+    .tone-tint,
+    .tone-accent {
+      padding-block: var(--space-24);
+    }
+
+    .inner {
+      grid-template-columns: 12rem minmax(0, 1fr);
+      gap: var(--space-8);
     }
 
     h2 {

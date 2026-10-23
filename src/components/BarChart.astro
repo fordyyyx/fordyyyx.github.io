@@ -1,0 +1,94 @@
+---
+// A simple horizontal bar chart built from plain HTML and CSS, so the
+// numbers stay real text that screen readers and search engines can read.
+// Each bar's length is its value divided by the largest value.
+interface Props {
+  title: string;
+  bars: { label: string; value: number }[];
+}
+
+const { title, bars } = Astro.props;
+const max = Math.max(...bars.map((bar) => bar.value));
+---
+
+<figure class="chart">
+  <figcaption>{title}</figcaption>
+  <ul>
+    {
+      bars.map((bar, index) => (
+        <li style={`--share: ${bar.value / max}; --index: ${index}`}>
+          <span class="label">{bar.label}</span>
+          <span class="track" aria-hidden="true">
+            <span class="bar" />
+          </span>
+          <span class="value">{bar.value.toFixed(1)}</span>
+        </li>
+      ))
+    }
+  </ul>
+</figure>
+
+<style>
+  .chart {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  figcaption {
+    color: var(--colour-text-muted);
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+
+  ul {
+    display: grid;
+    gap: var(--space-2);
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: grid;
+    grid-template-columns: 4.75rem minmax(0, 1fr) 2.5rem;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+  }
+
+  .track {
+    height: 0.75rem;
+    background: var(--colour-chip-bg);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .bar {
+    display: block;
+    height: 100%;
+    background: var(--colour-accent);
+    border-radius: inherit;
+    transform: scaleX(var(--share));
+    transform-origin: left;
+  }
+
+  .value {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Bars grow from zero when their section scrolls into view (only when
+     the scroll reveal is active, so they're never stuck at zero) */
+  :global(.js-reveal [data-reveal]:not(.is-visible)) .bar {
+    transform: scaleX(0);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .bar {
+      transition: transform 900ms cubic-bezier(0.2, 0.7, 0.2, 1);
+      transition-delay: calc(400ms + var(--index) * 100ms);
+    }
+  }
+</style>
