@@ -7,17 +7,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 import Section from '../components/Section.astro';
 import ProjectList from '../components/ProjectList.astro';
+import Entry from '../components/Entry.astro';
+import SkillGroups from '../components/SkillGroups.astro';
+
+// Sorts list collections into the order they're written in their YAML file
+const byOrder = (a: { data: { order: number } }, b: { data: { order: number } }) =>
+  a.data.order - b.data.order;
 
 const site = await getEntry('site', 'main');
 if (!site) throw new Error('src/content/site.yaml is missing');
 const { data } = site;
 const stats = await getCollection('stats');
-const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+const projects = (await getCollection('projects')).sort(byOrder);
+const experience = (await getCollection('experience')).sort(byOrder);
+const education = (await getCollection('education')).sort(byOrder);
+const skills = (await getCollection('skills')).sort(byOrder);
 
 const placeholders = [
-  { id: 'experience', title: 'Experience', step: 4 },
-  { id: 'education', title: 'Education', step: 4 },
-  { id: 'skills', title: 'Skills', step: 4 },
   { id: 'outside', title: 'Outside of code', step: 5 },
   { id: 'cv', title: 'CV', step: 5 },
   { id: 'contact', title: 'Contact', step: 5 },
@@ -36,6 +42,28 @@ const placeholders = [
 
   <Section id="projects" title="Projects">
     <ProjectList projects={projects} />
+  </Section>
+
+  <Section id="experience" title="Experience">
+    {experience.map(({ data: job }) => (
+      <Entry title={job.role} place={job.organisation} dates={job.dates} points={job.points} />
+    ))}
+  </Section>
+
+  <Section id="education" title="Education">
+    {education.map(({ data: course }) => (
+      <Entry
+        title={course.qualification}
+        place={course.institution}
+        dates={course.dates}
+        summary={course.summary}
+        points={course.points}
+      />
+    ))}
+  </Section>
+
+  <Section id="skills" title="Skills">
+    <SkillGroups groups={skills} />
   </Section>
 
   {placeholders.map((section) => (

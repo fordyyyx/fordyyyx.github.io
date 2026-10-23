@@ -1,0 +1,81 @@
+---
+// One item in Experience or Education: a title (role or qualification),
+// where (organisation or institution), dates, an optional summary and
+// bullet points. Both sections share this so they always look the same.
+interface Props {
+  title: string;
+  place: string;
+  dates: string;
+  summary?: string;
+  points?: string[];
+}
+
+const { title, place, dates, summary, points = [] } = Astro.props;
+---
+
+<article class="entry">
+  <header class="header">
+    <h3>{title}</h3>
+    <p class="dates">{dates}</p>
+  </header>
+  <p class="place">{place}</p>
+  {summary && <p class="summary">{summary}</p>}
+  {
+    points.length > 0 && (
+      <ul class="points">
+        {points.map((point) => (
+          <li>{point}</li>
+        ))}
+      </ul>
+    )
+  }
+</article>
+
+<style>
+  .entry + :global(.entry) {
+    margin-top: var(--space-12);
+  }
+
+  .header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-1) var(--space-6);
+  }
+
+  h3 {
+    font-size: clamp(1.5rem, 1.3rem + 0.8vw, 1.875rem);
+  }
+
+  .dates {
+    color: var(--colour-text-muted);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .place {
+    margin-top: var(--space-1);
+    font-weight: 600;
+  }
+
+  .summary {
+    max-width: var(--text-width);
+    margin-top: var(--space-3);
+  }
+
+  .points {
+    max-width: var(--text-width);
+    margin-top: var(--space-3);
+    padding-left: var(--space-6);
+  }
+
+  .points li + li {
+    margin-top: var(--space-2);
+  }
+
+  .points li::marker {
+    color: var(--colour-accent);
+  }
+</style>
