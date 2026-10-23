@@ -3,6 +3,12 @@ node_modules/
 dist/
 .astro/
 
+# Generated at build time by scripts/fetch-strava.mjs
+src/data/strava.json
+
+# Local secrets for `npm run strava` (never commit)
+.env
+
 # OS files
 .DS_Store
 Thumbs.db

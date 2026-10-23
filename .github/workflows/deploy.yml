@@ -2,6 +2,8 @@
 #
 # - On every push to main: build, then deploy to https://fordyyyx.github.io
 # - On pull requests: build only, as a check that nothing is broken
+# - Every day at 05:00 UTC: rebuild and deploy, so the live Strava chip
+#   shows the latest run count
 # - Can also be run by hand from the Actions tab ("Run workflow")
 name: Deploy to GitHub Pages
 
@@ -10,6 +12,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 5 * * *'
   workflow_dispatch:
 
 # The deploy job needs permission to publish to Pages. id-token lets GitHub
@@ -41,6 +45,18 @@ jobs:
       # `npm ci` installs the exact versions recorded in package-lock.json
       - name: Install dependencies
         run: npm ci
+
+      # Writes src/data/strava.json for the "Runs logged on Strava" chip.
+      # The secrets are set in Settings → Secrets and variables → Actions.
+      # On the daily run a failed fetch stops the workflow, so the live site
+      # keeps yesterday's number; on other runs the chip is just left out.
+      - name: Fetch Strava stats
+        run: npm run strava
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
+          STRAVA_REQUIRED: ${{ github.event_name == 'schedule' }}
 
       # Runs `astro check` (types and content schemas), then `astro build`
       - name: Build the site
