@@ -50,7 +50,10 @@ Routine changes only touch files in `src/content/`:
 - **Add a project:** copy one of the files in `src/content/projects/`,
   rename it (the file name becomes the URL, e.g. `my-project.md` →
   `/projects/my-project/`) and fill in the fields. Its page is created
-  automatically. Screenshots go in `src/assets/projects/`.
+  automatically. Screenshots go in `src/assets/projects/`. A project
+  without a screenshot can instead have a `chart` (a title and a list of
+  bars) in its frontmatter, drawn as a bar chart; see
+  `strava-analysis.md`.
 - **Add a job, qualification, skill or stat chip:** add an item to the
   matching YAML file, in the position you want it to appear.
 - **Update the CV:** replace `public/cv/will-ford-cv.pdf` (the public

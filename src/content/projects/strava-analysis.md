@@ -7,6 +7,14 @@ order: 3
 tech: [PostgreSQL, SQL, DBeaver]
 role: Solo project.
 repo: https://github.com/fordyyyx/strava-analysis-jun26
+chart:
+  title: Intensity score by sport (running = 100)
+  bars:
+    - { label: Running, value: 100.0 }
+    - { label: Squash, value: 92.9 }
+    - { label: Football, value: 88.1 }
+    - { label: Rowing, value: 85.2 }
+    - { label: Cycling, value: 72.8 }
 ---
 
 ## The questions

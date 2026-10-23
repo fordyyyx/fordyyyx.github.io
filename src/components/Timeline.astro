@@ -1,0 +1,61 @@
+---
+// Wraps Experience or Education entries in a timeline: a vertical line
+// down the left with a dot for each entry. The line "grows" downwards
+// when its section scrolls into view.
+---
+
+<div class="timeline">
+  <slot />
+</div>
+
+<style>
+  .timeline {
+    position: relative;
+    padding-left: var(--space-8);
+  }
+
+  /* The vertical line */
+  .timeline::before {
+    content: '';
+    position: absolute;
+    top: 0.75rem;
+    bottom: 0.5rem;
+    left: 0.4375rem;
+    width: 2px;
+    background: var(--colour-border);
+    transform-origin: top;
+  }
+
+  /* A dot beside each entry, lined up with its title */
+  .timeline > :global(*) {
+    position: relative;
+  }
+
+  .timeline > :global(*)::before {
+    content: '';
+    position: absolute;
+    top: 0.5rem;
+    left: calc(-1 * var(--space-8));
+    width: 1rem;
+    height: 1rem;
+    background: var(--colour-bg);
+    border: 3px solid var(--colour-accent);
+    border-radius: 50%;
+  }
+
+  /* The first (most recent) entry gets a filled dot */
+  .timeline > :global(*:first-child)::before {
+    background: var(--colour-accent);
+  }
+
+  /* Before the section is revealed the line is shrunk to nothing */
+  :global(.js-reveal [data-reveal]:not(.is-visible)) .timeline::before {
+    transform: scaleY(0);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .timeline::before {
+      transition: transform 1200ms cubic-bezier(0.2, 0.7, 0.2, 1) 200ms;
+    }
+  }
+</style>

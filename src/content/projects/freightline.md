@@ -3,7 +3,7 @@ title: Freightline
 summary: A logistics tycoon game on a real-world map. Grow a local delivery firm into a global distribution network.
 status: In progress
 statusNote: Early development
-order: 1
+order: 2
 tech: [TypeScript, React, Vite, Vitest, Leaflet, SPARQL (Wikidata), GitHub Actions]
 role: Solo project. I'm the product owner and developer, with Claude (AI) as a pair programmer.
 repo: https://github.com/fordyyyx/freightline

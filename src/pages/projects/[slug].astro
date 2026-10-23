@@ -6,6 +6,7 @@ import { getCollection, render } from 'astro:content';
 import { Image } from 'astro:assets';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import StatusBadge from '../../components/StatusBadge.astro';
+import BarChart from '../../components/BarChart.astro';
 
 export async function getStaticPaths() {
   const projects = await getCollection('projects');
@@ -40,6 +41,14 @@ const { Content } = await render(project);
           sizes="(min-width: 44rem) 640px, 100vw"
           loading="eager"
         />
+      )
+    }
+
+    {
+      !data.image && data.chart && (
+        <div class="chart-panel">
+          <BarChart title={data.chart.title} bars={data.chart.bars} />
+        </div>
       )
     }
 
@@ -115,6 +124,14 @@ const { Content } = await render(project);
     margin-bottom: var(--space-12);
     border: 1px solid var(--colour-border);
     border-radius: var(--radius);
+  }
+
+  .chart-panel {
+    max-width: var(--text-width);
+    margin-bottom: var(--space-12);
+    padding: var(--space-6);
+    background: var(--colour-surface);
+    border-radius: 12px;
   }
 
   .layout {

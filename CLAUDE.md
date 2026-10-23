@@ -120,8 +120,10 @@ All agreed 2026-10-23 unless dated otherwise.
   is served by the separate Freightline repo.
 
 ### Content
-- Projects on site (in order): Freightline, Descent from Olympus, Strava
-  Training Analysis. F1 tracker left off until rebuilt.
+- Projects on site (in order): Descent from Olympus (featured), Freightline,
+  Strava Training Analysis. Freightline returns to the featured spot once it
+  has a stronger screenshot (routes on the map, expected within a few weeks
+  of 2026-10-23). F1 tracker left off until rebuilt.
 - AI use is stated openly on each project page, describing my role
   accurately.
 - Skills shown as groups (Comfortable / Working knowledge / Learning /
@@ -153,6 +155,13 @@ All agreed 2026-10-23 unless dated otherwise.
   load; project rows show an arrow and accent line on hover/focus; header is
   sticky on screens ≥48rem and highlights the current section. All motion
   is skipped with reduced motion, and nothing is hidden without JavaScript.
+- Depth (2026-10-23): Projects sits on a light tinted band and Contact on a
+  solid blue band (Section `tone` prop); projects are cards (first one
+  featured and wide) with a screenshot or a data chart (`chart` frontmatter
+  → BarChart component); cards lift with a soft shadow on hover/focus (the
+  one agreed exception to "flat"); a decorative route line draws itself
+  behind the hero on wide screens; Experience and Education use a timeline
+  rail with dots.
 
 ### Stack and deployment
 - Astro (static site generator), TypeScript, plain CSS with custom

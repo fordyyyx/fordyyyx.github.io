@@ -46,6 +46,13 @@ const projects = defineCollection({
       demo: z.url().optional(),
       image: image().optional(),
       imageAlt: z.string().optional(),
+      // Optional bar chart, drawn from data instead of a screenshot
+      chart: z
+        .object({
+          title: z.string(),
+          bars: z.array(z.object({ label: z.string(), value: z.number() })),
+        })
+        .optional(),
     }),
 });
 
