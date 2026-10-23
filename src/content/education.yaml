@@ -1,0 +1,18 @@
+# Education, most recent first.
+- id: plymouth
+  qualification: BSc (Hons) Computer Science with a Year in Industry
+  institution: University of Plymouth
+  dates: 2026 – present
+  points:
+    # TODO: confirm month, then update with what was built afterwards.
+    - Taking part in the NASA Space Apps Challenge hackathon, November 2026
+- id: imperial
+  qualification: Certificate of Higher Education in Mathematics
+  institution: Imperial College London
+  dates: Oct 2021 – May 2023
+  summary: >-
+    Built a strong mathematical foundation at Imperial, then chose Computer
+    Science to turn it into a broader, more hands-on technical skill set.
+  points:
+    - 85% in Introduction to Computation
+    - 93% for an individual research project on solids of constant width

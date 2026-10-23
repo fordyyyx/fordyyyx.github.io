@@ -1,0 +1,70 @@
+---
+// Site-wide header: name (links home) and section navigation.
+// Links use "/#section" so they also work from project pages.
+const nav = [
+  { label: 'Projects', href: '/#projects' },
+  { label: 'Experience', href: '/#experience' },
+  { label: 'Education', href: '/#education' },
+  { label: 'Contact', href: '/#contact' },
+];
+---
+
+<header class="site-header">
+  <div class="container inner">
+    <a class="wordmark" href="/">Will Ford</a>
+    <nav aria-label="Main">
+      <ul>
+        {nav.map((item) => (
+          <li>
+            <a href={item.href}>{item.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    border-bottom: 1px solid var(--colour-border);
+  }
+
+  .inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-8);
+    padding-block: var(--space-4);
+  }
+
+  .wordmark {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--colour-text);
+  }
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-6);
+    padding: 0;
+    list-style: none;
+  }
+
+  nav a {
+    color: var(--colour-text-muted);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  nav a:hover {
+    color: var(--colour-accent);
+    text-decoration: underline;
+  }
+</style>

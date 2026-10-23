@@ -1,0 +1,60 @@
+---
+// The shared page shell: <head>, skip link, header and footer.
+// Every page wraps its content in this layout, so these only exist once.
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/barlow-condensed/500.css';
+import '@fontsource/barlow-condensed/600.css';
+import '../styles/global.css';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <SiteHeader />
+    <main id="main">
+      <slot />
+    </main>
+    <SiteFooter />
+  </body>
+</html>
+
+<style>
+  /* Off-screen until a keyboard user tabs to it */
+  .skip-link {
+    position: absolute;
+    left: var(--space-4);
+    top: -100%;
+    z-index: 10;
+    padding: var(--space-2) var(--space-4);
+    background: var(--colour-accent);
+    color: var(--colour-bg);
+    font-weight: 600;
+    border-radius: var(--radius);
+  }
+
+  .skip-link:focus {
+    top: var(--space-4);
+  }
+</style>

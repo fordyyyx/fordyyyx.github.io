@@ -1,0 +1,13 @@
+# Skill groups, shown in this order. No ratings, by design.
+- id: comfortable
+  label: Comfortable
+  items: [Python]
+- id: working
+  label: Working knowledge
+  items: [HTML, CSS, SQL]
+- id: learning
+  label: Learning
+  items: [JavaScript, TypeScript, C, C++]
+- id: tools
+  label: Tools
+  items: [Git, GitHub, VS Code]
