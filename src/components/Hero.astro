@@ -1,0 +1,119 @@
+---
+// The first thing a visitor sees: headline, who I am, what I'm looking
+// for, and the stat chips.
+import type { CollectionEntry } from 'astro:content';
+import StatChips from './StatChips.astro';
+
+interface Props {
+  site: CollectionEntry<'site'>['data'];
+  stats: CollectionEntry<'stats'>[];
+}
+
+const { site, stats } = Astro.props;
+---
+
+<section class="container hero" aria-labelledby="hero-heading">
+  <div class="text">
+    <h1 id="hero-heading">
+      {site.headline}
+      <span class="accent">{site.headlineAccent}</span>
+    </h1>
+    <p class="intro">{site.intro}</p>
+    <p class="looking-for">{site.lookingFor}</p>
+    <p class="location">{site.location}</p>
+    <div class="actions">
+      <a class="button primary" href="#projects">View projects</a>
+      {
+        site.cv ? (
+          <a class="button secondary" href={site.cv} download>
+            Download CV <span class="file-type">(PDF)</span>
+          </a>
+        ) : (
+          <a class="button secondary" href="#contact">Get in touch</a>
+        )
+      }
+    </div>
+  </div>
+  <StatChips stats={stats} />
+</section>
+
+<style>
+  .hero {
+    display: grid;
+    gap: var(--space-12);
+    padding-block: var(--space-12) var(--space-16);
+  }
+
+  @media (min-width: 56rem) {
+    .hero {
+      grid-template-columns: minmax(0, 1fr) 17rem;
+      align-items: end;
+      gap: var(--space-16);
+      padding-block: var(--space-24);
+    }
+  }
+
+  h1 {
+    font-size: var(--text-hero);
+    text-wrap: balance;
+    margin-bottom: var(--space-6);
+  }
+
+  .accent {
+    display: block;
+    color: var(--colour-accent);
+  }
+
+  .intro {
+    max-width: var(--text-width);
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-4);
+  }
+
+  .looking-for,
+  .location {
+    max-width: var(--text-width);
+    color: var(--colour-text-muted);
+  }
+
+  .location {
+    margin-top: var(--space-1);
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-8);
+  }
+
+  .button {
+    display: inline-block;
+    padding: var(--space-3) var(--space-6);
+    border: 2px solid var(--colour-accent);
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .primary {
+    background: var(--colour-accent);
+    color: var(--colour-bg);
+  }
+
+  .primary:hover {
+    background: var(--colour-accent-hover);
+    border-color: var(--colour-accent-hover);
+    color: var(--colour-bg);
+  }
+
+  .secondary:hover {
+    background: var(--colour-chip-bg);
+  }
+
+  .file-type {
+    font-weight: 400;
+  }
+</style>

@@ -13,6 +13,17 @@ import { parse } from 'yaml';
 const single = (path: string) =>
   file(path, { parser: (text) => [{ id: 'main', ...parse(text) }] });
 
+// Astro sorts entries by id, not by their position in the file. This
+// records each item's position as `order`, so the order you write things
+// in the YAML file is the order they appear on the site.
+const list = (path: string) =>
+  file(path, {
+    parser: (text) =>
+      parse(text).map((item: Record<string, unknown>, index: number) => ({ ...item, order: index })),
+  });
+
+const order = z.number();
+
 const link = z.object({
   label: z.string(),
   url: z.url(),
@@ -45,6 +56,7 @@ const site = defineCollection({
     headline: z.string(),
     headlineAccent: z.string(),
     role: z.string(),
+    intro: z.string(),
     lookingFor: z.string(),
     location: z.string(),
     bio: z.string(),
@@ -55,8 +67,9 @@ const site = defineCollection({
 });
 
 const stats = defineCollection({
-  loader: file('src/content/stats.yaml'),
+  loader: list('src/content/stats.yaml'),
   schema: z.object({
+    order,
     value: z.string(),
     label: z.string(),
     opening: z.boolean().default(false),
@@ -64,8 +77,9 @@ const stats = defineCollection({
 });
 
 const experience = defineCollection({
-  loader: file('src/content/experience.yaml'),
+  loader: list('src/content/experience.yaml'),
   schema: z.object({
+    order,
     role: z.string(),
     organisation: z.string(),
     dates: z.string(),
@@ -74,8 +88,9 @@ const experience = defineCollection({
 });
 
 const education = defineCollection({
-  loader: file('src/content/education.yaml'),
+  loader: list('src/content/education.yaml'),
   schema: z.object({
+    order,
     qualification: z.string(),
     institution: z.string(),
     dates: z.string(),
@@ -85,8 +100,9 @@ const education = defineCollection({
 });
 
 const skills = defineCollection({
-  loader: file('src/content/skills.yaml'),
+  loader: list('src/content/skills.yaml'),
   schema: z.object({
+    order,
     label: z.string(),
     items: z.array(z.string()),
   }),

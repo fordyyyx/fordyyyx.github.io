@@ -1,16 +1,18 @@
 ---
-// Homepage. Step 1 skeleton: the hero reads from site.yaml to prove the
-// content pipeline works; the other sections are placeholders that get
-// built out in later steps.
-import { getEntry } from 'astro:content';
+// Homepage. All text comes from the files in src/content/; this page only
+// decides the order of the sections. Sections still marked as
+// placeholders get built in later steps.
+import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import Section from '../components/Section.astro';
 
 const site = await getEntry('site', 'main');
 if (!site) throw new Error('src/content/site.yaml is missing');
 const { data } = site;
+const stats = await getCollection('stats');
 
-const sections = [
-  { id: 'about', title: 'About', step: 2 },
+const placeholders = [
   { id: 'projects', title: 'Projects', step: 3 },
   { id: 'experience', title: 'Experience', step: 4 },
   { id: 'education', title: 'Education', step: 4 },
@@ -22,54 +24,26 @@ const sections = [
 ---
 
 <BaseLayout
-  title={`${data.name} · Computer Science student`}
-  description={`${data.role}. ${data.lookingFor}`}
+  title={`${data.name} · ${data.role}`}
+  description={`${data.intro} ${data.lookingFor}`}
 >
-  <section class="container hero">
-    <h1>
-      {data.headline}
-      <span class="accent">{data.headlineAccent}</span>
-    </h1>
-    <p>{data.role}. {data.lookingFor}</p>
-    <p class="muted">{data.location}</p>
-  </section>
+  <Hero site={data} stats={stats} />
 
-  {sections.map((section) => (
-    <section id={section.id} class="container placeholder">
-      <h2>{section.title}</h2>
+  <Section id="about" title="About">
+    <p class="bio">{data.bio}</p>
+  </Section>
+
+  {placeholders.map((section) => (
+    <Section id={section.id} title={section.title}>
       <p class="muted">Built in step {section.step}.</p>
-    </section>
+    </Section>
   ))}
 </BaseLayout>
 
 <style>
-  .hero {
-    padding-block: var(--space-16);
-  }
-
-  .hero h1 {
-    font-size: var(--text-hero);
-    max-width: 14ch;
-    margin-bottom: var(--space-6);
-  }
-
-  .accent {
-    display: block;
-    color: var(--colour-accent);
-  }
-
-  .hero p {
+  .bio {
     max-width: var(--text-width);
     font-size: var(--text-lg);
-  }
-
-  .placeholder {
-    padding-block: var(--space-8);
-  }
-
-  .placeholder h2 {
-    font-size: var(--text-xl);
-    margin-bottom: var(--space-2);
   }
 
   .muted {
