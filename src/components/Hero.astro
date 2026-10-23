@@ -116,4 +116,39 @@ const { site, stats } = Astro.props;
   .file-type {
     font-weight: 400;
   }
+
+  /* Entrance on page load: each part fades up shortly after the one
+     before it. Pure CSS, so nothing stays hidden if JavaScript fails, and
+     skipped entirely for visitors who prefer reduced motion. Each part
+     sets its own --hero-delay, which the shared animation rule reads. */
+  @media (prefers-reduced-motion: no-preference) {
+    .text > *,
+    .hero > :global(.stat-chips) {
+      animation: hero-in 700ms cubic-bezier(0.2, 0.7, 0.2, 1) var(--hero-delay, 0ms) both;
+    }
+  }
+
+  .intro {
+    --hero-delay: 120ms;
+  }
+
+  .looking-for,
+  .location {
+    --hero-delay: 220ms;
+  }
+
+  .actions {
+    --hero-delay: 320ms;
+  }
+
+  .hero > :global(.stat-chips) {
+    --hero-delay: 450ms;
+  }
+
+  @keyframes hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+  }
 </style>

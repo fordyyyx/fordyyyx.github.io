@@ -24,9 +24,63 @@ const nav = [
   </div>
 </header>
 
+<script>
+  // Highlights the nav link for the section currently being read. Only
+  // does anything on pages that contain the linked sections (the homepage).
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('.site-header nav a')]
+    .map((link) => ({ link, url: new URL(link.href) }))
+    .filter(({ url }) => url.pathname === location.pathname && url.hash);
+  const sections = [...document.querySelectorAll<HTMLElement>('main section[id]')];
+
+  function update() {
+    // The "current" section is the last one whose top has passed a line
+    // 35% of the way down the screen. At the very bottom of the page it's
+    // the last section, since a short final section might never reach it.
+    const line = window.innerHeight * 0.35;
+    const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+    const current = atBottom
+      ? sections.at(-1)
+      : sections.filter((section) => section.getBoundingClientRect().top <= line).at(-1);
+
+    for (const { link, url } of links) {
+      if (current && url.hash === `#${current.id}`) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    }
+  }
+
+  if (links.length > 0 && sections.length > 0) {
+    // requestAnimationFrame limits the work to once per frame while scrolling
+    let queued = false;
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(() => {
+          queued = false;
+          update();
+        });
+      },
+      { passive: true },
+    );
+    update();
+  }
+</script>
+
 <style>
   .site-header {
     border-bottom: 1px solid var(--colour-border);
+    background: var(--colour-bg);
+  }
+
+  /* On wider screens the header stays at the top while scrolling. On phones
+     it scrolls away, because it takes up two lines there. */
+  @media (min-width: 48rem) {
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
   }
 
   .inner {
@@ -66,5 +120,13 @@ const nav = [
   nav a:hover {
     color: var(--colour-accent);
     text-decoration: underline;
+  }
+
+  /* The section currently being read */
+  nav a[aria-current] {
+    color: var(--colour-accent);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.4em;
   }
 </style>

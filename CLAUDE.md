@@ -148,6 +148,11 @@ All agreed 2026-10-23 unless dated otherwise.
 - Stat chips cycle slowly (~5–6 s fade) with the strongest set shown first;
   pause on hover/focus, a visible pause button, and static when the user
   prefers reduced motion.
+- Motion (2026-10-23): sections fade/slide up once as they scroll into
+  view, with items inside staggered (never fade back out); hero fades up on
+  load; project rows show an arrow and accent line on hover/focus; header is
+  sticky on screens ≥48rem and highlights the current section. All motion
+  is skipped with reduced motion, and nothing is hidden without JavaScript.
 
 ### Stack and deployment
 - Astro (static site generator), TypeScript, plain CSS with custom

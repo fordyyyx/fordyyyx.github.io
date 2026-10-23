@@ -12,7 +12,7 @@ const { certifications } = Astro.props;
 
 {
   certifications.length > 0 && (
-    <div class="certifications">
+    <div class="certifications" data-reveal-item>
       <h3>Certifications</h3>
       <ul>
         {certifications.map(({ data }) => (

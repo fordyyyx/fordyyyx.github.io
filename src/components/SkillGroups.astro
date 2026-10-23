@@ -13,7 +13,7 @@ const { groups } = Astro.props;
 <dl class="groups">
   {
     groups.map(({ data }) => (
-      <div class="group">
+      <div class="group" data-reveal-item>
         <dt>{data.label}</dt>
         <dd>
           <ul class="items">

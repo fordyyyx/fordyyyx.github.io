@@ -11,7 +11,7 @@ const { id, title } = Astro.props;
 const headingId = `${id}-heading`;
 ---
 
-<section id={id} class="container section" aria-labelledby={headingId}>
+<section id={id} class="container section" aria-labelledby={headingId} data-reveal>
   <h2 id={headingId}>{title}</h2>
   <div class="body">
     <slot />
@@ -41,6 +41,8 @@ const headingId = `${id}-heading`;
       grid-template-columns: 12rem minmax(0, 1fr);
       gap: var(--space-8);
       padding-block: var(--space-16);
+      /* Leave room for the sticky header when jumping to a section */
+      scroll-margin-top: 5rem;
     }
 
     h2 {

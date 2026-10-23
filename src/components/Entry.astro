@@ -13,7 +13,7 @@ interface Props {
 const { title, place, dates, summary, points = [] } = Astro.props;
 ---
 
-<article class="entry">
+<article class="entry" data-reveal-item>
   <header class="header">
     <h3>{title}</h3>
     <p class="dates">{dates}</p>
