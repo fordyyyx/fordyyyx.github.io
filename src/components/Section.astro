@@ -27,8 +27,13 @@ const headingId = `${id}-heading`;
     scroll-margin-top: var(--space-4);
   }
 
+  /* Section headings act as labels, so they stay smaller than the
+     headlines inside sections (like project titles) */
   h2 {
-    font-size: var(--text-xl);
+    font-size: 1.375rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--colour-accent);
   }
 
   @media (min-width: 48rem) {

@@ -1,0 +1,28 @@
+---
+// Small label showing a project's status, e.g. "In progress · Playable".
+interface Props {
+  status: string;
+  note?: string;
+}
+
+const { status, note } = Astro.props;
+---
+
+<span class="badge">
+  <span class="visually-hidden">Status: </span>
+  {status}{note && ` · ${note}`}
+</span>
+
+<style>
+  .badge {
+    display: inline-block;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--colour-border);
+    border-radius: var(--radius);
+    color: var(--colour-text-muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+</style>

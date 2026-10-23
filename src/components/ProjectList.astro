@@ -1,0 +1,114 @@
+---
+// Homepage project list: a short entry per project, linking to its full
+// page. Rows with dividers rather than a grid of identical cards, so each
+// project reads like a headline.
+import type { CollectionEntry } from 'astro:content';
+import StatusBadge from './StatusBadge.astro';
+
+interface Props {
+  projects: CollectionEntry<'projects'>[];
+}
+
+const { projects } = Astro.props;
+---
+
+<ul class="projects">
+  {
+    projects.map((project) => {
+      const { data } = project;
+      const href = `/projects/${project.id}/`;
+      return (
+        <li class="project">
+          <div class="heading">
+            <h3>
+              <a href={href}>{data.title}</a>
+            </h3>
+            <StatusBadge status={data.status} note={data.statusNote} />
+          </div>
+          <p class="summary">{data.summary}</p>
+          <p class="tech">
+            <span class="visually-hidden">Built with: </span>
+            {data.tech.join(' · ')}
+          </p>
+          <p class="links">
+            <a href={href}>
+              Read more<span class="visually-hidden"> about {data.title}</span>
+            </a>
+            {data.demo && (
+              <a href={data.demo}>
+                Try it<span class="visually-hidden">: {data.title}</span>
+              </a>
+            )}
+            {data.repo && (
+              <a href={data.repo}>
+                Code<span class="visually-hidden"> for {data.title} on GitHub</span>
+              </a>
+            )}
+          </p>
+        </li>
+      );
+    })
+  }
+</ul>
+
+<style>
+  .projects {
+    display: grid;
+    padding: 0;
+    list-style: none;
+  }
+
+  .project {
+    padding-block: var(--space-6);
+    border-bottom: 1px solid var(--colour-border);
+  }
+
+  .project:first-child {
+    padding-top: 0;
+  }
+
+  .project:last-child {
+    border-bottom: none;
+  }
+
+  .heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    margin-bottom: var(--space-2);
+  }
+
+  h3 {
+    font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.5rem);
+  }
+
+  h3 a {
+    color: var(--colour-text);
+    text-decoration: none;
+  }
+
+  h3 a:hover {
+    color: var(--colour-accent);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+  }
+
+  .summary {
+    max-width: var(--text-width);
+    margin-bottom: var(--space-2);
+  }
+
+  .tech {
+    color: var(--colour-text-muted);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-3);
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-6);
+    font-weight: 600;
+  }
+</style>
