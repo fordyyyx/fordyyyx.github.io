@@ -1,0 +1,68 @@
+---
+// Skills as labelled groups (Comfortable, Working knowledge, ...).
+// Deliberately no ratings or percentage bars.
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  groups: CollectionEntry<'skills'>[];
+}
+
+const { groups } = Astro.props;
+---
+
+<dl class="groups">
+  {
+    groups.map(({ data }) => (
+      <div class="group">
+        <dt>{data.label}</dt>
+        <dd>
+          <ul class="items">
+            {data.items.map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        </dd>
+      </div>
+    ))
+  }
+</dl>
+
+<style>
+  .groups {
+    display: grid;
+    gap: var(--space-6) var(--space-8);
+  }
+
+  @media (min-width: 36rem) {
+    .groups {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  dt {
+    margin-bottom: var(--space-2);
+    color: var(--colour-text-muted);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  .items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: 0;
+    list-style: none;
+  }
+
+  .items li {
+    padding: var(--space-1) var(--space-3);
+    background: var(--colour-chip-bg);
+    color: var(--colour-chip-text);
+    border-radius: 4px;
+    font-weight: 500;
+  }
+</style>

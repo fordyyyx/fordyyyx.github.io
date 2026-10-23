@@ -1,0 +1,26 @@
+# Stat chips in the hero. Chips marked `opening: true` are shown first;
+# the rest rotate in. Every stat must be true and approved for the site.
+- id: imperial-research
+  value: 93%
+  label: Imperial research project
+  opening: true
+- id: tesco-leadership
+  value: 3 years
+  label: Leading shifts at Tesco
+  opening: true
+- id: python
+  value: Python
+  label: My main language
+  opening: true
+- id: imperial-computation
+  value: 85%
+  label: Introduction to Computation, Imperial
+- id: shifts
+  value: 5am–11:15pm
+  label: Ran opening and closing shifts
+- id: blitz
+  value: Running back
+  label: Plymouth Blitz American football
+- id: space-apps
+  value: Nov 2026
+  label: NASA Space Apps Challenge

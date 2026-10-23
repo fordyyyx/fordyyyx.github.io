@@ -1,0 +1,60 @@
+---
+// Certifications, listed under Education. A certification with a `url`
+// links to its public verification page.
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  certifications: CollectionEntry<'certifications'>[];
+}
+
+const { certifications } = Astro.props;
+---
+
+{
+  certifications.length > 0 && (
+    <div class="certifications">
+      <h3>Certifications</h3>
+      <ul>
+        {certifications.map(({ data }) => (
+          <li>
+            {data.url ? <a href={data.url}>{data.name}</a> : <span class="name">{data.name}</span>}
+            <span class="issuer">{data.issuer}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+<style>
+  .certifications {
+    margin-top: var(--space-12);
+  }
+
+  h3 {
+    font-size: clamp(1.5rem, 1.3rem + 0.8vw, 1.875rem);
+    margin-bottom: var(--space-3);
+  }
+
+  ul {
+    display: grid;
+    gap: var(--space-2);
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-3);
+  }
+
+  .name,
+  a {
+    font-weight: 600;
+  }
+
+  .issuer {
+    color: var(--colour-text-muted);
+  }
+</style>

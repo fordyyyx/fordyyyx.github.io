@@ -1,0 +1,193 @@
+---
+// Stat chips: three facts shown in the hero, slowly rotating through the
+// pool in stats.yaml (one chip changes every few seconds).
+//
+// - The "opening" stats render first, so a quick glance (or a visitor
+//   without JavaScript) always sees the strongest three.
+// - Rotation pauses on hover/focus and has a pause button, and never runs
+//   if the visitor has asked their system to reduce motion.
+// - Screen readers get the full list once, from a visually hidden list,
+//   rather than hearing the visible chips change.
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  stats: CollectionEntry<'stats'>[];
+}
+
+const SLOTS = 3;
+
+// Opening stats first, otherwise keep the order from stats.yaml
+const pool = [...Astro.props.stats]
+  .sort((a, b) => Number(b.data.opening) - Number(a.data.opening) || a.data.order - b.data.order)
+  .map(({ data }) => ({ value: data.value, label: data.label }));
+const shown = pool.slice(0, SLOTS);
+---
+
+<div class="stat-chips" data-stat-chips data-pool={JSON.stringify(pool)}>
+  <h2 class="visually-hidden">Quick facts</h2>
+  <ul class="visually-hidden">
+    {pool.map((stat) => <li>{stat.value}: {stat.label}</li>)}
+  </ul>
+
+  <ul class="chips" aria-hidden="true">
+    {
+      shown.map((stat) => (
+        <li class="chip" data-slot>
+          <span class="value">{stat.value}</span>
+          <span class="label">{stat.label}</span>
+        </li>
+      ))
+    }
+  </ul>
+
+  <button class="pause" type="button" aria-label="Pause rotating stats" hidden>
+    <svg class="icon-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2h3v12H4zM9 2h3v12H9z" /></svg>
+    <svg class="icon-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2l10 6-10 6z" /></svg>
+    <span class="pause-text">Pause</span>
+  </button>
+</div>
+
+<script>
+  type Stat = { value: string; label: string };
+
+  const ROTATE_EVERY_MS = 5000;
+  const FADE_MS = 400; // keep in sync with the CSS transition below
+
+  const root = document.querySelector<HTMLElement>('[data-stat-chips]');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  if (root && !reducedMotion.matches) {
+    const pool: Stat[] = JSON.parse(root.dataset.pool ?? '[]');
+    const slots = [...root.querySelectorAll<HTMLElement>('[data-slot]')];
+    const button = root.querySelector<HTMLButtonElement>('.pause')!;
+    const buttonText = button.querySelector('.pause-text')!;
+
+    // Stats waiting to be shown; whatever leaves a slot joins the back.
+    const queue = pool.slice(slots.length);
+    let nextSlot = 0;
+    let pausedByButton = false;
+    let pausedByPointer = false;
+
+    if (queue.length > 0) {
+      button.hidden = false;
+
+      button.addEventListener('click', () => {
+        pausedByButton = !pausedByButton;
+        root.classList.toggle('is-paused', pausedByButton);
+        buttonText.textContent = pausedByButton ? 'Play' : 'Pause';
+        button.setAttribute('aria-label', pausedByButton ? 'Play rotating stats' : 'Pause rotating stats');
+      });
+
+      // Hovering over, or tabbing into, the chips holds them still
+      root.addEventListener('mouseenter', () => (pausedByPointer = true));
+      root.addEventListener('mouseleave', () => (pausedByPointer = false));
+      root.addEventListener('focusin', () => (pausedByPointer = true));
+      root.addEventListener('focusout', () => (pausedByPointer = false));
+
+      setInterval(() => {
+        if (pausedByButton || pausedByPointer || document.hidden || reducedMotion.matches) return;
+
+        const slot = slots[nextSlot];
+        nextSlot = (nextSlot + 1) % slots.length;
+
+        const valueEl = slot.querySelector('.value')!;
+        const labelEl = slot.querySelector('.label')!;
+        const incoming = queue.shift()!;
+        queue.push({ value: valueEl.textContent ?? '', label: labelEl.textContent ?? '' });
+
+        // Fade out, swap the text, fade back in
+        slot.classList.add('is-fading');
+        setTimeout(() => {
+          valueEl.textContent = incoming.value;
+          labelEl.textContent = incoming.label;
+          slot.classList.remove('is-fading');
+        }, FADE_MS);
+      }, ROTATE_EVERY_MS);
+    }
+  }
+</script>
+
+<style>
+  .chips {
+    display: grid;
+    gap: var(--space-2);
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Three across on tablets, where there's room but no side column */
+  @media (min-width: 36rem) and (max-width: 55.99rem) {
+    .chips {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .chip {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-4);
+    background: var(--colour-chip-bg);
+    border-radius: var(--radius);
+    transition: opacity 400ms ease;
+  }
+
+  .chip.is-fading {
+    opacity: 0;
+  }
+
+  .value {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.1;
+    color: var(--colour-chip-text);
+  }
+
+  .label {
+    /* Room for two lines, so chips don't jump in height as text changes */
+    min-height: 2.8em;
+    font-size: var(--text-sm);
+    line-height: 1.4;
+    color: var(--colour-chip-label);
+  }
+
+  .pause {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding: var(--space-1) var(--space-2);
+    background: none;
+    border: 1px solid var(--colour-border);
+    border-radius: var(--radius);
+    color: var(--colour-text-muted);
+    font: inherit;
+    font-size: var(--text-sm);
+    cursor: pointer;
+  }
+
+  .pause[hidden] {
+    display: none;
+  }
+
+  .pause:hover {
+    color: var(--colour-text);
+    border-color: var(--colour-text-muted);
+  }
+
+  .pause svg {
+    width: 0.75rem;
+    height: 0.75rem;
+    fill: currentColor;
+  }
+
+  .icon-play,
+  .is-paused .icon-pause {
+    display: none;
+  }
+
+  .is-paused .icon-play {
+    display: block;
+  }
+</style>

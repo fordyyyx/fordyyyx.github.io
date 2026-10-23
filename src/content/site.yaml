@@ -1,0 +1,40 @@
+# Core details used across the site (hero, about, contact, page titles).
+name: Will Ford
+
+# The hero headline. `headlineAccent` is shown on a second line in the
+# accent colour.
+headline: Software, data and a
+headlineAccent: team-first mindset.
+
+# Short description used in page titles and search results.
+role: Computer Science student
+# Shown in search results and link previews. Aim for under ~160 characters.
+description: >-
+  Computer Science student at Plymouth with a maths background from Imperial
+  and three years leading teams. Looking for a summer 2027 software or data
+  internship.
+# The hero introduction: the 10-second takeaway.
+intro: >-
+  First-year Computer Science student at the University of Plymouth, with a
+  Certificate of Higher Education in Mathematics from Imperial College
+  London and three years leading teams at Tesco.
+lookingFor: >-
+  Looking for a summer 2027 internship in software or data, and a Year in
+  Industry placement from mid-2028.
+location: Based in Plymouth · open to hybrid or remote
+
+bio: >-
+  Programming has been a lifelong habit for me. I'm always looking to learn
+  something new, and I get a lot of satisfaction from finishing what I
+  start.
+
+email: william.ford.wf2002@gmail.com
+
+# Path to the CV inside public/. Leave commented out until the PDF is added.
+cv: /cv/will-ford-cv.pdf
+
+links:
+  - label: GitHub
+    url: https://github.com/fordyyyx
+  - label: LinkedIn
+    url: https://www.linkedin.com/in/william-ford-148909284/

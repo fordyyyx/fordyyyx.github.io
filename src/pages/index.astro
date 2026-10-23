@@ -1,0 +1,140 @@
+---
+// Homepage. All text comes from the files in src/content/; this page only
+// decides the order of the sections.
+import { getCollection, getEntry } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import Section from '../components/Section.astro';
+import ProjectList from '../components/ProjectList.astro';
+import Entry from '../components/Entry.astro';
+import SkillGroups from '../components/SkillGroups.astro';
+import LinkList from '../components/LinkList.astro';
+import Certifications from '../components/Certifications.astro';
+
+// Sorts list collections into the order they're written in their YAML file
+const byOrder = (a: { data: { order: number } }, b: { data: { order: number } }) =>
+  a.data.order - b.data.order;
+
+const site = await getEntry('site', 'main');
+const outside = await getEntry('outside', 'main');
+if (!site || !outside) throw new Error('src/content/site.yaml or outside.yaml is missing');
+const { data } = site;
+const stats = await getCollection('stats');
+const projects = (await getCollection('projects')).sort(byOrder);
+const experience = (await getCollection('experience')).sort(byOrder);
+const education = (await getCollection('education')).sort(byOrder);
+const certifications = (await getCollection('certifications')).sort(byOrder);
+const skills = (await getCollection('skills')).sort(byOrder);
+
+// Structured data: tells search engines this page is about a person, and
+// links the profiles that belong to them.
+const person = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: data.name,
+  url: Astro.site?.href,
+  email: `mailto:${data.email}`,
+  sameAs: data.links.map((link) => link.url),
+  alumniOf: education.map(({ data: course }) => ({
+    '@type': 'CollegeOrUniversity',
+    name: course.institution,
+  })),
+};
+---
+
+<BaseLayout
+  title={`${data.name} · ${data.role}`}
+  description={data.description}
+>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(person)} />
+  <Hero site={data} stats={stats} />
+
+  <Section id="about" title="About">
+    <p class="lead">{data.bio}</p>
+  </Section>
+
+  <Section id="projects" title="Projects">
+    <ProjectList projects={projects} />
+  </Section>
+
+  <Section id="experience" title="Experience">
+    {experience.map(({ data: job }) => (
+      <Entry title={job.role} place={job.organisation} dates={job.dates} points={job.points} />
+    ))}
+  </Section>
+
+  <Section id="education" title="Education">
+    {education.map(({ data: course }) => (
+      <Entry
+        title={course.qualification}
+        place={course.institution}
+        dates={course.dates}
+        summary={course.summary}
+        points={course.points}
+      />
+    ))}
+    <Certifications certifications={certifications} />
+  </Section>
+
+  <Section id="skills" title="Skills">
+    <SkillGroups groups={skills} />
+  </Section>
+
+  <Section id="outside" title="Outside of code">
+    <p class="lead">{outside.data.text}</p>
+    <LinkList links={outside.data.links} />
+  </Section>
+
+  {/* Only shown once a CV is set in site.yaml */}
+  {
+    data.cv && (
+      <Section id="cv" title="CV">
+        <p class="lead">My education, experience and skills in one document you can save, print or share.</p>
+        <p>
+          <a class="cv-link" href={data.cv} download>
+            Download my CV <span class="file-type">(PDF)</span>
+          </a>
+        </p>
+      </Section>
+    )
+  }
+
+  <Section id="contact" title="Contact">
+    <p class="lead">Email is the best way to reach me.</p>
+    <p class="email">
+      <a href={`mailto:${data.email}`}>{data.email}</a>
+    </p>
+    <LinkList links={data.links} />
+  </Section>
+</BaseLayout>
+
+<style>
+  .lead {
+    max-width: var(--text-width);
+    font-size: var(--text-lg);
+  }
+
+  .lead + :global(.links) {
+    margin-top: var(--space-4);
+  }
+
+  .cv-link {
+    display: inline-block;
+    margin-top: var(--space-4);
+    font-weight: 600;
+  }
+
+  .file-type {
+    font-weight: 400;
+  }
+
+  .email {
+    margin-block: var(--space-4) var(--space-6);
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 1rem + 2.5vw, 2.5rem);
+    font-weight: 600;
+    line-height: 1.2;
+    /* Long email addresses can break onto a new line on small phones */
+    overflow-wrap: anywhere;
+  }
+</style>

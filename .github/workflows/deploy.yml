@@ -1,0 +1,65 @@
+# Builds the Astro site and publishes it to GitHub Pages.
+#
+# - On every push to main: build, then deploy to https://fordyyyx.github.io
+# - On pull requests: build only, as a check that nothing is broken
+# - Can also be run by hand from the Actions tab ("Run workflow")
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# The deploy job needs permission to publish to Pages. id-token lets GitHub
+# confirm the deployment really came from this repository's workflow.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy runs at a time. A running deploy is allowed to finish, and
+# if several more are waiting, only the newest of them runs.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      # `npm ci` installs the exact versions recorded in package-lock.json
+      - name: Install dependencies
+        run: npm ci
+
+      # Runs `astro check` (types and content schemas), then `astro build`
+      - name: Build the site
+        run: npm run build
+
+      - name: Upload the built site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    # Only publish from main, never from a pull request
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

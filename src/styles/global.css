@@ -1,0 +1,152 @@
+/*
+  Global styles and design tokens.
+
+  Every colour, font and spacing value the site uses is a CSS custom
+  property (a variable) defined here. Components refer to the variables,
+  never to raw values, so the whole look can be changed in one place.
+  Dark mode works by redefining the colour variables when the visitor's
+  system is set to dark.
+*/
+
+:root {
+  /* Colours: light mode */
+  --colour-bg: #ffffff;
+  --colour-surface: #f4f6f8;
+  --colour-text: #111418;
+  --colour-text-muted: #4a5058;
+  --colour-border: #e1e5ea;
+  --colour-accent: #185fa5;
+  --colour-accent-hover: #0c447c;
+  --colour-chip-bg: #e6f1fb;
+  --colour-chip-text: #0c447c;
+  --colour-chip-label: #185fa5;
+  --colour-focus: #185fa5;
+
+  /* Fonts */
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+
+  /* Type scale (fluid: grows slightly with screen width) */
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  --text-hero: clamp(2.75rem, 1.8rem + 4.5vw, 4.75rem);
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+
+  /* Layout */
+  --page-width: 68rem;
+  --text-width: 40rem;
+  --gutter: clamp(1rem, 4vw, 2rem);
+  --radius: 8px;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --colour-bg: #0f1114;
+    --colour-surface: #171a1f;
+    --colour-text: #eceef0;
+    --colour-text-muted: #a9b0b8;
+    --colour-border: #2a2f36;
+    --colour-accent: #85b7eb;
+    --colour-accent-hover: #b5d4f4;
+    --colour-chip-bg: #0f2a45;
+    --colour-chip-text: #e6f1fb;
+    --colour-chip-label: #b5d4f4;
+    --colour-focus: #85b7eb;
+  }
+}
+
+/* A light reset: consistent box sizing and no surprise margins */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background: var(--colour-bg);
+  color: var(--colour-text);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+
+a {
+  color: var(--colour-accent);
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  color: var(--colour-accent-hover);
+}
+
+/* A clear focus ring for keyboard users only */
+:focus-visible {
+  outline: 3px solid var(--colour-focus);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Centres content and keeps the side gutter consistent */
+.container {
+  width: 100%;
+  max-width: var(--page-width);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Hidden visually but still read out by screen readers */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
