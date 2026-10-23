@@ -56,6 +56,7 @@ const site = defineCollection({
     headline: z.string(),
     headlineAccent: z.string(),
     role: z.string(),
+    description: z.string().max(170),
     intro: z.string(),
     lookingFor: z.string(),
     location: z.string(),

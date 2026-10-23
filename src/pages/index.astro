@@ -25,12 +25,28 @@ const experience = (await getCollection('experience')).sort(byOrder);
 const education = (await getCollection('education')).sort(byOrder);
 const certifications = (await getCollection('certifications')).sort(byOrder);
 const skills = (await getCollection('skills')).sort(byOrder);
+
+// Structured data: tells search engines this page is about a person, and
+// links the profiles that belong to them.
+const person = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: data.name,
+  url: Astro.site?.href,
+  email: `mailto:${data.email}`,
+  sameAs: data.links.map((link) => link.url),
+  alumniOf: education.map(({ data: course }) => ({
+    '@type': 'CollegeOrUniversity',
+    name: course.institution,
+  })),
+};
 ---
 
 <BaseLayout
   title={`${data.name} · ${data.role}`}
-  description={`${data.intro} ${data.lookingFor}`}
+  description={data.description}
 >
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(person)} />
   <Hero site={data} stats={stats} />
 
   <Section id="about" title="About">

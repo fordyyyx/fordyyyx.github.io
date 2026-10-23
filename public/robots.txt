@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fordyyyx.github.io/sitemap-index.xml

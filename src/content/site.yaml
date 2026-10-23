@@ -8,6 +8,11 @@ headlineAccent: team-first mindset.
 
 # Short description used in page titles and search results.
 role: Computer Science student
+# Shown in search results and link previews. Aim for under ~160 characters.
+description: >-
+  Computer Science student at Plymouth with a maths background from Imperial
+  and three years leading teams. Looking for a summer 2027 software or data
+  internship.
 # The hero introduction: the 10-second takeaway.
 intro: >-
   First-year Computer Science student at the University of Plymouth, with a
