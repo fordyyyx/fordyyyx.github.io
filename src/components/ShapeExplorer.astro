@@ -1,0 +1,219 @@
+---
+// Demo: choose how many sides a Reuleaux polygon has and turn it between
+// two fixed lines. The width and perimeter are measured from the shape
+// itself, so the readouts really do show that neither changes.
+//
+// The shape is drawn at build time. The controls only appear if JavaScript
+// is running, because they can't do anything without it.
+import { perimeter, reuleauxOutline, toSvgPath, widthAt } from '../lib/constant-width';
+
+const START_SIDES = 7;
+const SCALE = 150;
+const CENTRE_X = 120;
+const TOP_Y = 45;
+const BOTTOM_Y = TOP_Y + SCALE;
+
+const outline = reuleauxOutline(START_SIDES);
+const lowestY = Math.min(...outline.map((point) => point.y));
+---
+
+<figure
+  class="explorer"
+  data-explorer
+  data-scale={SCALE}
+  data-centre-x={CENTRE_X}
+  data-top-y={TOP_Y}
+>
+  <svg
+    viewBox="0 30 240 180"
+    role="img"
+    aria-label="A Reuleaux polygon held between two fixed parallel lines, touching both."
+  >
+    <line class="rail" x1="10" x2="230" y1={TOP_Y} y2={TOP_Y} />
+    <line class="rail" x1="10" x2="230" y1={BOTTOM_Y} y2={BOTTOM_Y} />
+    <path
+      class="shape"
+      d={toSvgPath(outline, SCALE)}
+      data-shape
+      transform={`translate(${CENTRE_X} ${TOP_Y - lowestY * SCALE})`}
+    />
+  </svg>
+
+  <div class="side">
+    <div class="controls" data-controls hidden>
+      <div class="control">
+        <label for="explorer-sides">Sides: <output data-sides-value>{START_SIDES}</output></label>
+        <input id="explorer-sides" type="range" min="3" max="11" step="2" value={START_SIDES} data-sides />
+      </div>
+      <div class="control">
+        <label for="explorer-turn">Turn: <output data-turn-value>0°</output></label>
+        <input id="explorer-turn" type="range" min="0" max="360" step="1" value="0" data-turn />
+      </div>
+    </div>
+
+    <p class="note" data-note aria-live="polite">The shape of the 50p and 20p coins</p>
+
+    <dl>
+      <div>
+        <dt>Width</dt>
+        <dd data-width>{widthAt(outline, 0).toFixed(3)}</dd>
+      </div>
+      <div>
+        <dt>Perimeter</dt>
+        <dd data-perimeter>{perimeter(outline).toFixed(3)}</dd>
+      </div>
+    </dl>
+  </div>
+</figure>
+
+<script>
+  import { perimeter, reuleauxOutline, rotate, toSvgPath, widthAt } from '../lib/constant-width';
+
+  const NOTES: Record<number, string> = {
+    3: 'The Reuleaux triangle',
+    5: 'A Reuleaux pentagon',
+    7: 'The shape of the 50p and 20p coins',
+    9: 'A Reuleaux nonagon',
+    11: 'More sides look more like a circle',
+  };
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-explorer]')) {
+    const scale = Number(root.dataset.scale);
+    const centreX = Number(root.dataset.centreX);
+    const topY = Number(root.dataset.topY);
+
+    const shape = root.querySelector<SVGPathElement>('[data-shape]')!;
+    const sidesInput = root.querySelector<HTMLInputElement>('[data-sides]')!;
+    const turnInput = root.querySelector<HTMLInputElement>('[data-turn]')!;
+    const note = root.querySelector('[data-note]')!;
+
+    const setText = (selector: string, text: string) => {
+      root.querySelector(selector)!.textContent = text;
+    };
+
+    let outline = reuleauxOutline(Number(sidesInput.value));
+
+    // Turns the shape, then moves it so it touches the top line. If the width
+    // really is constant, it will touch the bottom line as well.
+    function drawTurn() {
+      const degrees = Number(turnInput.value);
+      const angle = (degrees * Math.PI) / 180;
+      const highestPoint = Math.min(...outline.map((point) => rotate(point, angle).y));
+
+      shape.setAttribute(
+        'transform',
+        `translate(${centreX} ${topY - highestPoint * scale}) rotate(${degrees})`,
+      );
+      setText('[data-turn-value]', `${degrees}°`);
+      setText('[data-width]', widthAt(outline, angle).toFixed(3));
+    }
+
+    function drawShape() {
+      const sides = Number(sidesInput.value);
+      outline = reuleauxOutline(sides);
+      shape.setAttribute('d', toSvgPath(outline, scale));
+
+      setText('[data-sides-value]', String(sides));
+      setText('[data-perimeter]', perimeter(outline).toFixed(3));
+      note.textContent = NOTES[sides];
+      drawTurn();
+    }
+
+    sidesInput.addEventListener('input', drawShape);
+    turnInput.addEventListener('input', drawTurn);
+    root.querySelector<HTMLElement>('[data-controls]')!.hidden = false;
+  }
+</script>
+
+<style>
+  /* A hands-on panel: picture beside the controls on wider screens */
+  .explorer {
+    display: grid;
+    gap: var(--space-4) var(--space-6);
+    margin-block: var(--space-6) var(--space-8);
+    padding: var(--space-4);
+    background: var(--colour-card);
+    border: 1px solid var(--colour-border);
+    border-radius: 12px;
+  }
+
+  @media (min-width: 36rem) {
+    .explorer {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: center;
+    }
+  }
+
+  svg {
+    width: 100%;
+    max-width: 18rem;
+    margin-inline: auto;
+  }
+
+  .rail {
+    stroke: var(--colour-text);
+    stroke-width: 2;
+  }
+
+  .shape {
+    fill: var(--colour-chip-bg);
+    stroke: var(--colour-accent);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+  }
+
+  .side {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .controls {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .controls[hidden] {
+    display: none;
+  }
+
+  .control {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  label {
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  input {
+    width: 100%;
+    accent-color: var(--colour-accent);
+    cursor: pointer;
+  }
+
+  .note {
+    margin: 0;
+    color: var(--colour-accent);
+    font-weight: 600;
+  }
+
+  dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-8);
+  }
+
+  dt {
+    color: var(--colour-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

@@ -1,0 +1,247 @@
+---
+// Demo: a Reuleaux triangle rolling between two parallel lines. It rolls one
+// full turn along, then back. The gap between the lines never changes, and
+// one turn carries it exactly π × its width, the same as a circle.
+//
+// The shape is drawn at build time, so it's still there without JavaScript.
+// The script below only moves it. It runs while on screen, can be paused,
+// and waits for Play if the visitor has asked for reduced motion.
+import { reuleauxOutline, toSvgPath } from '../lib/constant-width';
+
+// One unit of width, in SVG units, and where things sit in the picture
+const SCALE = 90;
+const START_X = 62;
+const GROUND_Y = 108;
+const TOP_Y = GROUND_Y - SCALE;
+const END_X = START_X + Math.PI * SCALE;
+
+const path = toSvgPath(reuleauxOutline(3), SCALE);
+---
+
+<figure
+  class="rolling"
+  data-rolling
+  data-scale={SCALE}
+  data-start-x={START_X}
+  data-ground-y={GROUND_Y}
+>
+  <svg
+    viewBox="0 0 420 150"
+    role="img"
+    aria-label="A Reuleaux triangle between two parallel lines. It rolls one full turn along the bottom line while touching both lines the whole way."
+  >
+    <line class="rail" x1="10" x2="410" y1={TOP_Y} y2={TOP_Y} />
+    <line class="rail" x1="10" x2="410" y1={GROUND_Y} y2={GROUND_Y} />
+
+    <line class="tick" x1={START_X} x2={START_X} y1={GROUND_Y} y2={GROUND_Y + 9} />
+    <line class="tick" x1={END_X} x2={END_X} y1={GROUND_Y} y2={GROUND_Y + 9} />
+    <text x={START_X} y={GROUND_Y + 28} text-anchor="middle">Start</text>
+    <text x={END_X} y={GROUND_Y + 28} text-anchor="middle">One full turn</text>
+
+    <path class="shape" d={path} data-shape transform={`translate(${START_X} ${GROUND_Y - SCALE / Math.sqrt(3)})`} />
+    <circle class="contact" r="4" cx={START_X} cy={GROUND_Y} data-contact />
+  </svg>
+
+  <div class="panel">
+    <dl>
+      <div>
+        <dt>Gap between lines</dt>
+        <dd data-gap>1.000 widths</dd>
+      </div>
+      <div>
+        <dt>Distance rolled</dt>
+        <dd data-distance>0.000 widths</dd>
+      </div>
+    </dl>
+    <button type="button" data-toggle aria-label="Pause rolling demo" hidden>Pause</button>
+  </div>
+
+  <figcaption>
+    The gap never changes, and one full turn travels 3.142 widths: π × its width, exactly as far as a
+    circle of the same width would roll.
+  </figcaption>
+</figure>
+
+<script>
+  import { createRoller, reuleauxOutline, widthAt } from '../lib/constant-width';
+
+  const SECONDS_THERE_AND_BACK = 12;
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-rolling]')) {
+    const scale = Number(root.dataset.scale);
+    const startX = Number(root.dataset.startX);
+    const groundY = Number(root.dataset.groundY);
+
+    const shape = root.querySelector<SVGPathElement>('[data-shape]')!;
+    const contactDot = root.querySelector<SVGCircleElement>('[data-contact]')!;
+    const gapText = root.querySelector('[data-gap]')!;
+    const distanceText = root.querySelector('[data-distance]')!;
+    const button = root.querySelector<HTMLButtonElement>('[data-toggle]')!;
+
+    const outline = reuleauxOutline(3);
+    const roll = createRoller(outline);
+
+    // Draws the shape after turning through `angle` radians
+    function draw(angle: number) {
+      const { contact, distance } = roll(angle);
+      const touchX = startX + distance * scale;
+      // Place the centre so the touching point sits on the ground line
+      const centreX = touchX - contact.x * scale;
+      const centreY = groundY - contact.y * scale;
+
+      const degrees = (angle * 180) / Math.PI;
+      shape.setAttribute('transform', `translate(${centreX} ${centreY}) rotate(${degrees})`);
+      contactDot.setAttribute('cx', String(touchX));
+
+      gapText.textContent = `${widthAt(outline, angle).toFixed(3)} widths`;
+      distanceText.textContent = `${distance.toFixed(3)} widths`;
+    }
+
+    // `time` runs from 0 to 1 and repeats. The cosine eases the shape from
+    // the start to one full turn along (2π) and smoothly back again.
+    let time = 0;
+    let previous: number | undefined;
+    let playing = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let onScreen = false;
+    let frame: number | undefined;
+
+    function tick(now: number) {
+      if (previous !== undefined) {
+        time = (time + (now - previous) / 1000 / SECONDS_THERE_AND_BACK) % 1;
+      }
+      previous = now;
+      draw(Math.PI * (1 - Math.cos(2 * Math.PI * time)));
+      frame = requestAnimationFrame(tick);
+    }
+
+    // Only animate when it's wanted and can actually be seen
+    function update() {
+      const shouldRun = playing && onScreen;
+      if (shouldRun && frame === undefined) {
+        frame = requestAnimationFrame(tick);
+      } else if (!shouldRun && frame !== undefined) {
+        cancelAnimationFrame(frame);
+        frame = undefined;
+        previous = undefined;
+      }
+      button.textContent = playing ? 'Pause' : 'Play';
+      button.setAttribute('aria-label', `${playing ? 'Pause' : 'Play'} rolling demo`);
+    }
+
+    button.hidden = false;
+    button.addEventListener('click', () => {
+      playing = !playing;
+      update();
+    });
+
+    new IntersectionObserver(([entry]) => {
+      onScreen = entry.isIntersecting;
+      update();
+    }).observe(root);
+
+    draw(0);
+    update();
+  }
+</script>
+
+<style>
+  .rolling {
+    display: grid;
+    gap: var(--space-3);
+    margin-block: var(--space-6) var(--space-8);
+    padding: var(--space-4);
+    background: var(--colour-surface);
+    border-radius: 12px;
+  }
+
+  svg {
+    width: 100%;
+  }
+
+  .rail {
+    stroke: var(--colour-text);
+    stroke-width: 2;
+  }
+
+  .tick {
+    stroke: var(--colour-text-muted);
+    stroke-width: 1.5;
+  }
+
+  text {
+    fill: var(--colour-text-muted);
+    font-family: var(--font-body);
+    /* These are picture units: the whole picture scales with the screen, so
+       labels need a larger value on phones to stay readable */
+    font-size: 15px;
+  }
+
+  @media (min-width: 40rem) {
+    text {
+      font-size: 11px;
+    }
+  }
+
+  .shape {
+    fill: var(--colour-chip-bg);
+    stroke: var(--colour-accent);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+  }
+
+  .contact {
+    fill: var(--colour-accent);
+  }
+
+  .panel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3) var(--space-6);
+  }
+
+  dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-8);
+  }
+
+  dt {
+    color: var(--colour-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  button {
+    padding: var(--space-1) var(--space-4);
+    background: var(--colour-card);
+    border: 1px solid var(--colour-border);
+    border-radius: var(--radius);
+    color: var(--colour-text);
+    font: inherit;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button:hover {
+    border-color: var(--colour-accent);
+    color: var(--colour-accent);
+  }
+
+  button[hidden] {
+    display: none;
+  }
+
+  figcaption {
+    margin: 0;
+  }
+</style>

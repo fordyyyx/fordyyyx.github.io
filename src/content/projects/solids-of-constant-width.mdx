@@ -1,0 +1,159 @@
+---
+title: Solids of Constant Width
+summary: My 93% Imperial poster on shapes that aren't circles but measure the same width in every direction, from the 50p coin to a proof involving a bendy needle.
+status: Complete
+statusNote: Imperial College London, 2022
+order: 4
+wide: true
+tech: [Wolfram Mathematica, 3D printing, TypeScript, SVG]
+role: An individually assessed poster, developed alongside a fellow student. The 2022 poster was my own work, made without AI. The interactive demos were built in 2026 with Claude.
+image: ../../assets/projects/ReuleauxModels.jpeg
+imageAlt: Four white 3D-printed solids of constant width on dark carpet, one large and three small, each with a smooth, rounded, slightly pointed shape.
+imageInArticle: true
+---
+
+import { Image } from 'astro:assets';
+import Maths from '../../components/Maths.astro';
+import RollingShape from '../../components/RollingShape.astro';
+import ShapeExplorer from '../../components/ShapeExplorer.astro';
+import modelsPhoto from '../../assets/projects/ReuleauxModels.jpeg';
+
+## What is constant width?
+
+A solid of constant width is exactly what it sounds like: however you turn it,
+its width stays the same. The obvious examples are the circle in two dimensions
+and the sphere in three.
+
+The surprise is that they aren't the only ones. The simplest other example is
+the Reuleaux triangle: a triangle with curved sides. Hold it between two
+parallel lines and it can turn freely, touching both lines the whole way round.
+Watch one roll:
+
+<RollingShape />
+
+## Building the shapes
+
+To draw a Reuleaux triangle, take an equilateral triangle and draw a circle
+around each corner, with a radius equal to the triangle's side. The curved
+shape where all three circles overlap is the Reuleaux triangle.
+
+As part of the project I built this in Wolfram Mathematica, which only takes
+one line: intersect three unit disks, centred on three evenly spaced points on
+a circle of radius <Maths tex="\tfrac{1}{\sqrt{3}}" />.
+
+```text
+RegionIntersection @@ (Disk /@ CirclePoints[1/Sqrt[3], 3]) //
+  RegionBoundary //
+  Region
+```
+
+The same ideas work in three dimensions, and the project included 3D-printed
+models. Spin a Reuleaux triangle around a line of symmetry and you get a solid
+of constant width. A tetrahedron is trickier. The natural guess is the Reuleaux
+tetrahedron, where each face is a Reuleaux triangle, but it isn't quite constant
+width. The Meissner tetrahedron fixes this by replacing three of the edges with
+a surface made by rotating an arc of a circle.
+
+<figure>
+  <Image
+    src={modelsPhoto}
+    alt="Four white 3D-printed solids of constant width on dark carpet, one large and three small, each with a smooth, rounded, slightly pointed shape."
+    widths={[480, 640, 960, 1280]}
+    sizes="(min-width: 44rem) 640px, 100vw"
+  />
+  <figcaption>3D-printed models from the project.</figcaption>
+</figure>
+
+## Why it matters: coins
+
+Most coins are circles, like the 2p and the £2. The 50p and 20p aren't: they're
+Reuleaux heptagons, built like a Reuleaux triangle but with seven arcs instead
+of three.
+
+That shape is a practical choice. Coin-counting machines and self-checkouts
+often need coins to roll, and they can tell coins apart by measuring their
+width. A constant width means a coin measures the same whichever way it lands.
+
+The 12-sided £1 coin looks as though it might work the same way, but it can't.
+Each corner of a Reuleaux polygon needs an edge opposite it, and an even number
+of sides puts a corner opposite another corner instead. Its width
+[varies between 23.03mm and 23.43mm](https://plus.maths.org/content/new-1-coin-gets-even),
+so before its release there was concern about whether machines would cope.
+
+Try it yourself: change the number of sides, then turn the shape. It always
+touches both lines. Keep an eye on the perimeter too.
+
+<ShapeExplorer />
+
+## Barbier's theorem
+
+Here's the result at the centre of my poster: **every shape of constant width
+has a perimeter of π multiplied by its width**, whatever its exact shape.
+
+So a Reuleaux triangle of width 1 and a circle of radius 0.5 look nothing alike,
+but both have a perimeter of exactly π. The proof is my favourite part, because
+it comes from probability rather than geometry: it involves dropping needles.
+
+<details>
+<summary>See the proof</summary>
+
+**Buffon's needle.** Imagine a floor with infinitely many parallel lines, each a
+distance <Maths tex="D" /> apart. Drop a needle of length <Maths tex="l" />,
+shorter than <Maths tex="D" />. What's the probability that it crosses a line?
+
+Let <Maths tex="y \in [0, D)" /> be the height of the needle's lower end above
+a line, and <Maths tex="\theta \in [0, \pi)" /> the angle it makes with the
+horizontal. The needle crosses the line above it when
+<Maths tex="y \le l \sin\theta" />. If both values are uniformly distributed,
+the probability is the area under that curve divided by the area of the
+<Maths tex="\pi \times D" /> rectangle:
+
+<Maths tex="A = \int_0^\pi l \sin\theta \, d\theta = 2l \implies P = \frac{2l}{\pi D}" block />
+
+**Buffon's noodle.** Now let the needle bend, and let it be longer than
+<Maths tex="D" />. To handle this, split the noodle into a chain of
+<Maths tex="n" /> straight segments, each shorter than <Maths tex="D" />, with
+lengths <Maths tex="l_1, l_2, \dots, l_n" />. Let <Maths tex="N_i" /> be the
+number of times segment <Maths tex="i" /> crosses a line, so the total number of
+crossings is <Maths tex="N = N_1 + N_2 + \dots + N_n" />.
+
+Each short segment is a needle, so its expected number of crossings is
+<Maths tex="\frac{2l_i}{\pi D}" />. Expectations add up even when the segments
+are joined together, so:
+
+<Maths tex="\begin{aligned} E(N) &= \frac{2l_1}{\pi D} + \frac{2l_2}{\pi D} + \dots + \frac{2l_n}{\pi D} \\ &= \frac{2(l_1 + l_2 + \dots + l_n)}{\pi D} = \frac{2l}{\pi D} \end{aligned}" block />
+
+This doesn't depend on the angles between the segments, so we can let
+<Maths tex="n \to \infty" /> and the formula holds for a smooth curve. The
+expected number of crossings depends only on the noodle's length.
+
+**The proof.** Take a noodle shaped like a circle of radius
+<Maths tex="r" />, and space the lines <Maths tex="D = 2r" /> apart. However it
+lands, it crosses exactly twice, which matches the formula:
+
+<Maths tex="E(N) = \frac{2l}{\pi D} = \frac{2 \cdot 2\pi r}{\pi \cdot 2r} = 2" block />
+
+A closed noodle of any shape with constant width <Maths tex="D" /> also crosses
+exactly twice: either once on each of two neighbouring lines, or twice on one.
+This time, solve the same formula for its length:
+
+<Maths tex="\frac{2l}{\pi D} = 2 \implies l = \pi D" block />
+
+That's the same perimeter as the circle, whatever the shape. This proves
+Barbier's theorem.
+
+</details>
+
+## What was hard
+
+Understanding the proof of Barbier's theorem was the hardest part of the
+project, and it was very satisfying when it finally made sense.
+
+## Sources
+
+- Ng, C. H. B. and Yip, W. P. (2014). [Reuleaux Triangle Disks: New Shape on the Block](https://doi.org/10.1021/ja506625y). *Journal of the American Chemical Society*, 136(37), 12840–12843.
+- Roberts, P. (2012). [Proof of Constant Width of Spheroform with Tetrahedral Symmetry](https://www.xtalgrafix.com/Reuleaux/Spheroform%20Tetrahedron.pdf).
+- Barbier, J.-É. (1860). Note sur le problème de l'aiguille et le jeu du joint couvert. *Journal de mathématiques pures et appliquées*, 2e série, 5, 273–286.
+- Klain, D. A. and Rota, G.-C. (1997). *Introduction to Geometric Probability*. Cambridge University Press.
+- Wakeham, D. (2020). [From noodles to woodles](https://hapax.github.io/maths/hacks/buffon/).
+- Freiberger, M. (2016). [New £1 coin gets even](https://plus.maths.org/content/new-1-coin-gets-even). *Plus Magazine*.

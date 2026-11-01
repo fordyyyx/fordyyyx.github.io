@@ -1,0 +1,36 @@
+---
+// Writes a formula in LaTeX and turns it into HTML at build time using
+// KaTeX, so visitors get finished maths with no JavaScript. A bad formula
+// stops the build rather than showing broken text on the live site.
+//
+// Use `block` for a formula on its own line:
+//   <Maths tex="E = mc^2" block />
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
+
+interface Props {
+  tex: string;
+  block?: boolean;
+}
+
+const { tex, block = false } = Astro.props;
+const html = katex.renderToString(tex, { displayMode: block, throwOnError: true });
+---
+
+{block ? <div class="maths-block" set:html={html} /> : <span set:html={html} />}
+
+<style>
+  /* Long formulas scroll sideways on phones rather than breaking the page */
+  .maths-block {
+    margin-block: var(--space-4);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  /* A little smaller on phones, so the longest formulas fit without scrolling */
+  @media (max-width: 30rem) {
+    .maths-block {
+      font-size: 0.88em;
+    }
+  }
+</style>

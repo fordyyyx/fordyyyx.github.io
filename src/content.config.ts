@@ -33,8 +33,10 @@ const link = z.object({
 
 // One Markdown file per project. Frontmatter holds the structured fields;
 // the Markdown body is the longer write-up shown on the project's page.
+// A project can use .mdx instead when its write-up needs components, such
+// as formulas or interactive demos.
 const projects = defineCollection({
-  loader: glob({ pattern: '*.md', base: './src/content/projects' }),
+  loader: glob({ pattern: '*.{md,mdx}', base: './src/content/projects' }),
   schema: ({ image }) =>
     z.object({
       title: z.string(),
@@ -42,12 +44,16 @@ const projects = defineCollection({
       status: z.enum(['In progress', 'Complete']),
       statusNote: z.string().optional(),
       order: z.number(),
+      // Show the card at full width on the homepage
+      wide: z.boolean().default(false),
       tech: z.array(z.string()),
       role: z.string(),
       repo: z.url().optional(),
       demo: z.url().optional(),
       image: image().optional(),
       imageAlt: z.string().optional(),
+      // The article places the image itself, so don't show it at the top
+      imageInArticle: z.boolean().default(false),
       // Optional bar chart, drawn from data instead of a screenshot
       chart: z
         .object({
@@ -132,7 +138,8 @@ const education = defineCollection({
     institution: z.string(),
     dates: z.string(),
     summary: z.string().optional(),
-    points: z.array(z.string()).default([]),
+    // A point is plain text, or text with a link to a page on the site
+    points: z.array(z.union([z.string(), z.object({ text: z.string(), href: z.string() })])).default([]),
   }),
 });
 
