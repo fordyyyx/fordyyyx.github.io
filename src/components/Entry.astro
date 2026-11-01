@@ -7,7 +7,7 @@ interface Props {
   place: string;
   dates: string;
   summary?: string;
-  points?: string[];
+  points?: (string | { text: string; href: string })[];
 }
 
 const { title, place, dates, summary, points = [] } = Astro.props;
@@ -24,7 +24,9 @@ const { title, place, dates, summary, points = [] } = Astro.props;
     points.length > 0 && (
       <ul class="points">
         {points.map((point) => (
-          <li>{point}</li>
+          <li>
+            {typeof point === 'string' ? point : <a class="link-sweep" href={point.href}>{point.text}</a>}
+          </li>
         ))}
       </ul>
     )

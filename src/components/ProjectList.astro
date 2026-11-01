@@ -1,6 +1,7 @@
 ---
 // Homepage project cards. The first project is "featured": a wide card with
-// its visual beside the text. The rest sit side by side underneath.
+// its visual beside the text. The rest sit side by side underneath, except
+// any marked `wide`, which get a full row with their visual on the other side.
 // Each card shows a screenshot or, if the project has chart data, a chart.
 import type { CollectionEntry } from 'astro:content';
 import { Image } from 'astro:assets';
@@ -20,8 +21,9 @@ const { projects } = Astro.props;
       const { data } = project;
       const href = `/projects/${project.id}/`;
       const featured = index === 0;
+      const wide = featured || data.wide;
       return (
-        <li class:list={['item', { featured }]} data-reveal-item>
+        <li class:list={['item', { wide, flipped: wide && !featured }]} data-reveal-item>
           <article class="card">
             {(data.image || data.chart) && (
               <div class:list={['visual', { 'has-chart': !data.image }]}>
@@ -30,7 +32,7 @@ const { projects } = Astro.props;
                     src={data.image}
                     alt={data.imageAlt ?? ''}
                     widths={[400, 640, 960]}
-                    sizes={featured ? '(min-width: 56rem) 400px, 100vw' : '(min-width: 40rem) 400px, 100vw'}
+                    sizes={wide ? '(min-width: 56rem) 400px, 100vw' : '(min-width: 40rem) 400px, 100vw'}
                   />
                 ) : (
                   data.chart && <BarChart title={data.chart.title} bars={data.chart.bars} />
@@ -86,7 +88,7 @@ const { projects } = Astro.props;
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .featured {
+    .wide {
       grid-column: 1 / -1;
     }
   }
@@ -112,17 +114,27 @@ const { projects } = Astro.props;
     border-bottom: 1px solid var(--colour-border);
   }
 
-  /* Featured card: visual on the right of the text on wide screens */
+  /* Wide cards: visual beside the text on wide screens, on the right for
+     the featured card and on the left for any others */
   @media (min-width: 56rem) {
-    .featured .card {
+    .wide .card {
       flex-direction: row-reverse;
     }
 
-    .featured .visual {
+    .wide .visual {
       flex: 0 0 45%;
       aspect-ratio: auto;
       border-bottom: none;
       border-left: 1px solid var(--colour-border);
+    }
+
+    .flipped .card {
+      flex-direction: row;
+    }
+
+    .flipped .visual {
+      border-left: none;
+      border-right: 1px solid var(--colour-border);
     }
   }
 
@@ -162,7 +174,7 @@ const { projects } = Astro.props;
     font-size: clamp(1.625rem, 1.4rem + 1vw, 2.125rem);
   }
 
-  .featured h3 {
+  .wide h3 {
     font-size: clamp(1.875rem, 1.5rem + 1.5vw, 2.75rem);
   }
 

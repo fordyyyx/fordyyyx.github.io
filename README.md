@@ -57,7 +57,9 @@ Routine changes only touch files in `src/content/`:
   automatically. Screenshots go in `src/assets/projects/`. A project
   without a screenshot can instead have a `chart` (a title and a list of
   bars) in its frontmatter, drawn as a bar chart; see
-  `strava-analysis.md`.
+  `strava-analysis.md`. If a write-up needs components, such as formulas
+  or interactive demos, use `.mdx` instead of `.md`; see
+  `solids-of-constant-width.mdx`.
 - **Add a job, qualification, skill or stat chip:** add an item to the
   matching YAML file, in the position you want it to appear.
 - **Give a stat chip an icon or a different entrance:** add `icon:` (a

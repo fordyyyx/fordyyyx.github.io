@@ -15,4 +15,5 @@
     Science to turn it into a broader, more hands-on technical skill set.
   points:
     - 85% in Introduction to Computation
-    - 93% for an individual research project on solids of constant width
+    - text: 93% for an individual research project on solids of constant width
+      href: /projects/solids-of-constant-width/
