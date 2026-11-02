@@ -17,7 +17,7 @@ const { certifications } = Astro.props;
       <ul>
         {certifications.map(({ data }) => (
           <li>
-            {data.url ? <a href={data.url}>{data.name}</a> : <span class="name">{data.name}</span>}
+            {data.url ? <a class="link-sweep" href={data.url}>{data.name}</a> : <span class="name">{data.name}</span>}
             <span class="issuer">{data.issuer}</span>
           </li>
         ))}
