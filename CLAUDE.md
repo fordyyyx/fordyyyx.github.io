@@ -124,7 +124,9 @@ All agreed 2026-10-23 unless dated otherwise.
   Strava Training Analysis, Solids of Constant Width (a second wide card,
   set with `wide: true`). Freightline returns to the featured spot once it
   has a stronger screenshot (routes on the map, expected within a few weeks
-  of 2026-10-23). F1 tracker left off until rebuilt.
+  of 2026-10-23). F1 tracker (github.com/fordyyyx/F1Tracker, a rebuild in
+  progress) gets a card once its standings and command-line interface work
+  (agreed 2026-11-02).
 - Solids of Constant Width (2026-11-01): layered write-up of my Imperial
   poster at `/projects/solids-of-constant-width/`, dated "2022". It was
   individually assessed; credit my peer only as "a fellow student" unless
@@ -215,5 +217,6 @@ All agreed 2026-10-23 unless dated otherwise.
   Setup is documented in the README.
 
 ### Planned follow-ups (after launch)
-- Rebuild the F1 championship tracker as a data project.
+- Add the F1Tracker project card once standings and the command-line
+  interface work.
 - Update education with NASA Space Apps Challenge outcome.
