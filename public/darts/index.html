@@ -78,6 +78,11 @@ label.btn{cursor:pointer}
 .coach{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair);display:flex;flex-direction:column;gap:10px}
 .coach-text{white-space:pre-wrap;font-size:.92rem;line-height:1.55;min-width:0;overflow-wrap:anywhere}
 .coach-note{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:16px;background:var(--acc-bg)}
+.cogrid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px}
+.cocell{border:0;border-radius:6px;background:var(--seg-b);font:600 .68rem var(--mono);color:var(--muted);padding:6px 0;cursor:pointer;min-width:0}
+.cocell.sel{outline:2px solid var(--accent);outline-offset:1px}
+.cocell.bogey,.bogeylg{background:repeating-linear-gradient(45deg,var(--seg-a) 0 3px,transparent 3px 6px);color:var(--faint)}
+.lg{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-2px}
 .radar-then{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:5 4}
 .itabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
 .itabs button{flex:none}
@@ -751,7 +756,7 @@ function inLeg(b,code){
   if(g.f9==null&&g.visits.length>=3)g.f9=sum(g.visits.slice(0,3))/3;
   if(won){if(g.f9==null)g.f9=sum(g.visits)/Math.max(1,g.visits.length);
     const co=g.visits[g.visits.length-1];d.legs.push({n:g.darts.length+g.burn,f9:g.f9,co,visits:g.visits,dd:g.dd,c:g.darts.join(" ")});d.cur=newLeg();
-    if(d.vs&&d.vs.cfg){d.vs.legsW++;d.vs.lastLeg={who:"W",no:d.vs.legNo+1,co};vsNextLeg(b);}
+    if(d.vs&&d.vs.cfg){(d.vs.log||(d.vs.log=[])).push({w:g.visits.slice(),b:d.vs.bot.visits.slice(),won:"W",st:d.vs.legNo%2===0?"W":"B"});d.vs.legsW++;d.vs.lastLeg={who:"W",no:d.vs.legNo+1,co};vsNextLeg(b);}
     return;}
   if(d.vs&&d.vs.cfg&&g.vd===0)vsBotVisit(b);
 }
@@ -770,7 +775,7 @@ function sigTable(){if(SIGTAB)return SIGTAB;const t=[];for(let sg=6;sg<=118;sg+=
   for(let i=1;i<t.length;i++)if(t[i][1]>t[i-1][1])t[i][1]=t[i-1][1]-0.01;return SIGTAB=t;}
 function botSigma(avg){const t=sigTable();if(avg>=t[0][1])return t[0][0];for(let i=1;i<t.length;i++)if(avg>=t[i][1]){const [s0,a0]=t[i-1],[s1,a1]=t[i];return s0+(a0-avg)/(a0-a1)*(s1-s0);}return t[t.length-1][0];}
 function defaultBot(){return S.meta.botLevel!=null?S.meta.botLevel:clamp(Math.round(analyse().sAvg||40),25,90);}
-function newVs(){return {cfg:null,draft:null,legsW:0,legsB:0,legNo:0,turn:"W",bot:newLeg(),lost:[],botLegs:[],botDarts:0,botPts:0,anim:null,over:false,won:null,lastLeg:null};}
+function newVs(){return {cfg:null,draft:null,legsW:0,legsB:0,legNo:0,turn:"W",bot:newLeg(),lost:[],botLegs:[],log:[],botDarts:0,botPts:0,anim:null,over:false,won:null,lastLeg:null};}
 function vsNextLeg(b){const d=b.data,v=d.vs;
   if(v.legsW>=v.cfg.first||v.legsB>=v.cfg.first){v.over=true;v.won=v.legsW>v.legsB;return;}
   v.legNo++;d.cur=newLeg();v.bot=newLeg();v.turn=v.legNo%2===0?"W":"B";if(v.turn==="B")vsBotVisit(b);}
@@ -779,7 +784,7 @@ function vsBotVisit(b){
   do{const c=botLand(botAim(leg),v.cfg.sigma);codes.push(c);res=throwInto(leg,c);}while(!res.won&&leg.vd!==0&&codes.length<3);
   v.botDarts+=res.won?codes.length:3;v.botPts+=res.won?start:start-leg.rem;
   (v.anim||(v.anim=[])).push({codes,shown:0,start});
-  if(res.won){const g=d.cur;v.lost.push({darts:g.darts.length+g.burn,pts:501-g.rem,dd:g.dd});v.botLegs.push({n:leg.darts.length+leg.burn});v.legsB++;v.lastLeg={who:"B",no:v.legNo+1,co:start};vsNextLeg(b);}
+  if(res.won){const g=d.cur;(v.log||(v.log=[])).push({w:g.visits.slice(),b:leg.visits.slice(),won:"B",st:v.legNo%2===0?"W":"B"});v.lost.push({darts:g.darts.length+g.burn,pts:501-g.rem,dd:g.dd,visits:g.visits.slice()});v.botLegs.push({n:leg.darts.length+leg.burn});v.legsB++;v.lastLeg={who:"B",no:v.legNo+1,co:start};vsNextLeg(b);}
   else v.turn="W";
 }
 let vsTimer=null;
@@ -822,13 +827,13 @@ function addPd(pd,t,hit){const a=pd[t]||(pd[t]=[0,0]);a[0]++;if(hit)a[1]++;}
 function summarise(R){
   const M={visits:0,total:0,vs:[],tD:0,tH:0,bedH:0,aim20:{},mL:0,mR:0,pd:{},inside:0,outside:0,wide:0,legs:[],n180:0,tons:0,t140:0,atc:null,ladder:null,coList:null,split:null,bobs:null,rtb:null,coDrillAtt:0,coDrillHit:0};
   const drills=[],t0=R.t0||(R.blocks[0]&&R.blocks[0].start)||0;
-  M.extraDd=[];M.match=null;M.aim19={};M.vh=[0,0,0,0,0,0,0,0];M.pos=[[0,0,0,0],[0,0,0,0],[0,0,0,0]];M.seg={};M.fv=[0,0];M.rest=[0,0];M.bobsPos=[[0,0],[0,0],[0,0]];
+  M.extraDd=[];M.match=null;M.aim19={};M.aim20pos=[{},{},{}];M.co={};M.bobsTrail=[];M.legsLog=[];M.vh=[0,0,0,0,0,0,0,0];M.pos=[[0,0,0,0],[0,0,0,0],[0,0,0,0]];M.seg={};M.fv=[0,0];M.rest=[0,0];M.bobsPos=[[0,0],[0,0],[0,0]];
   for(const b of R.blocks){
     const e=D[b.k].eng,d=b.data;if(!d||!b.started)continue;let txt="";
     if(e.type==="aim"){let vt=0,tt=0,th=0,bh=0;
       for(const v of d.visits){const sc=sum(v.d.map(val));M.vh[vhBand(sc)]++;M.maxVisit=Math.max(M.maxVisit||0,sc);M.visits++;M.total+=sc;M.vs.push(sc);vt+=sc;if(sc>=100)M.tons++;if(sc>=140)M.t140++;if(sc===180)M.n180++;
         const [L,Rn]=nb(v.t),vi=d.visits.indexOf(v);
-        v.d.forEach((c,j)=>{const q=M.pos[j];if(!q)return;q[0]++;if(c==="T"+v.t)q[1]++;if(numOf(c)===v.t&&c!=="SB"&&c!=="DB")q[2]++;q[3]+=val(c);});
+        v.d.forEach((c,j)=>{const q=M.pos[j];if(!q)return;if(v.t===20){const mp=M.aim20pos[j];mp[c]=(mp[c]||0)+1;}q[0]++;if(c==="T"+v.t)q[1]++;if(numOf(c)===v.t&&c!=="SB"&&c!=="DB")q[2]++;q[3]+=val(c);});
         if(v.ts&&t0){const k=Math.max(0,Math.floor((v.ts-t0)/600000)),a=M.seg[k]||(M.seg[k]=[0,0]);a[0]+=sc;a[1]++;}
         if(vi===0){M.fv[0]+=sc;M.fv[1]++;}else{M.rest[0]+=sc;M.rest[1]++;}
         for(const c of v.d){M.tD++;tt++;const n=numOf(c),bull=c==="SB"||c==="DB";if(c==="T"+v.t){M.tH++;th++;}if(n===v.t&&!bull){M.bedH++;bh++;}if(v.t===20)M.aim20[c]=(M.aim20[c]||0)+1;if(v.t===19)M.aim19[c]=(M.aim19[c]||0)+1;if(n===L&&!bull)M.mL++;if(n===Rn&&!bull)M.mR++;}}
@@ -837,17 +842,23 @@ function summarise(R){
     else if(e.type==="dbl"||e.type==="split"){let h=0;
       for(const x of d.darts){addPd(M.pd,x.t,x.r==="H");if(x.r==="H")h++;if(x.r==="I")M.inside++;if(x.r==="O")M.outside++;if(x.r==="W")M.wide++;}
       txt=`${h}/${d.darts.length} doubles (${fmt(pctf(h,d.darts.length),0)}%)`;
-      if(e.mode==="bobs")d.darts.forEach((x,i)=>{const q=M.bobsPos[i%3];q[0]++;if(x.r==="H")q[1]++;});
+      if(e.mode==="bobs"){d.darts.forEach((x,i)=>{const q=M.bobsPos[i%3];q[0]++;if(x.r==="H")q[1]++;});
+        let sc=27;const tr=[27];for(let i=0;i+3<=d.darts.length;i+=3){const t3=d.darts[i].t,h=d.darts.slice(i,i+3).filter(x=>x.r==="H").length,vv=t3===25?50:t3*2;sc+=h?h*vv:-vv;tr.push(sc);if(sc<=0)break;}
+        if(tr.length>1)M.bobsTrail.push(tr);}
       if(e.mode==="bobs"&&blockDone(b)){M.bobs=Math.max(0,d.score);txt+=` · Bob's 27: ${M.bobs}`;}
       if(e.mode==="rtb"&&blockDone(b)){M.rtb=d.darts.length;txt+=` · finished in ${d.darts.length}`;}
       if(e.type==="split"){M.split={w:d.wins,r:d.round};txt=`${d.wins}/${d.round} rounds won · `+txt;}}
     else if(e.type==="co"){let ok=0;
-      for(const r of d.results){if(r.ok){ok++;M.bestCo=Math.max(M.bestCo||0,r.t);}for(const x of r.dd){addPd(M.pd,x.t,x.r==="H");M.coDrillAtt++;if(x.r==="H")M.coDrillHit++;}}
+      for(const r of d.results){const ca=M.co[r.t]||(M.co[r.t]=[0,0]);ca[0]++;if(r.ok)ca[1]++;if(r.ok){ok++;M.bestCo=Math.max(M.bestCo||0,r.t);}for(const x of r.dd){addPd(M.pd,x.t,x.r==="H");M.coDrillAtt++;if(x.r==="H")M.coDrillHit++;}}
       if(d.mode==="ladder"){M.ladder={reached:d.target,best:d.best,r:d.round};txt=`Reached ${d.target} · best checkout ${d.best||"–"} · ${ok}/${d.results.length} rounds`;}
       else{M.coList={w:ok,a:d.results.length};txt=`${ok}/${d.results.length} finishes`;}}
     else if(e.type==="leg"){
       for(const g of d.legs){M.legs.push(g);g.visits.forEach(x=>M.vh[vhBand(x)]++);M.bestCo=Math.max(M.bestCo||0,g.co||0);M.maxVisit=Math.max(M.maxVisit||0,...g.visits);for(const x of g.dd)addPd(M.pd,x.t,x.r==="H");for(const v of g.visits)if(v===180)M.n180++;}
       txt=d.legs.length?`${d.legs.length} leg${d.legs.length>1?"s":""} · ${fmt(mean(d.legs.map(g=>g.n)))} darts/leg · avg ${fmt(mean(d.legs.map(g=>501/g.n*3)))}`:"No legs finished";
+      const coLeg=(vis,won)=>{let rem=501;vis.forEach((x,i)=>{if(rem<=170&&route(rem,3)){const ca=M.co[rem]||(M.co[rem]=[0,0]);ca[0]++;if(won&&i===vis.length-1&&x===rem)ca[1]++;}rem-=x;});};
+      d.legs.forEach(g=>coLeg(g.visits,true));
+      if(d.vs&&d.vs.cfg){(d.vs.lost||[]).forEach(l=>{if(l.visits)coLeg(l.visits,false);});(d.vs.log||[]).forEach(l=>M.legsLog.push(l));}
+      else d.legs.forEach(g=>M.legsLog.push({w:g.visits,b:null,won:"W",st:"W"}));
       if(d.vs&&d.vs.cfg){const v=d.vs;for(const l of v.lost){for(const x of l.dd)addPd(M.pd,x.t,x.r==="H");M.extraDd.push(...l.dd);}
         const wD=sum(d.legs.map(g=>g.n))+sum(v.lost.map(l=>l.darts)),wP=501*d.legs.length+sum(v.lost.map(l=>l.pts)),pDd=[...d.legs.flatMap(g=>g.dd),...v.lost.flatMap(l=>l.dd)];
         M.match={botAvg:v.cfg.botAvg,first:v.cfg.first,legsW:v.legsW,legsB:v.legsB,over:v.over,won:v.over?v.won:null,willAvg:wD?wP/wD*3:null,botActual:v.botDarts?v.botPts/v.botDarts*3:null,coAtt:pDd.length,coHits:pDd.filter(x=>x.r==="H").length};
@@ -864,6 +875,7 @@ function summarise(R){
     coAtt:legDd.length,coHits:legDd.filter(x=>x.r==="H").length,hiCo:M.legs.length?Math.max(...M.legs.map(g=>g.co||0)):null,
     atc:M.atc,ladder:M.ladder,coList:M.coList,split:M.split,rtb:M.rtb,coDrillAtt:M.coDrillAtt,coDrillHit:M.coDrillHit,
     pos:M.visits?M.pos:null,seg:Object.keys(M.seg).length?M.seg:null,fv:M.fv[1]?M.fv[0]/M.fv[1]:null,fvN:M.fv[1],restAvg:M.rest[1]?M.rest[0]/M.rest[1]:null,bobsPos:M.bobsPos[0][0]?M.bobsPos:null,
+    aim20pos:M.aim20pos.some(x=>Object.keys(x).length)?M.aim20pos:null,co:Object.keys(M.co).length?M.co:null,bobsTrail:M.bobsTrail.length?M.bobsTrail:null,legsLog:M.legsLog.length?M.legsLog.slice(-30):null,
     match:M.match,aim19:Object.keys(M.aim19).length?M.aim19:null,vh:sum(M.vh)?M.vh:null,bestCo:M.bestCo||null,bestLeg:M.legs.length?Math.min(...M.legs.map(g=>g.n)):null,maxVisit:M.maxVisit||null};
   let dAtt=0,dHits=0;for(const k in M.pd){dAtt+=M.pd[k][0];dHits+=M.pd[k][1];}
   return {total:M.visits?M.total:null,visits:M.visits||null,avg3:M.visits?M.total/M.visits:null,dAtt,dHits,bobs:M.bobs,dpl:M.legs.length?mean(M.legs.map(g=>g.n)):null,m,drills,legs:M.legs};
@@ -1194,6 +1206,10 @@ function renderInsights(A){
       ${radarSVG(axes,thenAx)}<div class="legend"><span class="small"><b style="color:var(--accent)">━</b> Now</span>${bsel?`<span class="small muted">┅ Baseline ${fmtDate(bsel.date)}</span>`:""}</div>
       <p class="faint small">Each axis reaches the edge at roughly professional level. A dot after a label means no data yet.</p></div>`,
     t20:()=>aimCard(all),
+    each:()=>eachDartCard(all),
+    cogrid:()=>coGridCard(all),
+    bobs:()=>bobsCard(all),
+    worm:()=>wormCard(rows),
     dbd:()=>`<div class="glass pad stack"><span class="eyebrow">Dart by dart</span>${posHtml}<span class="eyebrow" style="margin-top:6px">Across the hour</span>${segHtml}${fvA[1]>=3&&rsA[1]?`<p class="small muted">First visit after switching drills: <b class="mono" style="color:var(--ink)">${fmt(fvA[0]/fvA[1])}</b> against <b class="mono" style="color:var(--ink)">${fmt(rsA[0]/rsA[1])}</b> for the rest.</p>`:""}</div>`,
     spread:()=>spreadCard(rows),
     dmap:()=>`<div class="glass pad stack"><span class="eyebrow">Doubles map</span>${dRows.length?`<div class="boards" style="align-items:center">${dbl}<div class="tablebox"><table><thead><tr><th>Double</th><th>Darts</th><th>Hit %</th></tr></thead><tbody>${dRows.map(r=>`<tr><td>${dName(r.t)}</td><td class="num">${r.a}</td><td class="num ${r.r>=0.2?"good":r.r<0.1?"bad":""}">${fmt(r.r*100,0)}%</td></tr>`).join("")}</tbody></table></div></div><p class="faint small">Green is 15%+, red is below. A double shows once it has 5 darts.</p>`:`<div class="empty"><b>No per-double data yet</b><span>Doubles drills, checkouts and legs all fill this in.</span></div>`}</div>`,
@@ -1204,7 +1220,7 @@ function renderInsights(A){
     cal:()=>calCard(A),
     ms:()=>milestonesCard()
   };
-  const TABS=[["overview","Overview",["tiles","chart","web","ins"]],["scoring","Scoring",["t20","dbd","spread"]],["doubles","Doubles & finishing",["dmap"]],["matches","Matches",["vs"]],["progress","Progress",["goals","ladder","cal","ms"]]];
+  const TABS=[["overview","Overview",["tiles","chart","web","ins"]],["scoring","Scoring",["t20","each","dbd","spread"]],["doubles","Doubles & finishing",["dmap","cogrid","bobs"]],["matches","Matches",["vs","worm"]],["progress","Progress",["goals","ladder","cal","ms"]]];
   const cur=TABS.find(t=>t[0]===tab)||TABS[0];
   el.innerHTML=`<div class="row between"><h2>Insights</h2><span class="muted small">${rows.length} session${rows.length===1?"":"s"} · ${A.bs.length} baseline${A.bs.length===1?"":"s"}</span></div>
    <div class="seg itabs" role="tablist" aria-label="Insights sections">${TABS.map(t=>`<button type="button" role="tab" data-itab="${t[0]}" aria-pressed="${t[0]===cur[0]}" aria-selected="${t[0]===cur[0]}">${t[1]}</button>`).join("")}</div>
@@ -1235,6 +1251,68 @@ function aimCard(all){
   const n=sum(Object.values(aim)),mx=Math.max(1,...Object.entries(aim).filter(([k])=>k!=="M").map(([,v])=>v)),hit=aim["T"+t]||0;
   const tog=`<div class="seg" role="group" aria-label="Target">${[20,19].map(x=>`<button type="button" data-aimt="${x}" aria-pressed="${x===t}">T${x}</button>`).join("")}</div>`;
   return `<div class="glass pad stack"><div class="row between"><span class="eyebrow">Where your T${t} darts land</span>${tog}</div>${n?boardSVG((k,nn)=>{const c=aim[k==="SB"||k==="DB"?k:k+nn];return c?{cls:"heat",o:.15+.85*c/mx}:null;},`Where your T${t} darts land`)+`<p class="faint small">${n} darts aimed at T${t} · treble ${fmt(hit/n*100,0)}%. Brighter means more darts.${aim.M?" "+aim.M+" off the board.":""}</p>`:`<div class="empty"><b>No darts at T${t} yet</b><span>${t===19?"Switch to 19s fills this map.":"Every dart you tap in a T20 drill builds this map."}</span></div>`}</div>`;
+}
+function eachDartCard(all){
+  const mp=[{},{},{}];all.forEach(x=>{const a=x.m.aim20pos;if(a)a.forEach((o,j)=>{for(const k in o)mp[j][k]=(mp[j][k]||0)+o[k];});});
+  const ns=mp.map(o=>sum(Object.values(o)));
+  if(ns[0]<5)return `<div class="glass pad stack"><span class="eyebrow">Where each dart lands</span><div class="empty"><b>Not enough T20 darts yet</b><span>After a few visits at T20, this shows darts 1, 2 and 3 on their own boards.</span></div></div>`;
+  const mx=Math.max(1,...mp.flatMap(o=>Object.entries(o).filter(([k])=>k!=="M").map(([,v])=>v)));
+  return `<div class="glass pad stack"><span class="eyebrow">Where each dart lands</span><div class="grid3" style="grid-template-columns:repeat(3,minmax(0,1fr))">${mp.map((o,j)=>`<div class="stack" style="gap:4px;align-items:center;min-width:0">${boardSVG((k,n)=>{const c=o[k==="SB"||k==="DB"?k:k+n];return c?{cls:"heat",o:.15+.85*c/mx}:null;},`Where dart ${j+1} lands`)}<span class="small"><b>Dart ${j+1}</b></span><span class="faint small mono" style="text-align:center;line-height:1.35">T20 ${fmt(pctf(o.T20||0,ns[j]),0)}%<br>in 20 ${fmt(pctf((o.T20||0)+(o.S20||0)+(o.D20||0),ns[j]),0)}%</span></div>`).join("")}</div>
+    <p class="faint small">All three boards share one brightness scale, so a dart that spreads wider looks fainter.</p></div>`;
+}
+const BOGEY=[159,162,163,165,166,168,169];
+function coGridCard(all){
+  const co={};all.forEach(x=>{const c=x.m.co;if(c)for(const k in c){const a=co[k]||(co[k]=[0,0]);a[0]+=c[k][0];a[1]+=c[k][1];}});
+  const tried=Object.keys(co).length,sel=S.coSel;
+  const cell=n=>{if(BOGEY.includes(n))return `<button type="button" class="cocell bogey" data-cosel="${n}" aria-label="${n}: no checkout">${n}</button>`;
+    const a=co[n];let st="";if(a&&a[0]>=2){const r=a[1]/a[0];st=r>0?`background:color-mix(in srgb,var(--hit) ${Math.round(25+r*75)}%,transparent);color:var(--ink)`:`background:color-mix(in srgb,var(--miss) 35%,transparent)`;}else if(a)st="outline:1px dashed var(--muted);outline-offset:-2px";
+    return `<button type="button" class="cocell${sel===n?" sel":""}" data-cosel="${n}" style="${st}" aria-label="${n}${a?`: ${a[1]} of ${a[0]}`:": not tried"}">${n}</button>`;};
+  let det="";if(sel){const a=co[sel],rt=route(sel,3);det=`<div class="coach-note"><span class="eyebrow">${sel}</span><p class="small">${BOGEY.includes(sel)?"No three-dart checkout exists. Leave yourself something else.":a?`Checked out ${a[1]} of ${a[0]} attempt${a[0]===1?"":"s"} (${fmt(a[1]/a[0]*100,0)}%).`:"Not tried yet."}${rt?` Route: <b class="mono">${rt.map(lab).join(" ")}</b>`:""}</p></div>`;}
+  const sum2=Object.entries(co).filter(([,a])=>a[0]>=2).map(([n,a])=>({n:+n,r:a[1]/a[0],a:a[0]})),worst=sum2.filter(x=>x.r===0).sort((p,q)=>q.a-p.a).slice(0,3);
+  return `<div class="glass pad stack"><div class="row between"><span class="eyebrow">Checkout grid</span><span class="faint small">${tried} of 162 finishes tried</span></div>
+    <div class="cogrid">${range(2,170).map(cell).join("")}</div>
+    <div class="legend"><span class="small muted"><i class="lg" style="background:color-mix(in srgb,var(--hit) 80%,transparent)"></i>finished often</span><span class="small muted"><i class="lg" style="background:color-mix(in srgb,var(--miss) 35%,transparent)"></i>never finished (2+ tries)</span><span class="small muted"><i class="lg" style="outline:1px dashed var(--muted);outline-offset:-2px"></i>tried once</span><span class="small muted"><i class="lg bogeylg"></i>no checkout</span></div>
+    ${det||`<p class="faint small">Tap a number for your record and the suggested route. Attempts come from the checkout ladder, two-dart finishes and every visit in a leg that starts on a finish.</p>`}
+    ${worst.length?`<p class="small">Never finished yet: ${worst.map(x=>`<b class="mono">${x.n}</b> (${x.a} tries)`).join(", ")}.</p>`:""}</div>`;
+}
+function bobsCard(all){
+  const tr=[];all.slice().sort((p,q)=>(p.created||0)-(q.created||0)).forEach(x=>{(x.m.bobsTrail||[]).forEach(t=>tr.push({t,date:x.date}));});
+  if(!tr.length)return `<div class="glass pad stack"><span class="eyebrow">Bob's 27 trail</span><div class="empty"><b>No live Bob's 27 games yet</b><span>Play Bob's 27 in the scorer and each game draws its path from D1 to the bull here.</span></div></div>`;
+  const last=tr[tr.length-1],best=tr.reduce((p,q)=>q.t[q.t.length-1]>p.t[p.t.length-1]?q:p,tr[0]);
+  const ys=[...last.t,...best.t,0],lo=Math.min(...ys),hi=Math.max(...ys),W=420,H=220,L=40,Rr=12,T=14,B=28,X=i=>L+i*(W-L-Rr)/21,Y=v=>T+(hi-v)/((hi-lo)||1)*(H-T-B);
+  const path=t=>t.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+  const tl=i=>i===0?"Start":i===21?"Bull":"D"+i;
+  let g=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Bob's 27 score after each double" style="min-width:0">`;
+  niceTicks(lo,hi).forEach(t=>{g+=`<line class="ax" x1="${L}" x2="${W-Rr}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axt" x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}</text>`;});
+  g+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--miss)" stroke-width="1.2" stroke-dasharray="4 3"/>`;
+  if(best!==last)g+=`<path d="${path(best.t)}" fill="none" stroke="var(--muted)" stroke-width="2" opacity=".55"/>`;
+  g+=`<path class="ln" d="${path(last.t)}"/><circle class="dotlast" cx="${X(last.t.length-1)}" cy="${Y(last.t[last.t.length-1])}" r="5"/>`;
+  [0,4,8,12,16,21].forEach(i=>{g+=`<text class="axt" x="${X(i)}" y="${H-8}" text-anchor="middle">${tl(i)}</text>`;});g+=`</svg>`;
+  let pk=0,dd=0,a0=0,a1=0;last.t.forEach((v,i)=>{if(v>last.t[pk])pk=i;const drop=last.t[pk]-v;if(drop>dd){dd=drop;a0=pk+1;a1=i;}});
+  const fin=last.t[last.t.length-1],ended=last.t.length<22;
+  return `<div class="glass pad stack"><div class="row between"><span class="eyebrow">Bob's 27 trail</span><span class="faint small">${tr.length} game${tr.length===1?"":"s"}</span></div><div class="chartbox">${g}</div>
+    <div class="legend"><span class="small"><b style="color:var(--accent)">━</b> Latest (${fmtDate(last.date)}): ${ended?`out at ${tl(last.t.length-1)}`:fin}</span>${best!==last?`<span class="small muted">━ Best: ${best.t[best.t.length-1]} (${fmtDate(best.date)})</span>`:""}</div>
+    ${dd>0?`<p class="small">Your biggest slide in the latest game: <b>${a0===a1?tl(a0):tl(a0)+"–"+tl(a1)}</b> cost you <b class="mono">${dd}</b>.</p>`:""}</div>`;
+}
+function wormCard(rows){
+  const legs=[];rows.forEach(x=>{(x.m&&x.m.legsLog||[]).forEach((l,i)=>legs.push({...l,date:x.date,i:i+1,vs:!!(x.m.match)}));});
+  if(!legs.length)return `<div class="glass pad stack"><span class="eyebrow">Match worm</span><div class="empty"><b>No legs scored yet</b><span>Play 501 legs or a match and each leg's race to zero draws here.</span></div></div>`;
+  const list=legs.slice(-20).reverse(),k=clamp(S.wormIdx||0,0,list.length-1),L0=list[k];
+  const rem=vis=>{let r=501;const o=[501];vis.forEach(x=>{r-=x;o.push(r);});return o;},w=rem(L0.w),b=L0.b?rem(L0.b):null,n=Math.max(w.length,b?b.length:0)-1||1;
+  const W=420,H=230,L=40,Rr=14,T=14,B=28,X=i=>L+i*(W-L-Rr)/n,Y=v=>T+(501-v)/501*(H-T-B);
+  const path=a=>a.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+  let g=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Remaining score after each visit" style="min-width:0">`;
+  [501,400,300,200,100,0].forEach(t=>{g+=`<line class="ax" x1="${L}" x2="${W-Rr}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axt" x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}</text>`;});
+  g+=`<rect x="${L}" y="${Y(170)}" width="${W-L-Rr}" height="${Y(0)-Y(170)}" fill="var(--hit)" opacity=".06"/><text class="axt" x="${L+6}" y="${Y(170)+12}">finish zone (170 or less)</text>`;
+  if(b)g+=`<path d="${path(b)}" fill="none" stroke="var(--cs)" stroke-width="2.4" stroke-dasharray="6 4" stroke-linecap="round"/>`;
+  g+=`<path class="ln" d="${path(w)}"/>`;
+  const win=L0.won==="W"?w:b;if(win){const i=win.length-1,co=win[i-1];g+=`<circle cx="${X(i)}" cy="${Y(0)}" r="5" fill="${L0.won==="W"?"var(--accent)":"var(--cs)"}"/><text class="axt" x="${X(i)}" y="${Y(0)-9}" text-anchor="${i>n*0.8?"end":"middle"}">${co} out</text>`;}
+  for(let i=0;i<=n;i+=Math.max(1,Math.ceil(n/6)))g+=`<text class="axt" x="${X(i)}" y="${H-8}" text-anchor="middle">${i}</text>`;g+=`</svg>`;
+  const stall=(()=>{let i=w.findIndex(v=>v<=170);if(i<0||L0.won!=="W")return null;return w.length-1-i;})();
+  const opt=list.map((l,i)=>`<option value="${i}" ${i===k?"selected":""}>${fmtDate(l.date)} · leg ${l.i}${l.vs?(l.won==="W"?" · won":" · lost"):""} · ${l.w.length} visits</option>`).join("");
+  return `<div class="glass pad stack"><div class="row between"><span class="eyebrow">Match worm</span><select id="worm-leg" aria-label="Choose a leg" style="width:auto;max-width:60%">${opt}</select></div><div class="chartbox">${g}</div>
+    <div class="legend"><span class="small"><b style="color:var(--accent)">━</b> You</span>${b?`<span class="small" style="color:var(--cs)">┅ Opponent${L0.st==="B"?" (threw first)":""}</span>`:""}<span class="small muted">x-axis: visits</span></div>
+    ${stall!=null?`<p class="small muted">From your first visit inside 170 you needed <b class="mono" style="color:var(--ink)">${stall}</b> more visit${stall===1?"":"s"} to finish.</p>`:""}</div>`;
 }
 function spreadCard(rows){
   const mode=S.vhMode||"all",src=rows.filter(x=>x.m&&x.m.vh),use=mode==="7"?src.slice(-7):src,vh=[0,0,0,0,0,0,0,0];use.forEach(x=>x.m.vh.forEach((c,i)=>vh[i]+=c));
@@ -1296,7 +1374,7 @@ function vsCard(A){
   const bk=[[0,40,"Up to 40"],[41,50,"41–50"],[51,60,"51–60"],[61,99,"61+"]].map(([lo,hi,l])=>{const xs=mt.filter(s=>s.m.match.botAvg>=lo&&s.m.match.botAvg<=hi);return xs.length?`<tr><td>${l}</td><td class="num">${xs.filter(s=>s.m.match.won).length}–${xs.filter(s=>!s.m.match.won).length}</td><td class="num">${fmt(mean(xs.map(s=>s.m.match.willAvg).filter(x=>x!=null)))}</td></tr>`:"";}).join("");
   return `<div class="glass pad stack"><div class="row between"><span class="eyebrow">Against the opponent</span><span class="faint small">Next opponent: ${defaultBot()} average</span></div>
     <div class="grid3"><div class="glass tile"><span class="eyebrow">Record</span><span class="v">${w}–${mt.length-w}</span></div><div class="glass tile"><span class="eyebrow">Checkout under pressure</span><span class="v">${cA?fmt(cH/cA*100,0)+"%":"–"}</span><span class="d faint">${cH}/${cA} darts at a double</span></div><div class="glass tile"><span class="eyebrow">Doubles in practice</span><span class="v">${pA?fmt(pH/pA*100,0)+"%":"–"}</span><span class="d faint">drills only</span></div></div>
-    <div class="tablebox"><table><thead><tr><th>Opponent average</th><th>Won–lost</th><th>Your average</th></tr></thead><tbody>${bk}</tbody></table></div></div>`;
+    <div class="tablebox"><table><thead><tr><th>Opponent</th><th>W–L</th><th>Your avg</th></tr></thead><tbody>${bk}</tbody></table></div></div>`;
 }
 function milestonesCard(){
   const md=S.msDraft||(S.msDraft={date:todayISO(),text:""});
@@ -1638,6 +1716,7 @@ document.addEventListener("click",e=>{
       if(ds.botadj){dr.avg=clamp(dr.avg+ +ds.botadj,25,90);persistRun();renderRunner();return;}
       if(ds.botfirst){dr.first=+ds.botfirst;persistRun();renderRunner();return;}
       if(a==="vsGo"){t.textContent="Setting up…";t.disabled=true;setTimeout(()=>{v.cfg={botAvg:dr.avg,first:dr.first,sigma:botSigma(dr.avg)};v.turn="W";persistRun();renderRunner();},30);return;}}}
+  if(ds.cosel){S.coSel=S.coSel===+ds.cosel?null:+ds.cosel;render();return;}
   if(ds.itab){S.itab=ds.itab;store.set("oche-itab",ds.itab);render();return;}
   if(ds.aimt){S.aimT=+ds.aimt;render();return;}
   if(ds.vhmode){S.vhMode=ds.vhmode;render();return;}
@@ -1691,7 +1770,7 @@ document.addEventListener("click",e=>{
   if(ds.dr){const r=ds.dr;act(b=>D[b.k].eng.type==="split"?inSplit(b,r):inDbl(b,r));return;}
   if(ds.atc){const r=ds.atc;act(b=>inAtc(b,r));return;}
 });
-document.addEventListener("change",e=>{if(e.target.id==="rv-period"){S.rev.off=+e.target.value;render();}if(e.target.id==="web-base"){S.webBase=+e.target.value;render();}});
+document.addEventListener("change",e=>{if(e.target.id==="rv-period"){S.rev.off=+e.target.value;render();}if(e.target.id==="web-base"){S.webBase=+e.target.value;render();}if(e.target.id==="worm-leg"){S.wormIdx=+e.target.value;render();}});
 document.addEventListener("change",e=>{const t=e.target;if(t.dataset&&t.dataset.gd){(S.goalDraft||(S.goalDraft={metric:"avg3",target:"",by:""}))[t.dataset.gd]=t.value;S.goalDraft.open=true;if(t.dataset.gd==="metric")render();}});
 document.addEventListener("input",e=>{const t=e.target;if(t.dataset&&t.dataset.gd){(S.goalDraft||(S.goalDraft={metric:"avg3",target:"",by:""}))[t.dataset.gd]=t.value;S.goalDraft.open=true;}if(t.dataset&&t.dataset.md){(S.msDraft||(S.msDraft={date:todayISO(),text:""}))[t.dataset.md]=t.value;}});
 document.addEventListener("input",e=>{if(e.target.id==="rs-notes"&&S.run){S.run.notes=e.target.value;persistRun();}if(e.target.dataset&&e.target.dataset.cf)S.coachDraft[e.target.dataset.cf]=e.target.value;});
