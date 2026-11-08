@@ -78,6 +78,7 @@ label.btn{cursor:pointer}
 .coach{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair);display:flex;flex-direction:column;gap:10px}
 .coach-text{white-space:pre-wrap;font-size:.92rem;line-height:1.55;min-width:0;overflow-wrap:anywhere}
 .coach-note{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:16px;background:var(--acc-bg)}
+.focusline{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;color:var(--ink)}
 #coach-instr{font-size:.82rem;line-height:1.5;min-height:180px}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));}
@@ -389,7 +390,7 @@ footer{font-size:.76rem;color:var(--faint);text-align:center}
         <span class="eyebrow">AI feedback</span>
         <h2>Your darts coach in Claude</h2>
         <ol class="steps">
-          <li><h3>Set up once</h3><p>In Claude, create a project called "Darts coach" and paste the instructions below into its instructions.</p></li>
+          <li><h3>Set up once</h3><p>In Claude, create a project called "Darts coach" and paste the instructions below into its instructions. Already set up? Copy them again: reviews now end with FOCUS and DRILL lines that the app uses to shape your next session.</p></li>
           <li><h3>After each session</h3><p>Open the session in History and tap Copy for Claude. Paste it into a new chat in that project.</p></li>
           <li><h3>Save the reply</h3><p>Copy Claude's reply and paste it into Coach feedback on the same session. It stays with the session and shows on the Today tab.</p></li>
         </ol>
@@ -562,17 +563,37 @@ What's holding me back: the one or two biggest issues the numbers show (for exam
 Next session: one specific focus, how to work on it, and which drill in my plan suits it (T20 scoring, Ton chase, Switch to 19s, Around the clock trebles, Round the board doubles, Bob's 27, Match doubles, One-dart doubles, D16 split, Checkout ladder, Two-dart finishes, 501 legs).
 Trend: if the recent form section shows a pattern building, say so.
 
-Rules: be honest and specific, and don't praise anything without a number behind it. Only use stats that are in the report, and say when a sample is too small to judge. Keep it under 250 words, in British English, as plain text with no tables or markdown, because I paste your reply back into the app.`;
-const S={open:new Set(),editCoach:null,coachDraft:{},sessions:[],baselines:[],db:null,mode:"local",loaded:false,day:(new Date().getDay()+6)%7,metric:"avg3",pendingDel:null,note:"",run:store.get("oche-run-v2"),lfeel:3};
+If the report has a LAST COACH FOCUS section, start by saying whether I achieved it.
+
+Rules: be honest and specific, and don't praise anything without a number behind it. Only use stats that are in the report, and say when a sample is too small to judge. Keep it under 250 words, in British English, as plain text with no tables or markdown, because I paste your reply back into the app.
+
+End every reply with exactly these two lines, so my app can adjust my next session:
+FOCUS: the one thing to work on, in one sentence
+DRILL: one drill name from the list above, spelt exactly`;
+const FOCUS_DRILLS=["s_t20","s_ton","s_19","s_atc","d_rtb","d_bobs","d_fav","d_one","d_split","c_ladder","c_two","m_501"];
+const normName=x=>String(x).toLowerCase().replace(/[’‘`]/g,"'").replace(/[^a-z0-9' ]/g," ").replace(/\s+/g," ").trim();
+function parseFocus(text){
+  const f=/^[\s*_>-]*FOCUS\s*:\s*(.+)$/im.exec(text),d=/^[\s*_>-]*DRILL\s*:\s*(.+)$/im.exec(text);let drill=null;
+  if(d){const n=normName(d[1]);drill=FOCUS_DRILLS.find(k=>normName(D[k].name)===n)||FOCUS_DRILLS.find(k=>{const m=normName(D[k].name);return n.startsWith(m)||(n.length>=5&&m.startsWith(n));})||null;}
+  const ft=f?f[1].replace(/^[\s*_]+|[\s*_]+$/g,""):"";return {focus:ft||null,drill};
+}
+function focusList(){
+  const out=[];
+  S.sessions.forEach(s=>{if(s.coach&&s.coach.focus)out.push({focus:s.coach.focus,drill:s.coach.drill||null,at:s.coach.at||Date.parse(s.coach.date+"T12:00:00"),src:"session",id:s.id});});
+  (S.reviews||[]).forEach(r=>{if(r.coach&&r.coach.focus)out.push({focus:r.coach.focus,drill:r.coach.drill||null,at:r.coach.at,src:"review",id:r.id});});
+  return out.sort((a,b)=>b.at-a.at);
+}
+function activeFocus(before){const cl=(S.meta&&S.meta.focusClearedAt)||0;return focusList().find(f=>f.at>cl&&(before==null||f.at<before))||null;}
+const S={open:new Set(),editCoach:null,coachDraft:{},sessions:[],baselines:[],reviews:[],goals:[],milestones:[],meta:{},db:null,mode:"local",loaded:false,day:(new Date().getDay()+6)%7,metric:"avg3",pendingDel:null,note:"",run:store.get("oche-run-v2"),lfeel:3};
 if(S.run&&!Array.isArray(S.run.blocks))S.run=null;
 const LKEY="oche-plan-v1";
 const SEED={"sessions":[{"id":"efc2tsvjy8rmbzgvqhsh","avg3":null,"bobs":null,"created":1794084833924,"dAtt":113,"dHits":10,"date":"2026-11-07","dpl":45.2,"feel":3,"mins":60,"notes":"First real session - hit first 180 on new board and first ever 100+ checkout","total":null,"type":"match","visits":null}],"baselines":[{"id":"pmjzvoxgxp5n4458c316","avg3":43.45,"bobs":0,"coAtt":63,"coPct":4.761904761904762,"created":1794074354845,"dHits":8,"dPct":13.333333333333334,"date":"2026-11-07","dpl":63,"legs":[115,41,33],"t20":3,"tPct":5,"total":869}]};
 function loadLocal(){
   let j=store.get(LKEY);
   if(!j&&!store.get("oche-seeded")){j=JSON.parse(JSON.stringify(SEED));store.set(LKEY,j);store.set("oche-seeded",1);}
-  j=j||{};S.sessions=j.sessions||[];S.baselines=j.baselines||[];
+  j=j||{};S.sessions=j.sessions||[];S.baselines=j.baselines||[];S.reviews=j.reviews||[];S.goals=j.goals||[];S.milestones=j.milestones||[];S.meta=j.meta||{};
 }
-function saveLocal(){store.set(LKEY,{sessions:S.sessions,baselines:S.baselines});}
+function saveLocal(){store.set(LKEY,{sessions:S.sessions,baselines:S.baselines,reviews:S.reviews,goals:S.goals,milestones:S.milestones,meta:S.meta});}
 const sortRows=a=>a.slice().sort((x,y)=>(x.date||"").localeCompare(y.date||"")||((x.created||0)-(y.created||0)));
 async function addRow(coll,row){
   row.created=Date.now();row=JSON.parse(JSON.stringify(row));
@@ -634,9 +655,15 @@ function buildPlan(A,tpl0){
     const take=blocks.find(b=>weak.includes(D[b.k].cat));
     if(give&&take){give.m-=5;take.m+=5;take.tag=(take.tag?take.tag+" · ":"")+"+5 min focus";}
   }
+  const F=(!isBase&&!dip)?activeFocus():null;
+  if(F&&F.drill&&D[F.drill]){
+    const i=blocks.findIndex(b=>b.k===F.drill);
+    if(i>=0){const give=blocks.filter((b,j)=>j!==i&&b.m>=10).sort((a,b)=>b.m-a.m)[0];if(give){give.m-=5;blocks[i].m+=5;blocks[i].tag=(blocks[i].tag?blocks[i].tag+" · ":"")+"Coach focus";}}
+    else{const give=blocks.filter(b=>b.m>=15).sort((a,b)=>b.m-a.m)[0];if(give){give.m-=10;const at=blocks.findIndex(b=>b.k==="review");blocks.splice(at>=0?at:blocks.length,0,{k:F.drill,m:10,tag:"Coach focus"});}}
+  }
   const shift=dip?-1:plateau?1:0;
   blocks=blocks.map(b=>{const d=D[b.k];const base=(d.cat==="d"||d.cat==="c")?A.dL:A.sL;return {...b,L:clamp(base+shift,0,4)};});
-  return {name:tpl.name,key:tpl.key,blocks};
+  return {name:tpl.name,key:tpl.key,blocks,focus:F};
 }
 
 /* ================= session runner: engines ================= */
@@ -679,10 +706,10 @@ function blockDone(b){
     default:return true;
   }
 }
-function inAim(b,code){const d=b.data,e=D[b.k].eng;d.cur.push(code);if(d.cur.length===3){d.visits.push({t:e.target(d.visits.length),d:d.cur});d.cur=[];}}
+function inAim(b,code){const d=b.data,e=D[b.k].eng;d.cur.push(code);if(d.cur.length===3){d.visits.push({t:e.target(d.visits.length),d:d.cur,ts:Date.now()});d.cur=[];}}
 function inAtc(b,r){const d=b.data;d.darts.push({t:d.n,r});if(r==="T")d.n++;}
 function inDbl(b,r){
-  const e=D[b.k].eng,d=b.data,t=dblTarget(b);d.darts.push({t,r});
+  const e=D[b.k].eng,d=b.data,t=dblTarget(b);d.darts.push({t,r,ts:Date.now()});
   if(e.mode==="rtb"){if(r==="H")d.i++;}
   else if(e.mode==="until"){if(r==="H"){d.hits++;if(d.hits>=e.k){d.i++;d.hits=0;}}}
   else if(e.mode==="bobs"&&d.darts.length%3===0){const h=d.darts.slice(-3).filter(x=>x.r==="H").length;const v=t===25?50:t*2;d.score+=h?h*v:-v;}
@@ -722,18 +749,23 @@ function inLeg(b,code){
 function addPd(pd,t,hit){const a=pd[t]||(pd[t]=[0,0]);a[0]++;if(hit)a[1]++;}
 function summarise(R){
   const M={visits:0,total:0,vs:[],tD:0,tH:0,bedH:0,aim20:{},mL:0,mR:0,pd:{},inside:0,outside:0,wide:0,legs:[],n180:0,tons:0,t140:0,atc:null,ladder:null,coList:null,split:null,bobs:null,rtb:null,coDrillAtt:0,coDrillHit:0};
-  const drills=[];
+  const drills=[],t0=R.t0||(R.blocks[0]&&R.blocks[0].start)||0;
+  M.pos=[[0,0,0,0],[0,0,0,0],[0,0,0,0]];M.seg={};M.fv=[0,0];M.rest=[0,0];M.bobsPos=[[0,0],[0,0],[0,0]];
   for(const b of R.blocks){
     const e=D[b.k].eng,d=b.data;if(!d||!b.started)continue;let txt="";
     if(e.type==="aim"){let vt=0,tt=0,th=0,bh=0;
       for(const v of d.visits){const sc=sum(v.d.map(val));M.visits++;M.total+=sc;M.vs.push(sc);vt+=sc;if(sc>=100)M.tons++;if(sc>=140)M.t140++;if(sc===180)M.n180++;
-        const [L,Rn]=nb(v.t);
+        const [L,Rn]=nb(v.t),vi=d.visits.indexOf(v);
+        v.d.forEach((c,j)=>{const q=M.pos[j];if(!q)return;q[0]++;if(c==="T"+v.t)q[1]++;if(numOf(c)===v.t&&c!=="SB"&&c!=="DB")q[2]++;q[3]+=val(c);});
+        if(v.ts&&t0){const k=Math.max(0,Math.floor((v.ts-t0)/600000)),a=M.seg[k]||(M.seg[k]=[0,0]);a[0]+=sc;a[1]++;}
+        if(vi===0){M.fv[0]+=sc;M.fv[1]++;}else{M.rest[0]+=sc;M.rest[1]++;}
         for(const c of v.d){M.tD++;tt++;const n=numOf(c),bull=c==="SB"||c==="DB";if(c==="T"+v.t){M.tH++;th++;}if(n===v.t&&!bull){M.bedH++;bh++;}if(v.t===20)M.aim20[c]=(M.aim20[c]||0)+1;if(n===L&&!bull)M.mL++;if(n===Rn&&!bull)M.mR++;}}
       txt=d.visits.length?`${d.visits.length} visits · avg ${fmt(vt/d.visits.length)} · trebles ${fmt(pctf(th,tt),0)}% · in the bed ${fmt(pctf(bh,tt),0)}%`:"No visits";}
     else if(e.type==="atc"){M.atc={n:d.darts.length,done:d.n>20};txt=d.n>20?`Finished in ${d.darts.length} darts`:`Reached T${d.n} in ${d.darts.length} darts`;}
     else if(e.type==="dbl"||e.type==="split"){let h=0;
       for(const x of d.darts){addPd(M.pd,x.t,x.r==="H");if(x.r==="H")h++;if(x.r==="I")M.inside++;if(x.r==="O")M.outside++;if(x.r==="W")M.wide++;}
       txt=`${h}/${d.darts.length} doubles (${fmt(pctf(h,d.darts.length),0)}%)`;
+      if(e.mode==="bobs")d.darts.forEach((x,i)=>{const q=M.bobsPos[i%3];q[0]++;if(x.r==="H")q[1]++;});
       if(e.mode==="bobs"&&blockDone(b)){M.bobs=Math.max(0,d.score);txt+=` · Bob's 27: ${M.bobs}`;}
       if(e.mode==="rtb"&&blockDone(b)){M.rtb=d.darts.length;txt+=` · finished in ${d.darts.length}`;}
       if(e.type==="split"){M.split={w:d.wins,r:d.round};txt=`${d.wins}/${d.round} rounds won · `+txt;}}
@@ -754,7 +786,8 @@ function summarise(R){
   const m={visits:M.visits,tons:M.tons,t140:M.t140,n180:M.n180,tPct:pctf(M.tH,M.tD),bedPct:pctf(M.bedH,M.tD),sd:sdev(M.vs),mL:M.mL,mR:M.mR,aim20:M.aim20,pd:M.pd,
     inside:M.inside,outside:M.outside,wide:M.wide,legsN:M.legs.length,f9:M.legs.length?mean(M.legs.map(g=>g.f9)):null,legAvg:M.legs.length?mean(M.legs.map(g=>501/g.n*3)):null,
     coAtt:legDd.length,coHits:legDd.filter(x=>x.r==="H").length,hiCo:M.legs.length?Math.max(...M.legs.map(g=>g.co||0)):null,
-    atc:M.atc,ladder:M.ladder,coList:M.coList,split:M.split,rtb:M.rtb,coDrillAtt:M.coDrillAtt,coDrillHit:M.coDrillHit};
+    atc:M.atc,ladder:M.ladder,coList:M.coList,split:M.split,rtb:M.rtb,coDrillAtt:M.coDrillAtt,coDrillHit:M.coDrillHit,
+    pos:M.visits?M.pos:null,seg:Object.keys(M.seg).length?M.seg:null,fv:M.fv[1]?M.fv[0]/M.fv[1]:null,fvN:M.fv[1],restAvg:M.rest[1]?M.rest[0]/M.rest[1]:null,bobsPos:M.bobsPos[0][0]?M.bobsPos:null};
   let dAtt=0,dHits=0;for(const k in M.pd){dAtt+=M.pd[k][0];dHits+=M.pd[k][1];}
   return {total:M.visits?M.total:null,visits:M.visits||null,avg3:M.visits?M.total/M.visits:null,dAtt,dHits,bobs:M.bobs,dpl:M.legs.length?mean(M.legs.map(g=>g.n)):null,m,drills,legs:M.legs};
 }
@@ -763,7 +796,7 @@ function summarise(R){
 function persistRun(){store.set("oche-run-v2",S.run);}
 function startRun(tpl){
   const A=analyse(),plan=buildPlan(A,tpl);
-  S.run={kind:tpl===BASE?"baseline":"session",type:plan.key,name:plan.name,date:todayISO(),bi:0,hist:[],phase:"run",feel:3,notes:"",full:false,mult:"S",confirmDiscard:false,
+  S.run={kind:tpl===BASE?"baseline":"session",type:plan.key,name:plan.name,date:todayISO(),t0:Date.now(),focus:plan.focus?plan.focus.focus:null,bi:0,hist:[],phase:"run",feel:3,notes:"",full:false,mult:"S",confirmDiscard:false,
     blocks:plan.blocks.map(b=>({k:b.k,m:b.m,L:b.L,tag:b.tag,data:initData(b.k,b.L,A.pd),start:null,started:false}))};
   S.run.blocks[0].start=Date.now();S.run.blocks[0].started=true;
   persistRun();wake();renderRunner();
@@ -863,6 +896,7 @@ function renderRunner(){
     <div class="glass rhead">
       <div class="row between"><span class="cat c-${d.cat}">${CATNAME[d.cat]}</span><span class="timer" id="rt-timer">--:--</span></div>
       <h2>${esc(d.name)}${b.tag?` <span class="tag">${esc(b.tag)}</span>`:""}</h2>
+      ${R.focus?`<p class="small focusline"><span class="tag">Coach focus</span><span>${esc(R.focus)}</span></p>`:""}
       ${targetLine(b)}
       <details class="how"><summary>How this drill works</summary><p>${esc(d.how)}</p></details>
     </div>
@@ -946,8 +980,9 @@ function renderHome(A){
   const weak=weakDoubles(A.pd,2),parts=[];
   if(weak.length)parts.push(`Weak doubles right now: <b>${weak.map(dName).join(", ")}</b>. They're built into Match doubles.`);
   if(A.calibrated&&A.sL!==A.dL)parts.push(`${A.sL<A.dL?"Scoring":"Doubles"} is your weaker side, so it gets five extra minutes on most days.`);
-  const lastCoach=A.ss.slice().reverse().find(x=>x.coach&&x.coach.text);
-  if(parts.length||lastCoach)html+=`<div class="glass pad stack"><span class="eyebrow">Focus</span>${parts.map(p=>`<p class="small">${p}</p>`).join("")}${lastCoach?`<details class="how"><summary>Latest coach feedback · ${fmtDate(lastCoach.date)} ${esc(typeName(lastCoach.type))}</summary><p class="coach-text" style="color:var(--ink)">${esc(lastCoach.coach.text)}</p></details>`:""}</div>`;
+  const lastCoach=A.ss.slice().reverse().find(x=>x.coach&&x.coach.text),AF=A.mode==="dip"?null:activeFocus();
+  const afHtml=AF?`<div class="coach-note"><span class="eyebrow">Coach focus · ${fmtDate(isoOf(new Date(AF.at)))}</span><p>${esc(AF.focus)}</p><p class="small muted">${AF.drill?`${esc(D[AF.drill].name)} gets extra time in your plan until the next review.`:"No drill was named, so the plan is unchanged."}</p><div class="row"><button type="button" class="btn sm" data-act="clearFocus">Clear focus</button></div></div>`:"";
+  if(parts.length||lastCoach||AF)html+=`<div class="glass pad stack"><span class="eyebrow">Focus</span>${afHtml}${parts.map(p=>`<p class="small">${p}</p>`).join("")}${lastCoach?`<details class="how"><summary>Latest coach feedback · ${fmtDate(lastCoach.date)} ${esc(typeName(lastCoach.type))}</summary><p class="coach-text" style="color:var(--ink)">${esc(lastCoach.coach.text)}</p></details>`:""}</div>`;
   html+=`<div class="row between"><h2>${DAYS[S.day]} · the hour</h2><span class="muted small">Targets set by your levels</span></div>
     <ol class="blocks">${plan.blocks.map(b=>{const d=D[b.k];return `<li class="glass blk c-${d.cat}"><div class="min">${b.m}<small>MIN</small></div><h3>${esc(d.name)}${b.tag?`<span class="tag">${esc(b.tag)}</span>`:""}</h3><p>${esc(d.how)}</p>${targetLine(b)}</li>`;}).join("")}</ol>`;
   $("#v-home").innerHTML=html;
@@ -1039,6 +1074,25 @@ function renderInsights(A){
   const pAtt=sum(v2.map(s=>(s.dAtt||0)-(s.m.coAtt||0))),pHit=sum(v2.map(s=>(s.dHits||0)-(s.m.coHits||0))),lA=sum(v2.map(s=>s.m.coAtt||0)),lH=sum(v2.map(s=>s.m.coHits||0));
   if(pAtt>=40&&lA>=15){const pr=pHit/pAtt*100,lr=lH/lA*100;ins.push(["P",lr<pr*0.75?`In legs you hit ${fmt(lr,0)}% of darts at a double, against ${fmt(pr,0)}% in practice drills. That gap is pressure; One-dart doubles and the ladder are built for it.`:`Your checkout rate in legs (${fmt(lr,0)}%) holds up against practice (${fmt(pr,0)}%). You're not losing much to pressure.`]);}
   const f9s=v2.filter(s=>s.m.f9!=null&&s.m.legAvg!=null);if(f9s.length>=2){const g=mean(f9s.map(s=>s.m.f9-s.m.legAvg));if(g>8)ins.push(["9",`Your first-9 average is ${fmt(g)} higher than your leg average, so legs stall on the way in. Practise setting up a double from 100 to 170 with the ladder.`]);}
+  const posA=[[0,0,0,0],[0,0,0,0],[0,0,0,0]],segA={},fvA=[0,0],rsA=[0,0];
+  all.forEach(s=>{const q=s.m;if(q.pos)q.pos.forEach((r,j)=>r.forEach((v,k)=>posA[j][k]+=v));if(q.seg)for(const k in q.seg){const a=segA[k]||(segA[k]=[0,0]);a[0]+=q.seg[k][0];a[1]+=q.seg[k][1];}
+    if(q.fv!=null&&q.fvN){fvA[0]+=q.fv*q.fvN;fvA[1]+=q.fvN;}if(q.restAvg!=null&&q.visits>q.fvN){const n=q.visits-q.fvN;rsA[0]+=q.restAvg*n;rsA[1]+=n;}});
+  const posN=posA[0][0],trP=posA.map(q=>q[0]?q[1]/q[0]*100:0);
+  if(posA.every(q=>q[0]>=60)){const lo=trP.indexOf(Math.min(...trP)),hi=Math.max(...trP);
+    if(lo===2&&trP[2]<trP[0]*0.75)ins.push(["3",`Your third dart hits the treble ${fmt(trP[2],0)}% of the time, against ${fmt(trP[0],0)}% for your first. Third-dart drift usually comes from rushing or tension building through the visit. Keep the same rhythm and reset your grip before the last dart.`]);
+    else if(lo===0&&trP[0]<hi*0.75)ins.push(["1",`Your first dart is your weakest (${fmt(trP[0],0)}% trebles against ${fmt(hi,0)}% at best). You settle as the visit goes on. A full routine before dart one, feet then breath then aim, helps it land like the others.`]);}
+  const sg=k=>segA[k]||[0,0],early=[sg(0)[0]+sg(1)[0],sg(0)[1]+sg(1)[1]],late=[sg(4)[0]+sg(5)[0]+sg(6)[0],sg(4)[1]+sg(5)[1]+sg(6)[1]];
+  if(early[1]>=8&&late[1]>=8){const e1=early[0]/early[1],l1=late[0]/late[1];
+    if(l1<e1*0.92)ins.push(["⏱",`Your scoring drops from ${fmt(e1)} in the first 20 minutes to ${fmt(l1)} after 40. That's fatigue or concentration fading. Take a 30-second break between blocks, and don't add volume until the late average holds.`]);
+    else if(l1>e1*1.08)ins.push(["⏱",`You score better late in the hour (${fmt(e1)} early, ${fmt(l1)} after 40 minutes). You may need a longer warm-up before the first scoring block.`]);}
+  if(fvA[1]>=5&&rsA[1]>=20){const f1=fvA[0]/fvA[1],r1=rsA[0]/rsA[1];if(f1<r1*0.9)ins.push(["▶",`Your first visit after switching to a scoring drill averages ${fmt(f1)}, against ${fmt(r1)} for the rest. Throw one settling visit before you start counting, or rehearse the switch in your warm-up.`]);}
+  const segKeys=Object.keys(segA).map(Number).filter(k=>segA[k][1]>=3&&k<7).sort((a,b)=>a-b);
+  const segMax=Math.max(1,...segKeys.map(k=>segA[k][0]/segA[k][1]));
+  const posHtml=posN>=30?`<div class="stack" style="gap:10px">${posA.map((q,j)=>`<div class="stack" style="gap:4px"><div class="row between small"><b>Dart ${j+1}</b><span class="mono muted">treble ${fmt(trP[j],0)}% · in the bed ${fmt(pctf(q[2],q[0]),0)}% · ${fmt(q[3]/q[0])} per dart</span></div><div class="bar"><span style="width:${Math.round(trP[j]/Math.max(1,...trP)*100)}%"></span></div></div>`).join("")}</div>`:`<div class="empty"><b>Not enough scoring darts yet</b><span>After about 10 visits in scoring drills, this shows how your first, second and third darts compare.</span></div>`;
+  const segHtml=segKeys.length>=2?(()=>{const W=320,H=150,B=26,T=18,bw=(W-20)/7;let g=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Scoring average by 10 minutes into the session" style="min-width:0">`;
+      segKeys.forEach(k=>{const v=segA[k][0]/segA[k][1],h=(H-B-T)*v/segMax,x=10+k*bw+4;g+=`<rect x="${x}" y="${H-B-h}" width="${bw-8}" height="${h}" rx="5" fill="var(--accent)" opacity=".8"/><text class="axt" x="${x+(bw-8)/2}" y="${H-B-h-5}" text-anchor="middle">${fmt(v,0)}</text>`;});
+      for(let k=0;k<7;k++)g+=`<text class="axt" x="${10+k*bw+bw/2}" y="${H-8}" text-anchor="middle">${k*10}</text>`;
+      return g+`</svg><p class="faint small">Visit average by minutes into the session (bars start at 0, 10, 20…). Only sessions scored since this update count.</p>`;})():`<p class="faint small">After a couple of live sessions this shows whether your scoring fades through the hour.</p>`;
   const n180=sum(rows.map(s=>s.m?s.m.n180||0:0));if(n180)ins.push(["★",`${n180} × 180 logged with the live scorer so far.`]);
   el.innerHTML=`<div class="row between"><h2>Insights</h2><span class="muted small">${rows.length} session${rows.length===1?"":"s"} · ${A.bs.length} baseline${A.bs.length===1?"":"s"}</span></div>
    <div class="grid3">${tiles}</div>
@@ -1047,6 +1101,7 @@ function renderInsights(A){
      <div class="glass pad stack"><span class="eyebrow">Skill profile</span>${radarSVG(axes)}<p class="faint small">Each axis reaches the edge at roughly professional level. A dot after a label means no data yet.</p></div>
      <div class="glass pad stack"><span class="eyebrow">Where your T20 darts land</span>${aimN?heat+`<p class="faint small">${aimN} darts aimed at T20. Brighter means more darts.${aim.M?" "+aim.M+" off the board.":""}</p>`:`<div class="empty"><b>No scoring darts yet</b><span>Every dart you tap in a T20 drill builds this map.</span></div>`}</div>
    </div>
+   <div class="glass pad stack"><span class="eyebrow">Dart by dart</span>${posHtml}<span class="eyebrow" style="margin-top:6px">Across the hour</span>${segHtml}${fvA[1]>=3&&rsA[1]?`<p class="small muted">First visit after switching drills: <b class="mono" style="color:var(--ink)">${fmt(fvA[0]/fvA[1])}</b> against <b class="mono" style="color:var(--ink)">${fmt(rsA[0]/rsA[1])}</b> for the rest.</p>`:""}</div>
    <div class="glass pad stack"><span class="eyebrow">Doubles map</span>${dRows.length?`<div class="boards" style="align-items:center">${dbl}<div class="tablebox"><table><thead><tr><th>Double</th><th>Darts</th><th>Hit %</th></tr></thead><tbody>${dRows.map(r=>`<tr><td>${dName(r.t)}</td><td class="num">${r.a}</td><td class="num ${r.r>=0.2?"good":r.r<0.1?"bad":""}">${fmt(r.r*100,0)}%</td></tr>`).join("")}</tbody></table></div></div><p class="faint small">Green is 15%+, red is below. A double shows once it has 5 darts.</p>`:`<div class="empty"><b>No per-double data yet</b><span>Doubles drills, checkouts and legs all fill this in.</span></div>`}</div>
    <div class="glass pad"><span class="eyebrow">What the data says</span>${ins.length?ins.map(([i,t])=>`<div class="insight"><span class="ic">${esc(i)}</span><p>${esc(t)}</p></div>`).join(""):`<p class="muted small" style="margin-top:8px">After a few live-scored sessions this fills with findings about your miss pattern, doubles and pressure.</p>`}</div>`;
 }
@@ -1063,7 +1118,7 @@ function renderHistory(A){
     const cd=S.coachDraft[s.id],editing=!s.coach||S.editCoach===s.id;
     const coach=`<div class="coach">
         <div class="row"><button type="button" class="btn primary sm" data-copy="${esc(s.id)}">Copy for Claude</button><span class="faint small">Paste into your Darts coach project in Claude.</span></div>
-        ${s.coach&&!editing?`<div class="coach-note"><span class="eyebrow">Coach feedback · ${fmtDate(s.coach.date)}</span><div class="coach-text">${esc(s.coach.text)}</div><div class="row"><button type="button" class="btn sm" data-coach-edit="${esc(s.id)}">Edit</button></div></div>`:
+        ${s.coach&&!editing?`<div class="coach-note"><span class="eyebrow">Coach feedback · ${fmtDate(s.coach.date)}</span><div class="coach-text">${esc(s.coach.text)}</div>${s.coach.focus?`<p class="small"><b>Focus set:</b> ${esc(s.coach.focus)}${s.coach.drill?` · ${esc(D[s.coach.drill].name)}`:""}</p>`:""}<div class="row"><button type="button" class="btn sm" data-coach-edit="${esc(s.id)}">Edit</button></div></div>`:
         `<label class="f">Coach feedback<span class="hint">Paste Claude's reply here</span><textarea id="cf-${esc(s.id)}" data-cf="${esc(s.id)}" rows="5" placeholder="Paste the feedback from Claude">${esc(cd!=null?cd:(s.coach?s.coach.text:""))}</textarea></label>
         <div class="row"><button type="button" class="btn sm" data-paste="${esc(s.id)}">Paste</button><button type="button" class="btn primary sm" data-coach-save="${esc(s.id)}">Save feedback</button>${s.coach?`<button type="button" class="btn sm" data-coach-cancel="${esc(s.id)}">Cancel</button>`:""}</div>`}
         <span class="status" id="cs-${esc(s.id)}" role="status"></span></div>`;
@@ -1143,14 +1198,23 @@ async function saveBaselineManual(){
 function coachText(s){
   const A=analyse(),i=A.ss.findIndex(x=>x.id===s.id),prev=A.ss.slice(Math.max(0,i-5),i<0?A.ss.length:i),m=s.m||{},L=[],P=x=>L.push(x);
   const day=new Date(s.date+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
-  P("Review this darts practice session as my coach: how it compares with my recent form and baseline, what went well, the one or two biggest things holding back my scoring and doubles (with the likely technical cause), and one specific focus with a drill for my next session. Be honest, use the numbers, don't invent stats and flag small samples. Under 250 words, British English, plain text.");
+  P("Review this darts practice session as my coach: how it compares with my recent form and baseline, what went well, the one or two biggest things holding back my scoring and doubles (with the likely technical cause), and one specific focus with a drill for my next session. Be honest, use the numbers, don't invent stats and flag small samples. Under 250 words, British English, plain text. End with two lines: FOCUS: (one sentence) and DRILL: (one of "+FOCUS_DRILLS.map(k=>D[k].name).join(", ")+").");
   P("");P("SESSION");
   P(`${day} · ${typeName(s.type)} · ${s.mins||"?"} min · felt ${s.feel??"?"}/5 · ${s.v===2?"scored dart by dart":"entered by hand, totals only"}`);
   if(A.calibrated)P(`Current levels: scoring L${A.sL+1} ${LEVELS[A.sL].name} (rolling 3-dart avg ${fmt(A.sAvg)}), doubles L${A.dL+1} ${LEVELS[A.dL].name} (rolling double rate ${fmt(A.dPct,0)}%). Plan mode: ${MODE[A.mode][1]}.`);
   if(A.first){const b=A.first;P(`First baseline (${fmtDate(b.date)}): avg ${fmt(b.avg3)}, T20 rate ${b.tPct==null?"–":fmt(b.tPct,0)+"%"}, double rate ${fmt(b.dPct,0)}%, Bob's 27 ${b.bobs??"–"}, darts per leg ${fmt(b.dpl)}, checkout ${b.coPct==null?"–":fmt(b.coPct,0)+"%"}.`);}
+  const LF=activeFocus(s.created||Date.now());
+  if(LF){P("");P("LAST COACH FOCUS");P(`Set ${fmtDate(isoOf(new Date(LF.at)))}: ${LF.focus}`+(LF.drill?` (drill: ${D[LF.drill].name})`:""));
+    if(LF.drill){const now=(s.drills||[]).find(x=>x.k===LF.drill),src=LF.src==="session"?S.sessions.find(x=>x.id===LF.id):null,then=src&&src!==s&&(src.drills||[]).find(x=>x.k===LF.drill);
+      P(`This session: ${now?now.txt:"that drill wasn't played"}`+(then?` · in the session it was set: ${then.txt}`:""));}
+    P("Start by telling me whether I achieved this focus.");}
   P("");P("HEADLINE NUMBERS");
   if(s.avg3!=null)P(`3-dart average ${fmt(s.avg3)} over ${s.visits} visits`+(m.tPct!=null?` · treble rate ${fmt(m.tPct,0)}% · darts in the target bed ${fmt(m.bedPct,0)}% · visit spread (SD) ${fmt(m.sd)}`:""));
   if(m.visits)P(`Tons ${m.tons} · 140+ ${m.t140} · 180s ${m.n180}`);
+  if(m.pos&&m.pos[0][0])P("By dart in the visit: "+m.pos.map((q,j)=>`dart ${j+1} treble ${fmt(pctf(q[1],q[0]),0)}%, in the bed ${fmt(pctf(q[2],q[0]),0)}%, ${fmt(q[3]/q[0])} per dart`).join(" · "));
+  if(m.seg)P("Scoring through the session: "+Object.keys(m.seg).map(Number).sort((a,b)=>a-b).map(k=>`${k*10}–${k*10+10} min avg ${fmt(m.seg[k][0]/m.seg[k][1])} (${m.seg[k][1]} visits)`).join(", "));
+  if(m.fv!=null&&m.restAvg!=null)P(`First visit of each scoring block: avg ${fmt(m.fv)} over ${m.fvN} blocks, against ${fmt(m.restAvg)} for the other visits`);
+  if(m.bobsPos)P("Bob's 27 hit rate by dart: "+m.bobsPos.map((q,j)=>`dart ${j+1} ${q[1]}/${q[0]}`).join(", "));
   if((m.mL||0)+(m.mR||0))P(`Misses into the neighbouring numbers: ${m.mL} left, ${m.mR} right`);
   if(m.aim20&&Object.keys(m.aim20).length)P("Darts aimed at T20 landed: "+Object.entries(m.aim20).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k==="M"?"off/other":lab(k)} ×${v}`).join(", "));
   if(s.dAtt)P(`Doubles ${s.dHits}/${s.dAtt} (${fmt(s.dHits/s.dAtt*100,0)}%)`+((m.inside||0)+(m.outside||0)+(m.wide||0)?` · misses inside ${m.inside}, outside ${m.outside}, wide ${m.wide}`:""));
@@ -1173,13 +1237,15 @@ function setStatus(id,cls,msg){const el=document.getElementById(id);if(el){el.cl
 function saveCoach(id){
   const ta=document.getElementById("cf-"+id),text=(ta?ta.value:"").trim(),row=S.sessions.find(x=>x.id===id);if(!row)return;
   if(!text){setStatus("cs-"+id,"err","Paste Claude's reply into the box first.");return;}
-  row.coach={text,date:todayISO()};delete S.coachDraft[id];S.editCoach=null;S.open.add(id);saveLocal();render();toast("Feedback saved");
+  const pf=parseFocus(text);
+  row.coach={text,date:todayISO(),at:Date.now(),focus:pf.focus,drill:pf.drill};delete S.coachDraft[id];S.editCoach=null;S.open.add(id);saveLocal();render();
+  toast(pf.focus?(pf.drill?`Saved. ${D[pf.drill].name} gets extra time next session.`:"Saved. Focus set; no drill named."):"Saved. No FOCUS line found, so the plan is unchanged.");
 }
 
 /* ================= backup ================= */
 function bkStatus(cls,msg){const el=$("#bk-status");el.className="status "+cls;el.textContent=msg;}
 async function exportBackup(){
-  const data={app:"oche",format:2,exported:new Date().toISOString(),sessions:S.sessions,baselines:S.baselines};
+  const data={app:"oche",format:3,exported:new Date().toISOString(),sessions:S.sessions,baselines:S.baselines,reviews:S.reviews,goals:S.goals,milestones:S.milestones,meta:S.meta};
   const name=`oche-backup-${todayISO()}.json`,text=JSON.stringify(data);
   const blob=new Blob([text],{type:"application/json"});
   try{const file=new File([blob],name,{type:"application/json"});
@@ -1192,9 +1258,11 @@ async function exportBackup(){
 function importBackup(file){
   const rd=new FileReader();
   rd.onload=()=>{try{const j=JSON.parse(rd.result);if(!j||!Array.isArray(j.sessions)||!Array.isArray(j.baselines))throw 0;
-      const have=new Set([...S.sessions,...S.baselines].map(r=>r.id));let a=0,b=0;
+      const have=new Set([...S.sessions,...S.baselines,...S.reviews,...S.goals,...S.milestones].map(r=>r.id));let a=0,b=0;
       j.sessions.forEach(r=>{if(r&&r.id&&!have.has(r.id)){S.sessions.push(r);a++;}});
       j.baselines.forEach(r=>{if(r&&r.id&&!have.has(r.id)){S.baselines.push(r);b++;}});
+      ["reviews","goals","milestones"].forEach(k=>{if(Array.isArray(j[k]))j[k].forEach(r=>{if(r&&r.id&&!have.has(r.id))S[k].push(r);});});
+      if(j.meta&&typeof j.meta==="object")for(const k in j.meta)if(!(k in S.meta))S.meta[k]=j.meta[k];
       saveLocal();render();bkStatus("ok",a||b?`Added ${a} session${a===1?"":"s"} and ${b} baseline${b===1?"":"s"}.`:"Nothing new in that backup. Your data already has all of it.");}
     catch(e){bkStatus("err","That file isn't an Oche backup. Pick the .json file you exported.");}};
   rd.onerror=()=>bkStatus("err","Couldn't read that file.");rd.readAsText(file);
@@ -1223,6 +1291,7 @@ document.addEventListener("click",e=>{
   const a=ds.act;
   if(a==="start"||a==="startBase"){if(S.run&&!ds.sure){ds.sure="1";t.textContent="Tap again: replaces the session in progress";return;}startRun(a==="startBase"?BASE:null);return;}
   if(a==="resume"){wake();renderRunner();return;}
+  if(a==="clearFocus"){S.meta.focusClearedAt=Date.now();saveLocal();render();toast("Focus cleared");return;}
   if(a==="hideInstall"){store.set("oche-hide-install",1);render();return;}
   if(a==="install"&&deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.finally(()=>{deferredInstall=null;render();});return;}
   if(t.id==="bk-export"){exportBackup();return;}
