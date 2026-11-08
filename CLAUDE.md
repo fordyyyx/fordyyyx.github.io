@@ -118,6 +118,13 @@ All agreed 2026-10-23 unless dated otherwise.
 - Keep every page lean: complete but not info-heavy.
 - Never create a `freightline/` path in this repo: fordyyyx.github.io/freightline
   is served by the separate Freightline repo.
+- `/darts` (2026-11-08) hosts Oche, my personal darts training app, from
+  `public/darts/` (a self-contained installable web app: index.html,
+  manifest, service worker, icons). It is not part of the portfolio: never
+  link it from the site, keep it out of search (noindex meta tag plus
+  `Disallow: /darts/` in robots.txt), and don't apply the site's design
+  rules to it. Bump `VERSION` in `public/darts/sw.js` with every app change
+  so installed copies update.
 
 ### Content
 - Projects on site (in order): Descent from Olympus (featured), Freightline,
