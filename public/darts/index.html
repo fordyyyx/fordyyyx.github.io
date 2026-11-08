@@ -331,6 +331,7 @@ footer{font-size:.76rem;color:var(--faint);text-align:center}
     <section data-view="insights" id="v-insights" class="stack" style="gap:16px" hidden></section>
     <section data-view="history" id="v-history" class="stack" style="gap:16px" hidden>
       <div class="row between"><h2>History</h2><span class="muted small" id="h-count"></span></div>
+      <div id="h-reviews"></div>
       <div id="h-list" class="hist"></div>
       <details class="glass pad form" id="manual">
         <summary>Add a session without the live scorer</summary>
@@ -564,6 +565,8 @@ Next session: one specific focus, how to work on it, and which drill in my plan 
 Trend: if the recent form section shows a pattern building, say so.
 
 If the report has a LAST COACH FOCUS section, start by saying whether I achieved it.
+
+For a weekly or monthly report (it starts with WEEK or MONTH), use these sections instead: Trend (one line on the direction of travel against the previous period and my baseline), Biggest gain, Biggest leak (where I'm losing the most points or legs), Coach focus check (whether I improved on the focuses set during the period), and Next week or Next month (one focus and the drill for it).
 
 Rules: be honest and specific, and don't praise anything without a number behind it. Only use stats that are in the report, and say when a sample is too small to judge. Keep it under 250 words, in British English, as plain text with no tables or markdown, because I paste your reply back into the app.
 
@@ -959,6 +962,8 @@ function renderHome(A){
   if(!STANDALONE&&!store.get("oche-hide-install")){
     const how=IS_IOS?`In Safari, tap the Share button (the square with an arrow), then <b>Add to Home Screen</b>.`:deferredInstall?`Tap Install to add it to your home screen.`:`Open your browser menu and choose <b>Install app</b> or <b>Add to Home screen</b>.`;
     html+=`<div class="glass banner"><span class="eyebrow">Install the app</span><h3>Put Oche on your home screen</h3><p class="muted small">${how} It opens full-screen and works offline. Install before you log anything: the home-screen app keeps its own storage, separate from the browser.</p><div class="row">${deferredInstall?`<button type="button" class="btn primary sm" data-act="install">Install</button>`:""}<button type="button" class="btn sm" data-act="hideInstall">Not now</button></div></div>`;}
+  {const lw=periodRange("week",1),has=A.ss.some(x=>x.date>=lw.start&&x.date<=lw.end),done=S.reviews.some(r=>r.key===lw.key&&r.coach),hid=(S.meta.hideRev||"")===lw.key;
+   if(has&&!done&&!hid)html+=`<div class="glass banner ok"><span class="eyebrow">Weekly review</span><h3>Last week's review is ready</h3><p class="muted small">${A.ss.filter(x=>x.date>=lw.start&&x.date<=lw.end).length} sessions from ${fmtDate(lw.start)} to ${fmtDate(lw.end)}. Copy the week to Claude for a trend review and a focus for this week.</p><div class="row"><button type="button" class="btn primary sm" data-act="openLastWeek">Review last week</button><button type="button" class="btn sm" data-act="hideRev">Not now</button></div></div>`;}
   if(R)html+=`<div class="glass banner"><span class="eyebrow">In progress</span><h3>${esc(R.name)} · ${R.phase==="summary"?"ready to save":"block "+(R.bi+1)+" of "+R.blocks.length}</h3><div class="row"><button type="button" class="btn primary sm" data-act="resume">Resume</button></div></div>`;
   if(A.mode==="new")html+=`<div class="glass banner"><h3>Start with the baseline test</h3><p class="muted">Until you do, targets sit at Level 2. It takes about an hour and is scored live.</p><div class="row"><a class="btn sm" href="#baseline">Go to baseline</a></div></div>`;
   else if(A.mode==="dip")html+=`<div class="glass banner dip"><h3>Reset mode</h3><p class="muted">${esc(A.reasons.join(" "))} Every day runs the Reset session, one level easier, until your numbers recover. A day off is fine too.</p></div>`;
@@ -1144,6 +1149,67 @@ function milestonesCard(){
 }
 
 /* ---------- history ---------- */
+/* ---------- period reviews ---------- */
+function periodRange(kind,off){
+  const t=new Date();t.setHours(12,0,0,0);
+  if(kind==="week"){const st=new Date(t);st.setDate(t.getDate()-((t.getDay()+6)%7)-7*off);const en=new Date(st);en.setDate(st.getDate()+6);
+    return {kind,start:isoOf(st),end:isoOf(en),key:"week:"+isoOf(st),label:off===0?`This week (from ${fmtDate(isoOf(st))})`:off===1?`Last week (from ${fmtDate(isoOf(st))})`:`Week from ${fmtDate(isoOf(st))}`};}
+  const st=new Date(t.getFullYear(),t.getMonth()-off,1,12),en=new Date(st.getFullYear(),st.getMonth()+1,0,12),nm=st.toLocaleDateString("en-GB",{month:"long",year:"numeric"});
+  return {kind,start:isoOf(st),end:isoOf(en),key:"month:"+isoOf(st).slice(0,7),label:off===0?`This month (${nm})`:off===1?`Last month (${nm})`:nm};
+}
+function prevRange(r){return periodRange(r.kind,(S.rev&&S.rev.kind===r.kind?S.rev.off:1)+1);}
+function periodStats(rows){
+  const v=k=>{const M=METRICS[k];if(k==="dpct"){const a=sum(rows.map(x=>x.dAtt||0)),h=sum(rows.map(x=>x.dHits||0));return a?h/a*100:null;}
+    if(k==="co"){const a=sum(rows.map(x=>x.m&&x.m.coAtt||0)),h=sum(rows.map(x=>x.m&&x.m.coHits||0));return a?h/a*100:null;}
+    const xs=rows.map(M.get).filter(x=>x!=null);return xs.length?mean(xs):null;};
+  const out={};["avg3","f9","tpct","sd","dpct","co","bobs","dpl"].forEach(k=>out[k]=v(k));return out;
+}
+function periodText(r){
+  const A=analyse(),rows=A.ss.filter(x=>x.date>=r.start&&x.date<=r.end),pr=prevRange(r),prows=A.ss.filter(x=>x.date>=pr.start&&x.date<=pr.end),L=[],P=x=>L.push(x);
+  const word=r.kind==="week"?"week":"month";
+  P(`${r.kind==="week"?"WEEK":"MONTH"} REVIEW. Review this ${word} of darts practice as my coach: the trend against the previous ${word} and my baseline, my biggest gain, my biggest leak, whether I improved on the coach focuses set during the ${word}, and one focus with a drill for next ${word}. Be honest, use the numbers, don't invent stats and flag small samples. Under 300 words, British English, plain text. End with two lines: FOCUS: (one sentence) and DRILL: (one of `+FOCUS_DRILLS.map(k=>D[k].name).join(", ")+").");
+  P("");P("PERIOD");
+  P(`${fmtDate(r.start)} to ${fmtDate(r.end)}: ${rows.length} session${rows.length===1?"":"s"}, ${sum(rows.map(x=>x.mins||0))} minutes. Previous ${word}: ${prows.length} session${prows.length===1?"":"s"}.`);
+  const types={};rows.forEach(x=>{const n=typeName(x.type);types[n]=(types[n]||0)+1;});if(rows.length)P("Session types: "+Object.entries(types).map(([k,n])=>`${k} ×${n}`).join(", "));
+  if(A.calibrated)P(`Current levels: scoring L${A.sL+1} ${LEVELS[A.sL].name}, doubles L${A.dL+1} ${LEVELS[A.dL].name}. Plan mode: ${MODE[A.mode][1]}.`);
+  const cur=periodStats(rows),prv=periodStats(prows);
+  P("");P(`HEADLINE NUMBERS (this ${word} · previous ${word} · first baseline)`);
+  ["avg3","f9","tpct","sd","dpct","co","bobs","dpl"].forEach(k=>{const M=METRICS[k];if(cur[k]==null&&prv[k]==null)return;const bv=A.first?M.base(A.first):null,f=v=>v==null?"–":fmt(v,M.d)+M.unit;
+    P(`- ${M.label}: ${f(cur[k])} · ${f(prv[k])} · ${f(bv)}${M.dir==="down"?" (lower is better)":""}`);});
+  const pd=aggPd(rows),ppd=aggPd(prows),dl=Object.entries(pd).filter(([,a])=>a[0]>=5).sort((a,b)=>b[1][0]-a[1][0]);
+  if(dl.length)P("Per double this "+word+" (hits/darts, previous "+word+" %): "+dl.map(([t,a])=>{const q=ppd[t];return `${dName(+t)} ${a[1]}/${a[0]}${q&&q[0]>=5?` (prev ${fmt(q[1]/q[0]*100,0)}%)`:""}`;}).join(", "));
+  const pos=[[0,0,0,0],[0,0,0,0],[0,0,0,0]],seg={};rows.forEach(x=>{const m=x.m||{};if(m.pos)m.pos.forEach((q,j)=>q.forEach((v,k)=>pos[j][k]+=v));if(m.seg)for(const k in m.seg){const a=seg[k]||(seg[k]=[0,0]);a[0]+=m.seg[k][0];a[1]+=m.seg[k][1];}});
+  if(pos[0][0])P("By dart in the visit: "+pos.map((q,j)=>`dart ${j+1} treble ${fmt(pctf(q[1],q[0]),0)}%, ${fmt(q[3]/q[0])} per dart`).join(" · "));
+  if(Object.keys(seg).length)P("Scoring through the session: "+Object.keys(seg).map(Number).sort((a,b)=>a-b).map(k=>`${k*10}–${k*10+10} min ${fmt(seg[k][0]/seg[k][1])} (${seg[k][1]} visits)`).join(", "));
+  const mins=sum(rows.map(x=>x.m&&x.m.mL||0)),plus=sum(rows.map(x=>x.m&&x.m.mR||0));if(mins+plus)P(`Misses into neighbouring numbers: ${mins} left, ${plus} right`);
+  const ins_=sum(rows.map(x=>x.m&&x.m.inside||0)),out=sum(rows.map(x=>x.m&&x.m.outside||0));if(ins_+out)P(`Double misses: ${ins_} inside, ${out} outside`);
+  const mt=rows.filter(x=>x.m&&x.m.match);if(mt.length){const w=mt.filter(x=>x.m.match.won).length;P(`Against the virtual opponent: won ${w} of ${mt.length} matches`+(mt.length?` (opponent averages ${mt.map(x=>x.m.match.botAvg).join(", ")})`:""));}
+  const fs=focusList().filter(f=>{const d=isoOf(new Date(f.at));return d>=r.start&&d<=r.end;}).reverse();
+  if(fs.length){P("");P(`COACH FOCUSES SET THIS ${word.toUpperCase()}`);fs.forEach(f=>{P(`- ${fmtDate(isoOf(new Date(f.at)))}: ${f.focus}${f.drill?` (drill: ${D[f.drill].name})`:""}`);
+    if(f.drill){const res=rows.filter(x=>(x.created||0)>=f.at).map(x=>({x,d:(x.drills||[]).find(y=>y.k===f.drill)})).filter(o=>o.d);if(res.length)res.forEach(o=>P(`    ${fmtDate(o.x.date)}: ${o.d.txt}`));else P("    That drill wasn't played after it was set.");}});}
+  const ms=S.milestones.filter(x=>x.date>=r.start&&x.date<=r.end);if(ms.length){P("");P("MILESTONES");ms.forEach(x=>P("- "+x.title));}
+  const og=S.goals.filter(g=>!g.achieved);if(og.length){P("");P("MY GOALS");og.forEach(g=>{const st=goalStatus(g,A),M=METRICS[g.metric];P(`- ${goalLabel(g)}: now ${st.cur==null?"–":fmt(st.cur,M.d)+M.unit}. ${st.text}.`);});}
+  if(rows.length){P("");P("SESSIONS");rows.forEach(x=>P(`- ${fmtDate(x.date)} ${typeName(x.type)}: `+[x.avg3!=null?"avg "+fmt(x.avg3):null,x.dAtt?`doubles ${x.dHits}/${x.dAtt}`:null,x.bobs!=null?"Bob's 27 "+x.bobs:null,x.dpl!=null?fmt(x.dpl)+" darts/leg":null,x.feel?"felt "+x.feel+"/5":null].filter(Boolean).join(", ")+(x.notes?`. Notes: ${x.notes}`:"")+(x.coach&&x.coach.focus?`. Coach focus after it: ${x.coach.focus}`:"")));}
+  return L.join("\n");
+}
+function renderReviews(A){
+  const rv=S.rev||(S.rev={kind:"week",off:1}),r=periodRange(rv.kind,rv.off),rows=A.ss.filter(x=>x.date>=r.start&&x.date<=r.end),saved=S.reviews.find(x=>x.key===r.key),dk="rv:"+r.key;
+  const opts=(rv.kind==="week"?range(0,7):range(0,5)).map(o=>{const q=periodRange(rv.kind,o);return `<option value="${o}" ${o===rv.off?"selected":""}>${esc(q.label)}</option>`;}).join("");
+  const editing=!saved||!saved.coach||S.editCoach===dk,cd=S.coachDraft[dk];
+  const past=S.reviews.filter(x=>x.coach&&x.key!==r.key).sort((a,b)=>b.start.localeCompare(a.start));
+  $("#h-reviews").innerHTML=`<div class="glass pad stack">
+    <div class="row between"><span class="eyebrow">Weekly and monthly reviews</span><div class="seg" role="group" aria-label="Review period">${["week","month"].map(k=>`<button type="button" data-revkind="${k}" aria-pressed="${rv.kind===k}">${k==="week"?"Week":"Month"}</button>`).join("")}</div></div>
+    <label class="f">Period<select id="rv-period">${opts}</select></label>
+    <p class="small muted">${rows.length?`${rows.length} session${rows.length===1?"":"s"} · ${sum(rows.map(x=>x.mins||0))} minutes · ${fmtDate(r.start)} to ${fmtDate(r.end)}`:"No sessions in this period yet."}</p>
+    ${rows.length?`<div class="row"><button type="button" class="btn primary sm" data-act="rvCopy">Copy for Claude</button><span class="faint small">Paste into your Darts coach project.</span></div>
+    ${saved&&saved.coach&&!editing?`<div class="coach-note"><span class="eyebrow">Coach review · ${fmtDate(saved.coach.date)}</span><div class="coach-text">${esc(saved.coach.text)}</div>${saved.coach.focus?`<p class="small"><b>Focus set:</b> ${esc(saved.coach.focus)}${saved.coach.drill?` · ${esc(D[saved.coach.drill].name)}`:""}</p>`:""}<div class="row"><button type="button" class="btn sm" data-act="rvEdit">Edit</button><button type="button" class="btn sm danger" data-del="reviews:${esc(saved.id)}">${S.pendingDel==="reviews:"+saved.id?"Confirm":"Delete"}</button></div></div>`:
+    `<label class="f">Coach review<span class="hint">Paste Claude's reply here</span><textarea id="rv-text" data-cf="${esc(dk)}" rows="5" placeholder="Paste the review from Claude">${esc(cd!=null?cd:(saved&&saved.coach?saved.coach.text:""))}</textarea></label>
+    <div class="row"><button type="button" class="btn sm" data-act="rvPaste">Paste</button><button type="button" class="btn primary sm" data-act="rvSave">Save review</button>${saved&&saved.coach?`<button type="button" class="btn sm" data-act="rvCancel">Cancel</button>`:""}</div>`}`:""}
+    <span class="status" id="rv-status" role="status"></span>
+    ${past.length?`<details class="how"><summary>Earlier reviews (${past.length})</summary><div class="stack" style="margin-top:8px">${past.map(x=>`<div class="coach-note"><span class="eyebrow">${x.kind==="week"?"Week from "+fmtDate(x.start):new Date(x.start+"T12:00:00").toLocaleDateString("en-GB",{month:"long",year:"numeric"})}</span><div class="coach-text">${esc(x.coach.text)}</div></div>`).join("")}</div></details>`:""}
+  </div>`;
+}
+
 function renderHistory(A){
   $("#h-count").textContent=A.ss.length?`${A.ss.length} session${A.ss.length>1?"s":""}`:"";
   const el=$("#h-list");
@@ -1385,7 +1451,7 @@ function routeView(){const h=location.hash.replace("#","");const v=VIEWS.include
   document.querySelectorAll("section[data-view]").forEach(s=>s.hidden=s.dataset.view!==v);
   document.querySelectorAll("#nav a").forEach(a=>a.getAttribute("href")==="#"+v?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));window.scrollTo(0,0);}
 function render(){
-  const A=analyse();renderHome(A);renderInsights(A);renderHistory(A);renderBaseline(A);
+  const A=analyse();renderHome(A);renderInsights(A);renderHistory(A);renderReviews(A);renderBaseline(A);
   const sy=$("#sync");sy.textContent=S.note||"Saved on this phone";sy.classList.toggle("off",!!S.note);
 }
 
@@ -1402,6 +1468,17 @@ document.addEventListener("click",e=>{
   const a=ds.act;
   if(a==="start"||a==="startBase"){if(S.run&&!ds.sure){ds.sure="1";t.textContent="Tap again: replaces the session in progress";return;}startRun(a==="startBase"?BASE:null);return;}
   if(a==="resume"){wake();renderRunner();return;}
+  if(ds.revkind){S.rev={kind:ds.revkind,off:1};render();return;}
+  if(a==="openLastWeek"){S.rev={kind:"week",off:1};location.hash="history";render();return;}
+  if(a==="hideRev"){S.meta.hideRev=periodRange("week",1).key;saveLocal();render();return;}
+  if(a==="rvCopy"){const r=periodRange(S.rev.kind,S.rev.off);copyText(periodText(r)).then(ok=>setStatus("rv-status",ok?"ok":"err",ok?"Copied. Paste it into a chat in your Darts coach project.":"Couldn't copy on this device."));return;}
+  if(a==="rvPaste"){const r=periodRange(S.rev.kind,S.rev.off),dk="rv:"+r.key;try{navigator.clipboard.readText().then(tx=>{const ta=$("#rv-text");if(ta&&tx){ta.value=tx;S.coachDraft[dk]=tx;setStatus("rv-status","ok","Pasted. Tap Save review.");}else setStatus("rv-status","err","Clipboard is empty.");}).catch(()=>setStatus("rv-status","err","Press and hold in the box, then choose Paste."));}catch(e){setStatus("rv-status","err","Press and hold in the box, then choose Paste.");}return;}
+  if(a==="rvSave"){const r=periodRange(S.rev.kind,S.rev.off),dk="rv:"+r.key,tx=($("#rv-text")?$("#rv-text").value:"").trim();if(!tx){setStatus("rv-status","err","Paste Claude's reply into the box first.");return;}
+    const pf=parseFocus(tx);let rec=S.reviews.find(x=>x.key===r.key);if(!rec){rec={id:"rv"+Date.now().toString(36),kind:r.kind,key:r.key,start:r.start,end:r.end,created:Date.now()};S.reviews.push(rec);}
+    rec.coach={text:tx,date:todayISO(),at:Date.now(),focus:pf.focus,drill:pf.drill};delete S.coachDraft[dk];S.editCoach=null;saveLocal();render();
+    toast(pf.focus?(pf.drill?`Review saved. ${D[pf.drill].name} gets extra time next session.`:"Review saved. Focus set."):"Review saved. No FOCUS line found.");return;}
+  if(a==="rvEdit"){S.editCoach="rv:"+periodRange(S.rev.kind,S.rev.off).key;render();return;}
+  if(a==="rvCancel"){const dk="rv:"+periodRange(S.rev.kind,S.rev.off).key;S.editCoach=null;delete S.coachDraft[dk];render();return;}
   if(a==="saveGoal"){const gd=S.goalDraft,M=METRICS[gd.metric],tg=num(gd.target);
     if(tg==null){setStatus("g-status","err","Enter a target number.");return;}
     if(!gd.by||gd.by<=todayISO()){setStatus("g-status","err","Pick a date in the future.");return;}
@@ -1439,6 +1516,7 @@ document.addEventListener("click",e=>{
   if(ds.dr){const r=ds.dr;act(b=>D[b.k].eng.type==="split"?inSplit(b,r):inDbl(b,r));return;}
   if(ds.atc){const r=ds.atc;act(b=>inAtc(b,r));return;}
 });
+document.addEventListener("change",e=>{if(e.target.id==="rv-period"){S.rev.off=+e.target.value;render();}});
 document.addEventListener("change",e=>{const t=e.target;if(t.dataset&&t.dataset.gd){(S.goalDraft||(S.goalDraft={metric:"avg3",target:"",by:""}))[t.dataset.gd]=t.value;S.goalDraft.open=true;if(t.dataset.gd==="metric")render();}});
 document.addEventListener("input",e=>{const t=e.target;if(t.dataset&&t.dataset.gd){(S.goalDraft||(S.goalDraft={metric:"avg3",target:"",by:""}))[t.dataset.gd]=t.value;S.goalDraft.open=true;}if(t.dataset&&t.dataset.md){(S.msDraft||(S.msDraft={date:todayISO(),text:""}))[t.dataset.md]=t.value;}});
 document.addEventListener("input",e=>{if(e.target.id==="rs-notes"&&S.run){S.run.notes=e.target.value;persistRun();}if(e.target.dataset&&e.target.dataset.cf)S.coachDraft[e.target.dataset.cf]=e.target.value;});
