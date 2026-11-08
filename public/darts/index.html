@@ -75,6 +75,10 @@ button,a,label,summary{touch-action:manipulation;-webkit-tap-highlight-color:tra
 .runner{overscroll-behavior:contain}
 .vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
 label.btn{cursor:pointer}
+.coach{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair);display:flex;flex-direction:column;gap:10px}
+.coach-text{white-space:pre-wrap;font-size:.92rem;line-height:1.55;min-width:0;overflow-wrap:anywhere}
+.coach-note{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:16px;background:var(--acc-bg)}
+#coach-instr{font-size:.82rem;line-height:1.5;min-height:180px}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));}
 body.lock{overflow:hidden}
@@ -381,6 +385,17 @@ footer{font-size:.76rem;color:var(--faint);text-align:center}
         <div class="row"><button type="button" class="btn primary" id="bk-export">Export backup</button><label class="btn" for="bk-file">Import backup</label><input type="file" id="bk-file" class="vh" accept="application/json,.json"></div>
         <span class="status" id="bk-status" role="status"></span>
       </div>
+      <div class="glass pad-lg stack" id="coach-setup">
+        <span class="eyebrow">AI feedback</span>
+        <h2>Your darts coach in Claude</h2>
+        <ol class="steps">
+          <li><h3>Set up once</h3><p>In Claude, create a project called "Darts coach" and paste the instructions below into its instructions.</p></li>
+          <li><h3>After each session</h3><p>Open the session in History and tap Copy for Claude. Paste it into a new chat in that project.</p></li>
+          <li><h3>Save the reply</h3><p>Copy Claude's reply and paste it into Coach feedback on the same session. It stays with the session and shows on the Today tab.</p></li>
+        </ol>
+        <label class="f">Project instructions<textarea id="coach-instr" readonly></textarea></label>
+        <div class="row"><button type="button" class="btn primary" id="ci-copy">Copy instructions</button><span class="status" id="ci-status" role="status"></span></div>
+      </div>
       <div class="glass pad-lg prose">
         <span class="eyebrow">How it works</span>
         <h2>The plan reads your darts, not your mood</h2>
@@ -538,7 +553,17 @@ const IS_IOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==
 let deferredInstall=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e;try{render();}catch(_){}});
 window.addEventListener("appinstalled",()=>{deferredInstall=null;store.set("oche-hide-install",1);try{render();}catch(_){}});
-const S={sessions:[],baselines:[],db:null,mode:"local",loaded:false,day:(new Date().getDay()+6)%7,metric:"avg3",pendingDel:null,note:"",run:store.get("oche-run-v2"),lfeel:3};
+const COACH_INSTR=`You are my darts coach. I'm working on my 3-dart average and my doubles with an hour-a-day practice plan in my Oche app. After each session I'll paste a report with my current levels, my baseline, recent form, drill-by-drill results and dart-by-dart detail.
+
+For each report, reply with these short sections:
+Verdict: one line on how this session compares with my recent form and baseline.
+What went well: one or two things, each backed by a number from the report.
+What's holding me back: the one or two biggest issues the numbers show (for example miss direction around T20, doubles missing outside the wire, checkout rate in legs against practice, first-9 average against leg average, visit consistency), with the likely technical cause.
+Next session: one specific focus, how to work on it, and which drill in my plan suits it (T20 scoring, Ton chase, Switch to 19s, Around the clock trebles, Round the board doubles, Bob's 27, Match doubles, One-dart doubles, D16 split, Checkout ladder, Two-dart finishes, 501 legs).
+Trend: if the recent form section shows a pattern building, say so.
+
+Rules: be honest and specific, and don't praise anything without a number behind it. Only use stats that are in the report, and say when a sample is too small to judge. Keep it under 250 words, in British English, as plain text with no tables or markdown, because I paste your reply back into the app.`;
+const S={open:new Set(),editCoach:null,coachDraft:{},sessions:[],baselines:[],db:null,mode:"local",loaded:false,day:(new Date().getDay()+6)%7,metric:"avg3",pendingDel:null,note:"",run:store.get("oche-run-v2"),lfeel:3};
 if(S.run&&!Array.isArray(S.run.blocks))S.run=null;
 const LKEY="oche-plan-v1";
 const SEED={"sessions":[{"id":"efc2tsvjy8rmbzgvqhsh","avg3":null,"bobs":null,"created":1794084833924,"dAtt":113,"dHits":10,"date":"2026-11-07","dpl":45.2,"feel":3,"mins":60,"notes":"First real session - hit first 180 on new board and first ever 100+ checkout","total":null,"type":"match","visits":null}],"baselines":[{"id":"pmjzvoxgxp5n4458c316","avg3":43.45,"bobs":0,"coAtt":63,"coPct":4.761904761904762,"created":1794074354845,"dHits":8,"dPct":13.333333333333334,"date":"2026-11-07","dpl":63,"legs":[115,41,33],"t20":3,"tPct":5,"total":869}]};
@@ -551,8 +576,8 @@ function saveLocal(){store.set(LKEY,{sessions:S.sessions,baselines:S.baselines})
 const sortRows=a=>a.slice().sort((x,y)=>(x.date||"").localeCompare(y.date||"")||((x.created||0)-(y.created||0)));
 async function addRow(coll,row){
   row.created=Date.now();row=JSON.parse(JSON.stringify(row));
-  if(S.mode==="db"){await S.db.collection(coll).add(row);return;}
-  row.id="l"+row.created;S[coll].push(row);saveLocal();render();
+  if(S.mode==="db"){const ref=await S.db.collection(coll).add(row);return ref&&ref.id;}
+  row.id="l"+row.created;S[coll].push(row);saveLocal();render();return row.id;
 }
 async function delRow(coll,id){
   if(S.mode==="db"){await S.db.doc(coll+"/"+id).delete();return;}
@@ -721,7 +746,9 @@ function summarise(R){
       txt=d.legs.length?`${d.legs.length} leg${d.legs.length>1?"s":""} · ${fmt(mean(d.legs.map(g=>g.n)))} darts/leg · avg ${fmt(mean(d.legs.map(g=>501/g.n*3)))}`:"No legs finished";}
     else txt="Done";
     const raw=e.type==="aim"?d.visits.map(v=>v.d.join(" ")).join(" | "):(e.type==="dbl"||e.type==="split"||e.type==="atc")?d.darts.map(x=>x.t+x.r).join(" "):e.type==="leg"?d.legs.map(g=>g.c).join(" | "):e.type==="co"?d.results.map(r=>r.t+":"+r.c).join(" | "):"";
-    drills.push({k:b.k,m:b.m,txt,raw});
+    const touched=e.type==="timer"||(d.visits&&d.visits.length)||(e.type==="aim"&&d.cur&&d.cur.length)||(d.darts&&d.darts.length)||(d.results&&d.results.length)||(d.legs&&d.legs.length)||(d.cur&&d.cur.darts&&d.cur.darts.length)||(d.att&&d.att.darts&&d.att.darts.length);
+    if(!touched)txt="Skipped";
+    drills.push({k:b.k,m:b.m,L:b.L,txt,raw});
   }
   const legDd=M.legs.flatMap(g=>g.dd);
   const m={visits:M.visits,tons:M.tons,t140:M.t140,n180:M.n180,tPct:pctf(M.tH,M.tD),bedPct:pctf(M.bedH,M.tD),sd:sdev(M.vs),mL:M.mL,mR:M.mR,aim20:M.aim20,pd:M.pd,
@@ -868,7 +895,7 @@ function summaryHTML(R){
     </div></div>`;
 }
 async function saveRun(){
-  const R=S.run,sm=summarise(R),st=$("#rs-status"),mins=sum(R.blocks.filter(b=>b.started).map(b=>b.m));
+  const R=S.run,sm=summarise(R),st=$("#rs-status"),mins=sum(R.blocks.filter(b=>b.started).map(b=>b.m));let newId=null;
   try{
     if(R.kind==="baseline"){
       const blk=k=>R.blocks.find(b=>b.k===k);const sc=blk("base_score").data,dbd=blk("base_dbl").data,bo=blk("base_bobs"),lg=blk("base_legs").data;
@@ -879,9 +906,9 @@ async function saveRun(){
         bobs:bo.started&&blockDone(bo)?Math.max(0,bo.data.score):null,legs,dpl:legs.length?mean(legs):null,coAtt,coPct:coAtt?legs.length/coAtt*100:null,m:sm.m,drills:sm.drills});
     }else{
       if(sm.avg3==null&&!sm.dAtt&&sm.bobs==null&&sm.dpl==null){st.className="status err";st.textContent="Nothing scored yet. Throw at least one block, or discard.";return;}
-      await addRow("sessions",{v:2,date:R.date,type:R.type,total:sm.total,visits:sm.visits,avg3:sm.avg3,dAtt:sm.dAtt,dHits:sm.dHits,bobs:sm.bobs,dpl:sm.dpl,mins,feel:R.feel,notes:(R.notes||"").trim(),m:sm.m,drills:sm.drills});
+      newId=await addRow("sessions",{v:2,date:R.date,type:R.type,total:sm.total,visits:sm.visits,avg3:sm.avg3,dAtt:sm.dAtt,dHits:sm.dHits,bobs:sm.bobs,dpl:sm.dpl,mins,feel:R.feel,notes:(R.notes||"").trim(),m:sm.m,drills:sm.drills});
     }
-    S.run=null;persistRun();closeRunner();location.hash=R.kind==="baseline"?"baseline":"insights";toast(R.kind==="baseline"?"Baseline saved":"Session saved");
+    S.run=null;persistRun();if(newId)S.open.add(newId);closeRunner();location.hash=R.kind==="baseline"?"baseline":"history";toast(R.kind==="baseline"?"Baseline saved":"Saved. Copy it to Claude for feedback.");
   }catch(e){st.className="status err";st.textContent="Couldn't save: "+(e&&e.message||"try again");}
 }
 
@@ -919,7 +946,8 @@ function renderHome(A){
   const weak=weakDoubles(A.pd,2),parts=[];
   if(weak.length)parts.push(`Weak doubles right now: <b>${weak.map(dName).join(", ")}</b>. They're built into Match doubles.`);
   if(A.calibrated&&A.sL!==A.dL)parts.push(`${A.sL<A.dL?"Scoring":"Doubles"} is your weaker side, so it gets five extra minutes on most days.`);
-  if(parts.length)html+=`<div class="glass pad stack"><span class="eyebrow">Focus</span>${parts.map(p=>`<p class="small">${p}</p>`).join("")}</div>`;
+  const lastCoach=A.ss.slice().reverse().find(x=>x.coach&&x.coach.text);
+  if(parts.length||lastCoach)html+=`<div class="glass pad stack"><span class="eyebrow">Focus</span>${parts.map(p=>`<p class="small">${p}</p>`).join("")}${lastCoach?`<details class="how"><summary>Latest coach feedback · ${fmtDate(lastCoach.date)} ${esc(typeName(lastCoach.type))}</summary><p class="coach-text" style="color:var(--ink)">${esc(lastCoach.coach.text)}</p></details>`:""}</div>`;
   html+=`<div class="row between"><h2>${DAYS[S.day]} · the hour</h2><span class="muted small">Targets set by your levels</span></div>
     <ol class="blocks">${plan.blocks.map(b=>{const d=D[b.k];return `<li class="glass blk c-${d.cat}"><div class="min">${b.m}<small>MIN</small></div><h3>${esc(d.name)}${b.tag?`<span class="tag">${esc(b.tag)}</span>`:""}</h3><p>${esc(d.how)}</p>${targetLine(b)}</li>`;}).join("")}</ol>`;
   $("#v-home").innerHTML=html;
@@ -1032,9 +1060,17 @@ function renderHistory(A){
     const st=[];if(s.avg3!=null)st.push("avg "+fmt(s.avg3));if(s.dAtt)st.push(`dbl ${s.dHits}/${s.dAtt}`);if(s.m&&s.m.coAtt)st.push(`co ${fmt(s.m.coHits/s.m.coAtt*100,0)}%`);
     if(s.bobs!=null)st.push("Bob's "+s.bobs);if(s.dpl!=null)st.push(fmt(s.dpl)+" d/leg");if(s.m&&s.m.n180)st.push(s.m.n180+"×180");if(s.feel)st.push("feel "+s.feel);
     const key="sessions:"+s.id;
-    return `<details class="glass hcard"><summary><b>${fmtDate(s.date)} · ${esc(typeName(s.type))}</b><span class="faint small">${s.v===2?"Live":"Manual"}</span><div class="stats">${st.map(x=>`<span>${esc(x)}</span>`).join("")}</div></summary>
+    const cd=S.coachDraft[s.id],editing=!s.coach||S.editCoach===s.id;
+    const coach=`<div class="coach">
+        <div class="row"><button type="button" class="btn primary sm" data-copy="${esc(s.id)}">Copy for Claude</button><span class="faint small">Paste into your Darts coach project in Claude.</span></div>
+        ${s.coach&&!editing?`<div class="coach-note"><span class="eyebrow">Coach feedback · ${fmtDate(s.coach.date)}</span><div class="coach-text">${esc(s.coach.text)}</div><div class="row"><button type="button" class="btn sm" data-coach-edit="${esc(s.id)}">Edit</button></div></div>`:
+        `<label class="f">Coach feedback<span class="hint">Paste Claude's reply here</span><textarea id="cf-${esc(s.id)}" data-cf="${esc(s.id)}" rows="5" placeholder="Paste the feedback from Claude">${esc(cd!=null?cd:(s.coach?s.coach.text:""))}</textarea></label>
+        <div class="row"><button type="button" class="btn sm" data-paste="${esc(s.id)}">Paste</button><button type="button" class="btn primary sm" data-coach-save="${esc(s.id)}">Save feedback</button>${s.coach?`<button type="button" class="btn sm" data-coach-cancel="${esc(s.id)}">Cancel</button>`:""}</div>`}
+        <span class="status" id="cs-${esc(s.id)}" role="status"></span></div>`;
+    return `<details class="glass hcard" data-id="${esc(s.id)}" ${S.open.has(s.id)?"open":""}><summary><b>${fmtDate(s.date)} · ${esc(typeName(s.type))}</b><span class="faint small">${s.coach?"Reviewed · ":""}${s.v===2?"Live":"Manual"}</span><div class="stats">${st.map(x=>`<span>${esc(x)}</span>`).join("")}</div></summary>
       ${s.drills?`<ul>${s.drills.map(x=>`<li><b style="color:var(--ink)">${esc((D[x.k]||{name:x.k}).name)}</b> — ${esc(x.txt)}</li>`).join("")}</ul>`:""}
       ${s.notes?`<p class="small muted" style="margin-top:10px">${esc(s.notes)}</p>`:""}
+      ${coach}
       <div class="row" style="margin-top:12px"><button type="button" class="btn sm danger" data-del="${esc(key)}">${S.pendingDel===key?"Tap again to delete":"Delete"}</button></div></details>`;}).join("");
 }
 
@@ -1103,6 +1139,43 @@ async function saveBaselineManual(){
   catch(e){st.className="status err";st.textContent="Couldn't save: "+(e&&e.message||"try again");}
 }
 
+/* ================= coach report ================= */
+function coachText(s){
+  const A=analyse(),i=A.ss.findIndex(x=>x.id===s.id),prev=A.ss.slice(Math.max(0,i-5),i<0?A.ss.length:i),m=s.m||{},L=[],P=x=>L.push(x);
+  const day=new Date(s.date+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+  P("Review this darts practice session as my coach: how it compares with my recent form and baseline, what went well, the one or two biggest things holding back my scoring and doubles (with the likely technical cause), and one specific focus with a drill for my next session. Be honest, use the numbers, don't invent stats and flag small samples. Under 250 words, British English, plain text.");
+  P("");P("SESSION");
+  P(`${day} · ${typeName(s.type)} · ${s.mins||"?"} min · felt ${s.feel??"?"}/5 · ${s.v===2?"scored dart by dart":"entered by hand, totals only"}`);
+  if(A.calibrated)P(`Current levels: scoring L${A.sL+1} ${LEVELS[A.sL].name} (rolling 3-dart avg ${fmt(A.sAvg)}), doubles L${A.dL+1} ${LEVELS[A.dL].name} (rolling double rate ${fmt(A.dPct,0)}%). Plan mode: ${MODE[A.mode][1]}.`);
+  if(A.first){const b=A.first;P(`First baseline (${fmtDate(b.date)}): avg ${fmt(b.avg3)}, T20 rate ${b.tPct==null?"–":fmt(b.tPct,0)+"%"}, double rate ${fmt(b.dPct,0)}%, Bob's 27 ${b.bobs??"–"}, darts per leg ${fmt(b.dpl)}, checkout ${b.coPct==null?"–":fmt(b.coPct,0)+"%"}.`);}
+  P("");P("HEADLINE NUMBERS");
+  if(s.avg3!=null)P(`3-dart average ${fmt(s.avg3)} over ${s.visits} visits`+(m.tPct!=null?` · treble rate ${fmt(m.tPct,0)}% · darts in the target bed ${fmt(m.bedPct,0)}% · visit spread (SD) ${fmt(m.sd)}`:""));
+  if(m.visits)P(`Tons ${m.tons} · 140+ ${m.t140} · 180s ${m.n180}`);
+  if((m.mL||0)+(m.mR||0))P(`Misses into the neighbouring numbers: ${m.mL} left, ${m.mR} right`);
+  if(m.aim20&&Object.keys(m.aim20).length)P("Darts aimed at T20 landed: "+Object.entries(m.aim20).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k==="M"?"off/other":lab(k)} ×${v}`).join(", "));
+  if(s.dAtt)P(`Doubles ${s.dHits}/${s.dAtt} (${fmt(s.dHits/s.dAtt*100,0)}%)`+((m.inside||0)+(m.outside||0)+(m.wide||0)?` · misses inside ${m.inside}, outside ${m.outside}, wide ${m.wide}`:""));
+  if(m.pd&&Object.keys(m.pd).length)P("Per double (hits/darts): "+Object.entries(m.pd).sort((a,b)=>b[1][0]-a[1][0]).map(([t,a])=>`${dName(+t)} ${a[1]}/${a[0]}`).join(", "));
+  if(s.bobs!=null)P(`Bob's 27: ${s.bobs}`);
+  if(s.dpl!=null)P(`501: ${m.legsN?m.legsN+" legs, ":""}${fmt(s.dpl)} darts per leg`+(m.f9!=null?` · first-9 avg ${fmt(m.f9)} · leg avg ${fmt(m.legAvg)}`:"")+(m.coAtt?` · checkout in legs ${m.coHits}/${m.coAtt} (${fmt(m.coHits/m.coAtt*100,0)}%) · highest checkout ${m.hiCo}`:""));
+  if(s.drills&&s.drills.length){P("");P("DRILL BY DRILL");s.drills.forEach(x=>{const d=D[x.k];if(!d)return;const t=d.t&&x.L!=null&&x.txt!=="Skipped"?` (target ${d.t.dir==="down"?"≤ ":""}${d.t.v[x.L]} for ${d.t.label.toLowerCase()}, L${x.L+1})`:"";P(`- ${d.name}, ${x.m} min: ${x.txt}${t}`);});}
+  if(s.notes){P("");P("MY NOTES");P(s.notes);}
+  if(prev.length){P("");P("RECENT FORM (sessions before this one)");prev.forEach(x=>P(`- ${fmtDate(x.date)} ${typeName(x.type)}: `+[x.avg3!=null?"avg "+fmt(x.avg3):null,x.dAtt?`doubles ${fmt(x.dHits/x.dAtt*100,0)}%`:null,x.dpl!=null?fmt(x.dpl)+" darts/leg":null,x.bobs!=null?"Bob's 27 "+x.bobs:null,x.feel?"felt "+x.feel+"/5":null].filter(Boolean).join(", ")));}
+  const raw=(s.drills||[]).filter(x=>x.raw).map(x=>`${(D[x.k]||{name:x.k}).name}: ${x.raw.length>700?x.raw.slice(0,700)+" …":x.raw}`);
+  if(raw.length){P("");P("RAW DARTS (T treble, D double, plain number single, SB 25, DB bull, M miss. Doubles drills show the target then H hit, I inside, O outside, W wide, X other miss. | separates visits or legs.)");raw.forEach(r=>P(r));}
+  return L.join("\n");
+}
+async function copyText(text){
+  try{await navigator.clipboard.writeText(text);return true;}catch(e){}
+  const ta=document.createElement("textarea");ta.value=text;ta.setAttribute("readonly","");ta.style.cssText="position:fixed;top:0;left:0;opacity:0";document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,text.length);
+  let ok=false;try{ok=document.execCommand("copy");}catch(e){}ta.remove();return ok;
+}
+function setStatus(id,cls,msg){const el=document.getElementById(id);if(el){el.className="status "+cls;el.textContent=msg;}}
+function saveCoach(id){
+  const ta=document.getElementById("cf-"+id),text=(ta?ta.value:"").trim(),row=S.sessions.find(x=>x.id===id);if(!row)return;
+  if(!text){setStatus("cs-"+id,"err","Paste Claude's reply into the box first.");return;}
+  row.coach={text,date:todayISO()};delete S.coachDraft[id];S.editCoach=null;S.open.add(id);saveLocal();render();toast("Feedback saved");
+}
+
 /* ================= backup ================= */
 function bkStatus(cls,msg){const el=$("#bk-status");el.className="status "+cls;el.textContent=msg;}
 async function exportBackup(){
@@ -1153,6 +1226,12 @@ document.addEventListener("click",e=>{
   if(a==="hideInstall"){store.set("oche-hide-install",1);render();return;}
   if(a==="install"&&deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.finally(()=>{deferredInstall=null;render();});return;}
   if(t.id==="bk-export"){exportBackup();return;}
+  if(t.id==="ci-copy"){copyText(COACH_INSTR).then(ok=>setStatus("ci-status",ok?"ok":"err",ok?"Copied. Paste them into your project's instructions.":"Couldn't copy. Select the text above and copy it."));return;}
+  if(ds.copy){const row=S.sessions.find(x=>x.id===ds.copy);if(row)copyText(coachText(row)).then(ok=>setStatus("cs-"+ds.copy,ok?"ok":"err",ok?"Copied. Paste it into a chat in your Darts coach project.":"Couldn't copy on this device."));return;}
+  if(ds.paste){const id=ds.paste;try{navigator.clipboard.readText().then(tx=>{const ta=document.getElementById("cf-"+id);if(ta&&tx){ta.value=tx;S.coachDraft[id]=tx;setStatus("cs-"+id,"ok","Pasted. Tap Save feedback.");}else setStatus("cs-"+id,"err","Clipboard is empty.");}).catch(()=>setStatus("cs-"+id,"err","Press and hold in the box, then choose Paste."));}catch(e){setStatus("cs-"+id,"err","Press and hold in the box, then choose Paste.");}return;}
+  if(ds.coachSave){saveCoach(ds.coachSave);return;}
+  if(ds.coachEdit){S.editCoach=ds.coachEdit;S.open.add(ds.coachEdit);render();return;}
+  if(ds.coachCancel){S.editCoach=null;delete S.coachDraft[ds.coachCancel];render();return;}
   if(!S.run)return;
   if(a==="close"){closeRunner();return;}
   if(a==="undo"){const p=S.run.hist.pop();if(p)curBlock().data=JSON.parse(p);persistRun();renderRunner();return;}
@@ -1168,7 +1247,8 @@ document.addEventListener("click",e=>{
   if(ds.dr){const r=ds.dr;act(b=>D[b.k].eng.type==="split"?inSplit(b,r):inDbl(b,r));return;}
   if(ds.atc){const r=ds.atc;act(b=>inAtc(b,r));return;}
 });
-document.addEventListener("input",e=>{if(e.target.id==="rs-notes"&&S.run){S.run.notes=e.target.value;persistRun();}});
+document.addEventListener("input",e=>{if(e.target.id==="rs-notes"&&S.run){S.run.notes=e.target.value;persistRun();}if(e.target.dataset&&e.target.dataset.cf)S.coachDraft[e.target.dataset.cf]=e.target.value;});
+document.addEventListener("toggle",e=>{const d=e.target;if(d&&d.classList&&d.classList.contains("hcard")){d.open?S.open.add(d.dataset.id):S.open.delete(d.dataset.id);}},true);
 ["l-total","l-visits","l-datt","l-dhits"].forEach(id=>$("#"+id).addEventListener("input",logCalc));
 $("#l-type").addEventListener("change",()=>{$("#l-visits").value="";applyLogType();});
 ["b-total","b-t20","b-dhits","b-bobs","b-leg1","b-leg2","b-leg3","b-coatt"].forEach(id=>$("#"+id).addEventListener("input",baselineCalc));
@@ -1177,6 +1257,7 @@ $("#bk-file").addEventListener("change",e=>{const f=e.target.files&&e.target.fil
 
 /* ================= boot ================= */
 $("#l-type").innerHTML=ALLT.map(w=>`<option value="${w.key}">${w.name}</option>`).join("")+`<option value="other">Other</option>`;
+$("#coach-instr").value=COACH_INSTR;
 $("#lvl-table").innerHTML=LEVELS.map((l,i)=>`<tr><td><b>${i+1}</b> ${l.name}</td><td class="num">${i===4?"65+":l.avg[0]+"–"+l.avg[1]}</td><td class="num">${i===4?"36%+":l.dbl[0]+"–"+l.dbl[1]+"%"}</td><td class="num">${l.bobs}</td><td class="num">${l.dpl}</td></tr>`).join("");
 $("#b-date").value=todayISO();$("#l-date").value=todayISO();$("#l-type").value=WEEK[S.day].key;
 baselineCalc();applyLogType();routeView();render();
