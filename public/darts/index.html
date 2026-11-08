@@ -522,6 +522,7 @@ const D={
  d_split:{cat:"d",name:"D16 split",how:"Aim D16. A single 16 leaves D8, a single 8 leaves D4, and so on down. Three darts a round, 10 rounds.",t:{label:"Rounds won",v:[2,4,5,7,8],dir:"up"},eng:{type:"split",rounds:10}},
  c_ladder:{cat:"c",name:"Checkout ladder",how:"Nine darts to check out the number shown. Success moves it up 1; failure moves it down 1. Ten rounds, with suggested routes.",t:{label:"Number reached",v:[46,66,86,106,126],dir:"up"},start:[41,61,81,101,121],eng:{type:"co",mode:"ladder",rounds:10}},
  c_two:{cat:"c",name:"Two-dart finishes",how:"Ten finishes from 41 to 100, picked for you. Three darts each.",t:{label:"Finishes from 10",v:[2,3,4,6,7],dir:"up"},eng:{type:"co",mode:"list"}},
+ m_vs:{cat:"m",name:"Match vs opponent",how:"First to 2, 3 or 4 legs of 501 against a virtual opponent playing at a set average. You alternate throwing first each leg. Score your darts as usual; the opponent throws its visit after yours.",eng:{type:"leg",vs:true}},
  m_501:{cat:"m",name:"501 legs",how:"Full legs of 501, double out. Darts at a double, first-9 average and checkouts are tracked for you.",t:{label:"Darts per leg",v:[33,27,22,19,16],dir:"down"},eng:{type:"leg"}},
  r_rhythm:{cat:"warm",name:"Rhythm reset",how:"Slow throws at the 20 segment. Check stance, grip and release on every dart. Count nothing.",eng:{type:"timer"}},
  r_big:{cat:"s",name:"Big-bed grouping",how:"15 visits at T20. Focus on landing in the 20 bed, singles included.",t:{label:"Darts in the 20 from 45",v:[18,24,30,35,39],dir:"up"},eng:{type:"aim",target:T20,visits:15}},
@@ -543,11 +544,12 @@ const WEEK=[
  {key:"checkin",name:"Check-in day",blocks:[["warm",5],["test_score",15],["d_bobs",15],["m_501",20],["review",5]]}
 ];
 const DIP={key:"reset",name:"Reset session",blocks:[["r_rhythm",10],["r_big",15],["r_dbl",15],["r_easy",10],["r_leg",10]]};
+const MATCH={key:"vsbot",name:"Match vs opponent",blocks:[["m_vs",30]]};
 const BASE={key:"baseline",name:"Baseline test",blocks:[["warm",5],["base_score",15],["base_dbl",10],["base_bobs",10],["base_legs",20]]};
 const DAYS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const CATNAME={warm:"Routine",s:"Scoring",d:"Doubles",c:"Checkouts",m:"Match play"};
 const ALLT=[...WEEK,DIP];
-const typeName=k=>k==="baseline"?"Baseline test":(ALLT.find(w=>w.key===k)||{name:"Other"}).name;
+const typeName=k=>k==="baseline"?"Baseline test":k==="vsbot"?"Match vs opponent":(ALLT.find(w=>w.key===k)||{name:"Other"}).name;
 
 /* ================= state + storage ================= */
 const STANDALONE=(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
@@ -648,7 +650,7 @@ function randomDoubles(n,pd){
 function pickTwoDart(n){const c=range(41,100).filter(x=>{const r=route(x,2);return r&&r.length===2;});for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}return c.slice(0,n).sort((a,b)=>a-b);}
 
 function buildPlan(A,tpl0){
-  const isBase=tpl0===BASE,dip=!isBase&&A.mode==="dip",plateau=!isBase&&A.mode==="plateau";
+  const isBase=tpl0===BASE||tpl0===MATCH,dip=!isBase&&A.mode==="dip",plateau=!isBase&&A.mode==="plateau";
   const tpl=tpl0||(dip?DIP:WEEK[S.day]);
   let blocks=tpl.blocks.map(([k,m])=>({k,m,tag:""}));
   if(plateau)blocks.forEach(b=>{if(b.k==="s_t20"){b.k="s_19";b.tag="Plateau swap";}if(b.k==="d_fav"){b.k="d_one";b.tag="Plateau swap";}});
@@ -687,7 +689,7 @@ function initData(k,L,pd){
     case "split":return {round:0,t:16,inRound:0,wins:0,darts:[]};
     case "co":{if(e.mode==="ladder"){const s=D[k].start[L];return {mode:"ladder",round:0,target:s,start:s,best:0,results:[],att:newAtt(s,9)};}
       const list=e.fixed||pickTwoDart(10);return {mode:"list",list,idx:0,results:[],att:newAtt(list[0],3)};}
-    case "leg":return {legs:[],cur:newLeg()};
+    case "leg":return {legs:[],cur:newLeg(),vs:e.vs?newVs():null};
     default:return {};
   }
 }
@@ -705,7 +707,7 @@ function blockDone(b){
       return d.darts.length>=d.q.length;
     case "split":return d.round>=e.rounds;
     case "co":return d.mode==="ladder"?d.round>=e.rounds:d.idx>=d.list.length;
-    case "leg":return !!e.legs&&d.legs.length>=e.legs;
+    case "leg":if(d.vs)return !!d.vs.over;return !!e.legs&&d.legs.length>=e.legs;
     default:return true;
   }
 }
@@ -745,7 +747,69 @@ function inLeg(b,code){
   const d=b.data,g=d.cur,{won}=throwInto(g,code);
   if(g.f9==null&&g.visits.length>=3)g.f9=sum(g.visits.slice(0,3))/3;
   if(won){if(g.f9==null)g.f9=sum(g.visits)/Math.max(1,g.visits.length);
-    d.legs.push({n:g.darts.length+g.burn,f9:g.f9,co:g.visits[g.visits.length-1],visits:g.visits,dd:g.dd,c:g.darts.join(" ")});d.cur=newLeg();}
+    const co=g.visits[g.visits.length-1];d.legs.push({n:g.darts.length+g.burn,f9:g.f9,co,visits:g.visits,dd:g.dd,c:g.darts.join(" ")});d.cur=newLeg();
+    if(d.vs&&d.vs.cfg){d.vs.legsW++;d.vs.lastLeg={who:"W",no:d.vs.legNo+1,co};vsNextLeg(b);}
+    return;}
+  if(d.vs&&d.vs.cfg&&g.vd===0)vsBotVisit(b);
+}
+
+/* ================= virtual opponent ================= */
+const BR={db:6.35,sb:15.9,ti:99,to:107,di:162,dout:170};
+function scoreAt(x,y){const r=Math.hypot(x,y);if(r<=BR.db)return "DB";if(r<=BR.sb)return "SB";if(r>BR.dout)return "M";
+  const a=((Math.atan2(x,y)*180/Math.PI)+369)%360,n=BOARD[Math.floor(a/18)%20];if(r>=BR.ti&&r<=BR.to)return "T"+n;if(r>=BR.di)return "D"+n;return "S"+n;}
+function aimXY(c){if(c==="DB"||c==="SB")return [0,0];const n=+c.slice(1),a=BOARD.indexOf(n)*18*Math.PI/180,r=c[0]==="T"?103:c[0]==="D"?166:134;return [r*Math.sin(a),r*Math.cos(a)];}
+function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function botLand(aim,sig){const [x,y]=aimXY(aim);return scoreAt(x+gauss()*sig,y+gauss()*sig);}
+function botAim(leg){const left=3-leg.vd,rt=route(leg.rem,left);if(rt)return rt[0];if(leg.rem<=170){const r3=route(leg.rem,3);if(r3)return r3[0];}return "T20";}
+function simLegDarts(sig){const leg=newLeg();for(let i=0;i<500;i++){if(throwInto(leg,botLand(botAim(leg),sig)).won)break;}return leg.darts.length+leg.burn;}
+let SIGTAB=null;
+function sigTable(){if(SIGTAB)return SIGTAB;const t=[];for(let sg=6;sg<=118;sg+=4){let n=0;const L=160;for(let i=0;i<L;i++)n+=simLegDarts(sg);t.push([sg,501*L*3/n]);}
+  for(let i=1;i<t.length;i++)if(t[i][1]>t[i-1][1])t[i][1]=t[i-1][1]-0.01;return SIGTAB=t;}
+function botSigma(avg){const t=sigTable();if(avg>=t[0][1])return t[0][0];for(let i=1;i<t.length;i++)if(avg>=t[i][1]){const [s0,a0]=t[i-1],[s1,a1]=t[i];return s0+(a0-avg)/(a0-a1)*(s1-s0);}return t[t.length-1][0];}
+function defaultBot(){return S.meta.botLevel!=null?S.meta.botLevel:clamp(Math.round(analyse().sAvg||40),25,90);}
+function newVs(){return {cfg:null,draft:null,legsW:0,legsB:0,legNo:0,turn:"W",bot:newLeg(),lost:[],botLegs:[],botDarts:0,botPts:0,anim:null,over:false,won:null,lastLeg:null};}
+function vsNextLeg(b){const d=b.data,v=d.vs;
+  if(v.legsW>=v.cfg.first||v.legsB>=v.cfg.first){v.over=true;v.won=v.legsW>v.legsB;return;}
+  v.legNo++;d.cur=newLeg();v.bot=newLeg();v.turn=v.legNo%2===0?"W":"B";if(v.turn==="B")vsBotVisit(b);}
+function vsBotVisit(b){
+  const d=b.data,v=d.vs,leg=v.bot,start=leg.rem,codes=[];let res;
+  do{const c=botLand(botAim(leg),v.cfg.sigma);codes.push(c);res=throwInto(leg,c);}while(!res.won&&leg.vd!==0&&codes.length<3);
+  v.botDarts+=res.won?codes.length:3;v.botPts+=res.won?start:start-leg.rem;
+  (v.anim||(v.anim=[])).push({codes,shown:0,start});
+  if(res.won){const g=d.cur;v.lost.push({darts:g.darts.length+g.burn,pts:501-g.rem,dd:g.dd});v.botLegs.push({n:leg.darts.length+leg.burn});v.legsB++;v.lastLeg={who:"B",no:v.legNo+1,co:start};vsNextLeg(b);}
+  else v.turn="W";
+}
+let vsTimer=null;
+function vsAnimTick(){
+  if(vsTimer||!S.run||S.run.phase!=="run")return;const b=curBlock(),v=b&&b.data&&b.data.vs;if(!v||!v.anim)return;
+  const a=v.anim.find(x=>x.shown<x.codes.length);if(!a){v.anim=null;persistRun();return;}
+  vsTimer=setTimeout(()=>{vsTimer=null;a.shown++;if(!v.anim.some(x=>x.shown<x.codes.length))v.anim=null;persistRun();if(!$("#runner").hidden)renderRunner();},520);
+}
+const vsBusy=v=>!!(v&&(!v.cfg||(v.anim&&v.anim.some(x=>x.shown<x.codes.length))));
+function matchView(b){
+  const R=S.run,d=b.data,v=d.vs,e=D[b.k].eng;
+  if(!v.cfg){const dr=v.draft||(v.draft={avg:defaultBot(),first:3});
+    return `<div class="glass live"><span class="eyebrow">Your opponent</span>
+      <div class="bigrow"><div><div class="bignum">${dr.avg}</div><span class="faint small">3-dart average</span></div>
+        <div class="row"><button type="button" class="key" style="width:56px" data-botadj="-1" aria-label="Lower opponent average">−</button><button type="button" class="key" style="width:56px" data-botadj="1" aria-label="Raise opponent average">+</button></div></div>
+      <p class="small muted">Set from your form. It goes up 2 after you win a match and down 2 after you lose.</p>
+      <span class="small" style="font-weight:600">First to</span>
+      <div class="seg" role="group" aria-label="Legs to win">${[2,3,4].map(n=>`<button type="button" data-botfirst="${n}" aria-pressed="${dr.first===n}">${n} legs</button>`).join("")}</div>
+      <div class="row"><button type="button" class="btn primary big" data-act="vsGo">Start match</button>${e.vs?"":`<button type="button" class="btn" data-act="vsOff">Play solo legs</button>`}</div></div>`;}
+  const g=d.cur,an=v.anim&&v.anim.find(x=>x.shown<x.codes.length),done=v.over;
+  let botRem=v.bot.rem;if(an){const r=an.start-sum(an.codes.slice(0,an.shown).map(val));botRem=r<=1?an.start:r;}
+  const wD=sum(d.legs.map(x=>x.n))+sum(v.lost.map(x=>x.darts))+g.darts.length+g.burn,wP=501*d.legs.length+sum(v.lost.map(x=>x.pts))+(501-g.rem);
+  const willTurn=!done&&!an&&v.turn==="W";
+  const col=(name,rem,legs,avg,active)=>`<div class="glass tile" style="${active?"outline:2px solid var(--accent);outline-offset:-2px":""}"><span class="eyebrow">${name}${active?" · to throw":""}</span><span class="bignum sm">${rem}</span><span class="small muted">Legs <b class="mono" style="color:var(--ink)">${legs}</b> · avg <b class="mono" style="color:var(--ink)">${avg}</b></span></div>`;
+  let h=`<div class="glass live"><div class="row between"><span class="eyebrow">First to ${v.cfg.first} · opponent ${v.cfg.botAvg} avg</span><span class="mono small muted">Leg ${v.legNo+1}</span></div>
+    <div class="grid2" style="grid-template-columns:1fr 1fr">${col("You",g.rem,v.legsW,wD?fmt(wP/wD*3):"–",willTurn)}${col("Opponent",botRem,v.legsB,v.botDarts?fmt(v.botPts/v.botDarts*3):"–",!!an)}</div>`;
+  if(v.lastLeg&&!done&&!an&&g.darts.length===0)h+=`<p class="small ${v.lastLeg.who==="W"?"good":"bad"}">${v.lastLeg.who==="W"?`You took leg ${v.lastLeg.no}, checking out ${v.lastLeg.co}.`:`Opponent took leg ${v.lastLeg.no}, checking out ${v.lastLeg.co}.`}</p>`;
+  if(done)h+=`<div class="done-badge">${v.won?`✓ You won ${v.legsW}–${v.legsB}`:`Opponent won ${v.legsB}–${v.legsW}`}. Tap ${R.bi===R.blocks.length-1?"Finish session":"Next block"}.</div>`;
+  else if(an)h+=`<span class="faint small">Opponent throwing…</span>${slotsHTML(an.codes.slice(0,an.shown))}`;
+  else{const rt=route(g.rem,3-g.vd);h+=`<div class="route">${rt?`<span class="faint small">Checkout</span>${rt.map(c=>`<b>${lab(c)}</b>`).join("")}`:""}</div>${slotsHTML(g.darts.slice(g.darts.length-g.vd))}`;}
+  h+=`</div>`;
+  if(willTurn)h+=`<div class="stack" style="gap:8px">${quickRow()}${fullPad(R)}</div>`;
+  return h;
 }
 
 /* ================= summary of a run ================= */
@@ -753,7 +817,7 @@ function addPd(pd,t,hit){const a=pd[t]||(pd[t]=[0,0]);a[0]++;if(hit)a[1]++;}
 function summarise(R){
   const M={visits:0,total:0,vs:[],tD:0,tH:0,bedH:0,aim20:{},mL:0,mR:0,pd:{},inside:0,outside:0,wide:0,legs:[],n180:0,tons:0,t140:0,atc:null,ladder:null,coList:null,split:null,bobs:null,rtb:null,coDrillAtt:0,coDrillHit:0};
   const drills=[],t0=R.t0||(R.blocks[0]&&R.blocks[0].start)||0;
-  M.pos=[[0,0,0,0],[0,0,0,0],[0,0,0,0]];M.seg={};M.fv=[0,0];M.rest=[0,0];M.bobsPos=[[0,0],[0,0],[0,0]];
+  M.extraDd=[];M.match=null;M.pos=[[0,0,0,0],[0,0,0,0],[0,0,0,0]];M.seg={};M.fv=[0,0];M.rest=[0,0];M.bobsPos=[[0,0],[0,0],[0,0]];
   for(const b of R.blocks){
     const e=D[b.k].eng,d=b.data;if(!d||!b.started)continue;let txt="";
     if(e.type==="aim"){let vt=0,tt=0,th=0,bh=0;
@@ -778,20 +842,24 @@ function summarise(R){
       else{M.coList={w:ok,a:d.results.length};txt=`${ok}/${d.results.length} finishes`;}}
     else if(e.type==="leg"){
       for(const g of d.legs){M.legs.push(g);M.bestCo=Math.max(M.bestCo||0,g.co||0);M.maxVisit=Math.max(M.maxVisit||0,...g.visits);for(const x of g.dd)addPd(M.pd,x.t,x.r==="H");for(const v of g.visits)if(v===180)M.n180++;}
-      txt=d.legs.length?`${d.legs.length} leg${d.legs.length>1?"s":""} · ${fmt(mean(d.legs.map(g=>g.n)))} darts/leg · avg ${fmt(mean(d.legs.map(g=>501/g.n*3)))}`:"No legs finished";}
+      txt=d.legs.length?`${d.legs.length} leg${d.legs.length>1?"s":""} · ${fmt(mean(d.legs.map(g=>g.n)))} darts/leg · avg ${fmt(mean(d.legs.map(g=>501/g.n*3)))}`:"No legs finished";
+      if(d.vs&&d.vs.cfg){const v=d.vs;for(const l of v.lost){for(const x of l.dd)addPd(M.pd,x.t,x.r==="H");M.extraDd.push(...l.dd);}
+        const wD=sum(d.legs.map(g=>g.n))+sum(v.lost.map(l=>l.darts)),wP=501*d.legs.length+sum(v.lost.map(l=>l.pts)),pDd=[...d.legs.flatMap(g=>g.dd),...v.lost.flatMap(l=>l.dd)];
+        M.match={botAvg:v.cfg.botAvg,first:v.cfg.first,legsW:v.legsW,legsB:v.legsB,over:v.over,won:v.over?v.won:null,willAvg:wD?wP/wD*3:null,botActual:v.botDarts?v.botPts/v.botDarts*3:null,coAtt:pDd.length,coHits:pDd.filter(x=>x.r==="H").length};
+        txt=`${v.over?(v.won?"Won":"Lost"):"Unfinished"} ${v.legsW}–${v.legsB} against a ${v.cfg.botAvg}-average opponent · your average ${fmt(M.match.willAvg)} · checkout ${M.match.coHits}/${M.match.coAtt}`;}}
     else txt="Done";
     const raw=e.type==="aim"?d.visits.map(v=>v.d.join(" ")).join(" | "):(e.type==="dbl"||e.type==="split"||e.type==="atc")?d.darts.map(x=>x.t+x.r).join(" "):e.type==="leg"?d.legs.map(g=>g.c).join(" | "):e.type==="co"?d.results.map(r=>r.t+":"+r.c).join(" | "):"";
-    const touched=e.type==="timer"||(d.visits&&d.visits.length)||(e.type==="aim"&&d.cur&&d.cur.length)||(d.darts&&d.darts.length)||(d.results&&d.results.length)||(d.legs&&d.legs.length)||(d.cur&&d.cur.darts&&d.cur.darts.length)||(d.att&&d.att.darts&&d.att.darts.length);
+    const touched=e.type==="timer"||(d.vs&&d.vs.cfg)||(d.visits&&d.visits.length)||(e.type==="aim"&&d.cur&&d.cur.length)||(d.darts&&d.darts.length)||(d.results&&d.results.length)||(d.legs&&d.legs.length)||(d.cur&&d.cur.darts&&d.cur.darts.length)||(d.att&&d.att.darts&&d.att.darts.length);
     if(!touched)txt="Skipped";
     drills.push({k:b.k,m:b.m,L:b.L,txt,raw});
   }
-  const legDd=M.legs.flatMap(g=>g.dd);
+  const legDd=[...M.legs.flatMap(g=>g.dd),...M.extraDd];
   const m={visits:M.visits,tons:M.tons,t140:M.t140,n180:M.n180,tPct:pctf(M.tH,M.tD),bedPct:pctf(M.bedH,M.tD),sd:sdev(M.vs),mL:M.mL,mR:M.mR,aim20:M.aim20,pd:M.pd,
     inside:M.inside,outside:M.outside,wide:M.wide,legsN:M.legs.length,f9:M.legs.length?mean(M.legs.map(g=>g.f9)):null,legAvg:M.legs.length?mean(M.legs.map(g=>501/g.n*3)):null,
     coAtt:legDd.length,coHits:legDd.filter(x=>x.r==="H").length,hiCo:M.legs.length?Math.max(...M.legs.map(g=>g.co||0)):null,
     atc:M.atc,ladder:M.ladder,coList:M.coList,split:M.split,rtb:M.rtb,coDrillAtt:M.coDrillAtt,coDrillHit:M.coDrillHit,
     pos:M.visits?M.pos:null,seg:Object.keys(M.seg).length?M.seg:null,fv:M.fv[1]?M.fv[0]/M.fv[1]:null,fvN:M.fv[1],restAvg:M.rest[1]?M.rest[0]/M.rest[1]:null,bobsPos:M.bobsPos[0][0]?M.bobsPos:null,
-    bestCo:M.bestCo||null,bestLeg:M.legs.length?Math.min(...M.legs.map(g=>g.n)):null,maxVisit:M.maxVisit||null};
+    match:M.match,bestCo:M.bestCo||null,bestLeg:M.legs.length?Math.min(...M.legs.map(g=>g.n)):null,maxVisit:M.maxVisit||null};
   let dAtt=0,dHits=0;for(const k in M.pd){dAtt+=M.pd[k][0];dHits+=M.pd[k][1];}
   return {total:M.visits?M.total:null,visits:M.visits||null,avg3:M.visits?M.total/M.visits:null,dAtt,dHits,bobs:M.bobs,dpl:M.legs.length?mean(M.legs.map(g=>g.n)):null,m,drills,legs:M.legs};
 }
@@ -809,7 +877,7 @@ let wl=null;
 function wake(){try{if(navigator.wakeLock&&!wl)navigator.wakeLock.request("screen").then(l=>{wl=l;l.addEventListener("release",()=>{wl=null;});}).catch(()=>{});}catch(e){}}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&S.run&&!$("#runner").hidden)wake();});
 const curBlock=()=>S.run.blocks[S.run.bi];
-function act(fn){const b=curBlock();if(blockDone(b))return;try{navigator.vibrate&&navigator.vibrate(8);}catch(e){}S.run.hist.push(JSON.stringify(b.data));if(S.run.hist.length>300)S.run.hist.shift();fn(b);S.run.mult="S";persistRun();renderRunner();}
+function act(fn){const b=curBlock();if(blockDone(b))return;if(b.data&&b.data.vs&&vsBusy(b.data.vs))return;try{navigator.vibrate&&navigator.vibrate(8);}catch(e){}S.run.hist.push(JSON.stringify(b.data));if(S.run.hist.length>300)S.run.hist.shift();fn(b);S.run.mult="S";persistRun();renderRunner();}
 function nextBlock(){
   const R=S.run;R.full=false;R.hist=[];R.mult="S";
   if(R.bi<R.blocks.length-1){R.bi++;const b=curBlock();b.start=Date.now();b.started=true;}
@@ -879,11 +947,13 @@ function engineView(b){
       ${done?"":`<div class="stack" style="gap:8px">${quickRow()}${fullPad(R)}</div>`}`;
   }
   if(e.type==="leg"){
+    if(d.vs)return matchView(b);
     const g=d.cur,n=g.darts.length+g.burn,rt=done?null:route(g.rem,3-g.vd),legs=d.legs;
     return `<div class="glass live"><div class="bigrow"><div><span class="eyebrow">${done?"All legs done":"Leg "+(legs.length+1)+(e.legs?" of "+e.legs:"")+" · dart "+(n+1)}</span><div class="bignum">${done?"✓":g.rem}</div></div>${done?"":slotsHTML(g.darts.slice(g.darts.length-g.vd))}</div>
       ${done?"":`<div class="route">${rt?`<span class="faint small">Checkout</span>${rt.map(c=>`<b>${lab(c)}</b>`).join("")}`:g.rem<=170?`<span class="faint small">No finish with ${3-g.vd} dart${3-g.vd>1?"s":""}. Leave a double.</span>`:""}</div>`}
       ${miniHTML([["Leg avg",n?fmt((501-g.rem)/n*3):"–"],["First 9",g.f9!=null?fmt(g.f9):"–"],["Legs",legs.length],["Darts/leg",fmt(mean(legs.map(x=>x.n)))],["At a double",g.dd.length]])}
-      ${trail(legs.map(x=>`<i class="h">${x.n} darts</i>`))}${doneBadge}</div>
+      ${trail(legs.map(x=>`<i class="h">${x.n} darts</i>`))}${doneBadge}
+      ${!done&&!e.legs&&!legs.length&&!g.darts.length?`<button type="button" class="btn sm" data-act="vsOn">Play these legs against the opponent</button>`:""}</div>
       ${done?"":`<div class="stack" style="gap:8px">${quickRow()}${fullPad(R)}</div>`}`;
   }
   return "";
@@ -908,7 +978,7 @@ function renderRunner(){
     <div class="ractions"><button type="button" class="btn" data-act="undo" ${R.hist.length?"":"disabled"}>Undo</button>
       <button type="button" class="btn ${done||D[b.k].eng.type==="timer"?"primary":""}" data-act="next">${last?"Finish session":done||D[b.k].eng.type==="timer"?"Next block":"Skip to next"}</button></div>
   </div>`;
-  tick();
+  tick();vsAnimTick();
 }
 function tick(){const el=$("#rt-timer");if(!el||!S.run||S.run.phase!=="run")return;const b=curBlock();const s=Math.round(b.m*60-(Date.now()-b.start)/1000);
   const a=Math.abs(s),t=`${Math.floor(a/60)}:${String(a%60).padStart(2,"0")}`;el.textContent=s>=0?t+" left":"+"+t+" over";el.classList.toggle("over",s<0);}
@@ -945,9 +1015,10 @@ async function saveRun(){
       newId=await addRow("baselines",{v:2,date:R.date,total:Math.round(total/sc.visits.length*20),avg3:total/sc.visits.length,t20,tPct:pctf(t20,darts.length),dHits:dh,dPct:pctf(dh,dbd.darts.length),
         bobs:bo.started&&blockDone(bo)?Math.max(0,bo.data.score):null,legs,dpl:legs.length?mean(legs):null,coAtt,coPct:coAtt?legs.length/coAtt*100:null,m:sm.m,drills:sm.drills});
     }else{
-      if(sm.avg3==null&&!sm.dAtt&&sm.bobs==null&&sm.dpl==null){st.className="status err";st.textContent="Nothing scored yet. Throw at least one block, or discard.";return;}
+      if(sm.avg3==null&&!sm.dAtt&&sm.bobs==null&&sm.dpl==null&&!sm.m.match){st.className="status err";st.textContent="Nothing scored yet. Throw at least one block, or discard.";return;}
       newId=await addRow("sessions",{v:2,date:R.date,type:R.type,total:sm.total,visits:sm.visits,avg3:sm.avg3,dAtt:sm.dAtt,dHits:sm.dHits,bobs:sm.bobs,dpl:sm.dpl,mins,feel:R.feel,notes:(R.notes||"").trim(),m:sm.m,drills:sm.drills});
     }
+    R.blocks.forEach(b=>{const v=b.data&&b.data.vs;if(v&&v.cfg&&v.over)S.meta.botLevel=clamp(v.cfg.botAvg+(v.won?2:-2),25,90);});
     const ms=newId?afterSave(newId,R.kind!=="baseline"):[];
     S.run=null;persistRun();if(newId)S.open.add(newId);closeRunner();location.hash=R.kind==="baseline"?"baseline":"history";
     toast(ms.length?`Saved · ${ms.length>1?ms.length+" new milestones":"New: "+ms[0].title}`:(R.kind==="baseline"?"Baseline saved":"Saved. Copy it to Claude for feedback."));
@@ -975,7 +1046,8 @@ function renderHome(A){
     <h1><span class="grad-text">${esc(plan.name)}</span></h1>
     <div class="timeline" aria-hidden="true">${plan.blocks.map(b=>`<span class="c-${D[b.k].cat}" style="flex:${b.m}"></span>`).join("")}</div>
     <div class="legend">${cats.map(c=>`<span class="cat c-${c}">${CATNAME[c]}</span>`).join("")}</div>
-    <div class="row"><button type="button" class="btn primary big" data-act="start">${R?"Start a new session":"Start session"}</button><span class="muted small">Live, dart-by-dart scoring</span></div>
+    <div class="row"><button type="button" class="btn primary big" data-act="start">${R?"Start a new session":"Start session"}</button><button type="button" class="btn big" data-act="startMatch">Play a match</button></div>
+    <span class="muted small">Live, dart-by-dart scoring. Your next opponent averages ${defaultBot()}.</span>
     <div class="days" role="group" aria-label="Day of the week">${DAYS.map((d,i)=>`<button type="button" data-day="${i}" aria-pressed="${i===S.day}" class="${i===todayIdx?"today":""}">${d}<small>${A.mode==="dip"?"Reset":WEEK[i].name.split(" ")[0]}</small></button>`).join("")}</div>
   </div>`;
   const lv=(title,v,unit,L,bands,cal)=>`<div class="glass pad lvl"><span class="eyebrow">${title}</span><div class="row between" style="align-items:baseline"><span class="big">${v==null?"–":fmt(v)+unit}</span><span class="chip">${cal?"L"+(L+1)+" "+LEVELS[L].name:"Uncalibrated"}</span></div>
@@ -1115,6 +1187,7 @@ function renderInsights(A){
    <div class="glass pad stack"><span class="eyebrow">Dart by dart</span>${posHtml}<span class="eyebrow" style="margin-top:6px">Across the hour</span>${segHtml}${fvA[1]>=3&&rsA[1]?`<p class="small muted">First visit after switching drills: <b class="mono" style="color:var(--ink)">${fmt(fvA[0]/fvA[1])}</b> against <b class="mono" style="color:var(--ink)">${fmt(rsA[0]/rsA[1])}</b> for the rest.</p>`:""}</div>
    <div class="glass pad stack"><span class="eyebrow">Doubles map</span>${dRows.length?`<div class="boards" style="align-items:center">${dbl}<div class="tablebox"><table><thead><tr><th>Double</th><th>Darts</th><th>Hit %</th></tr></thead><tbody>${dRows.map(r=>`<tr><td>${dName(r.t)}</td><td class="num">${r.a}</td><td class="num ${r.r>=0.2?"good":r.r<0.1?"bad":""}">${fmt(r.r*100,0)}%</td></tr>`).join("")}</tbody></table></div></div><p class="faint small">Green is 15%+, red is below. A double shows once it has 5 darts.</p>`:`<div class="empty"><b>No per-double data yet</b><span>Doubles drills, checkouts and legs all fill this in.</span></div>`}</div>
    <div class="glass pad"><span class="eyebrow">What the data says</span>${ins.length?ins.map(([i,t])=>`<div class="insight"><span class="ic">${esc(i)}</span><p>${esc(t)}</p></div>`).join(""):`<p class="muted small" style="margin-top:8px">After a few live-scored sessions this fills with findings about your miss pattern, doubles and pressure.</p>`}</div>
+   ${vsCard(A)}
    ${milestonesCard()}`;
 }
 
@@ -1136,6 +1209,16 @@ function goalsCard(A){
       </div>
       <div class="row" style="margin-top:12px"><button type="button" class="btn primary sm" data-act="saveGoal">${gd.edit?"Save changes":"Add goal"}</button>${gd.edit?`<button type="button" class="btn sm" data-act="cancelGoal">Cancel</button>`:""}<span class="status" id="g-status" role="status"></span></div>
     </details></div>`;
+}
+function vsCard(A){
+  const mt=A.ss.filter(s=>s.m&&s.m.match&&s.m.match.over);
+  if(!mt.length)return `<div class="glass pad stack"><span class="eyebrow">Against the opponent</span><p class="muted small">Play a match from the Today tab, or switch Match day's legs to the opponent. Your record and checkout under pressure show here. Next opponent: ${defaultBot()} average.</p></div>`;
+  const w=mt.filter(s=>s.m.match.won).length,cA=sum(mt.map(s=>s.m.match.coAtt)),cH=sum(mt.map(s=>s.m.match.coHits));
+  const v2=A.ss.filter(s=>s.m&&!s.m.match),pA=sum(v2.map(s=>(s.dAtt||0)-(s.m.coAtt||0))),pH=sum(v2.map(s=>(s.dHits||0)-(s.m.coHits||0)));
+  const bk=[[0,40,"Up to 40"],[41,50,"41–50"],[51,60,"51–60"],[61,99,"61+"]].map(([lo,hi,l])=>{const xs=mt.filter(s=>s.m.match.botAvg>=lo&&s.m.match.botAvg<=hi);return xs.length?`<tr><td>${l}</td><td class="num">${xs.filter(s=>s.m.match.won).length}–${xs.filter(s=>!s.m.match.won).length}</td><td class="num">${fmt(mean(xs.map(s=>s.m.match.willAvg).filter(x=>x!=null)))}</td></tr>`:"";}).join("");
+  return `<div class="glass pad stack"><div class="row between"><span class="eyebrow">Against the opponent</span><span class="faint small">Next opponent: ${defaultBot()} average</span></div>
+    <div class="grid3"><div class="glass tile"><span class="eyebrow">Record</span><span class="v">${w}–${mt.length-w}</span></div><div class="glass tile"><span class="eyebrow">Checkout under pressure</span><span class="v">${cA?fmt(cH/cA*100,0)+"%":"–"}</span><span class="d faint">${cH}/${cA} darts at a double</span></div><div class="glass tile"><span class="eyebrow">Doubles in practice</span><span class="v">${pA?fmt(pH/pA*100,0)+"%":"–"}</span><span class="d faint">drills only</span></div></div>
+    <div class="tablebox"><table><thead><tr><th>Opponent average</th><th>Won–lost</th><th>Your average</th></tr></thead><tbody>${bk}</tbody></table></div></div>`;
 }
 function milestonesCard(){
   const md=S.msDraft||(S.msDraft={date:todayISO(),text:""});
@@ -1393,6 +1476,7 @@ function coachText(s){
   if(s.dAtt)P(`Doubles ${s.dHits}/${s.dAtt} (${fmt(s.dHits/s.dAtt*100,0)}%)`+((m.inside||0)+(m.outside||0)+(m.wide||0)?` · misses inside ${m.inside}, outside ${m.outside}, wide ${m.wide}`:""));
   if(m.pd&&Object.keys(m.pd).length)P("Per double (hits/darts): "+Object.entries(m.pd).sort((a,b)=>b[1][0]-a[1][0]).map(([t,a])=>`${dName(+t)} ${a[1]}/${a[0]}`).join(", "));
   if(s.bobs!=null)P(`Bob's 27: ${s.bobs}`);
+  if(m.match){const x=m.match;P(`Match against a virtual opponent (set to ${x.botAvg} average, played ${fmt(x.botActual)}), first to ${x.first}: ${x.over?(x.won?"won":"lost"):"unfinished"} ${x.legsW}–${x.legsB}. My match average ${fmt(x.willAvg)}. Checkout under match pressure ${x.coHits}/${x.coAtt}${x.coAtt?` (${fmt(x.coHits/x.coAtt*100,0)}%)`:""}.`);}
   if(s.dpl!=null)P(`501: ${m.legsN?m.legsN+" legs, ":""}${fmt(s.dpl)} darts per leg`+(m.f9!=null?` · first-9 avg ${fmt(m.f9)} · leg avg ${fmt(m.legAvg)}`:"")+(m.coAtt?` · checkout in legs ${m.coHits}/${m.coAtt} (${fmt(m.coHits/m.coAtt*100,0)}%) · highest checkout ${m.hiCo}`:""));
   if(s.drills&&s.drills.length){P("");P("DRILL BY DRILL");s.drills.forEach(x=>{const d=D[x.k];if(!d)return;const t=d.t&&x.L!=null&&x.txt!=="Skipped"?` (target ${d.t.dir==="down"?"≤ ":""}${d.t.v[x.L]} for ${d.t.label.toLowerCase()}, L${x.L+1})`:"";P(`- ${d.name}, ${x.m} min: ${x.txt}${t}`);});}
   const msNow=S.milestones.filter(x=>x.sessionId===s.id);
@@ -1438,9 +1522,9 @@ function importBackup(file){
       const have=new Set([...S.sessions,...S.baselines,...S.reviews,...S.goals,...S.milestones].map(r=>r.id));let a=0,b=0;
       j.sessions.forEach(r=>{if(r&&r.id&&!have.has(r.id)){S.sessions.push(r);a++;}});
       j.baselines.forEach(r=>{if(r&&r.id&&!have.has(r.id)){S.baselines.push(r);b++;}});
-      ["reviews","goals","milestones"].forEach(k=>{if(Array.isArray(j[k]))j[k].forEach(r=>{if(r&&r.id&&!have.has(r.id))S[k].push(r);});});
+      let o=0;["reviews","goals","milestones"].forEach(k=>{if(Array.isArray(j[k]))j[k].forEach(r=>{if(r&&r.id&&!have.has(r.id)){S[k].push(r);o++;}});});
       if(j.meta&&typeof j.meta==="object")for(const k in j.meta)if(!(k in S.meta))S.meta[k]=j.meta[k];
-      saveLocal();render();bkStatus("ok",a||b?`Added ${a} session${a===1?"":"s"} and ${b} baseline${b===1?"":"s"}.`:"Nothing new in that backup. Your data already has all of it.");}
+      saveLocal();render();bkStatus("ok",a||b||o?`Added ${a} session${a===1?"":"s"}, ${b} baseline${b===1?"":"s"}${o?` and ${o} goal${o===1?"":"s"}, review${o===1?"":"s"} or milestone${o===1?"":"s"}`:""}.`:"Nothing new in that backup. Your data already has all of it.");}
     catch(e){bkStatus("err","That file isn't an Oche backup. Pick the .json file you exported.");}};
   rd.onerror=()=>bkStatus("err","Couldn't read that file.");rd.readAsText(file);
 }
@@ -1468,6 +1552,14 @@ document.addEventListener("click",e=>{
   const a=ds.act;
   if(a==="start"||a==="startBase"){if(S.run&&!ds.sure){ds.sure="1";t.textContent="Tap again: replaces the session in progress";return;}startRun(a==="startBase"?BASE:null);return;}
   if(a==="resume"){wake();renderRunner();return;}
+  if(a==="startMatch"){if(S.run&&!ds.sure){ds.sure="1";t.textContent="Tap again: replaces the session in progress";return;}startRun(MATCH);return;}
+  if(S.run&&S.run.phase==="run"){const vb=curBlock(),vd=vb&&vb.data;
+    if(a==="vsOn"&&vd){vd.vs=newVs();persistRun();renderRunner();return;}
+    if(a==="vsOff"&&vd){vd.vs=null;persistRun();renderRunner();return;}
+    if(vd&&vd.vs&&!vd.vs.cfg){const v=vd.vs,dr=v.draft||(v.draft={avg:defaultBot(),first:3});
+      if(ds.botadj){dr.avg=clamp(dr.avg+ +ds.botadj,25,90);persistRun();renderRunner();return;}
+      if(ds.botfirst){dr.first=+ds.botfirst;persistRun();renderRunner();return;}
+      if(a==="vsGo"){t.textContent="Setting up…";t.disabled=true;setTimeout(()=>{v.cfg={botAvg:dr.avg,first:dr.first,sigma:botSigma(dr.avg)};v.turn="W";persistRun();renderRunner();},30);return;}}}
   if(ds.revkind){S.rev={kind:ds.revkind,off:1};render();return;}
   if(a==="openLastWeek"){S.rev={kind:"week",off:1};location.hash="history";render();return;}
   if(a==="hideRev"){S.meta.hideRev=periodRange("week",1).key;saveLocal();render();return;}
