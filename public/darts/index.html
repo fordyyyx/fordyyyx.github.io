@@ -78,6 +78,9 @@ label.btn{cursor:pointer}
 .coach{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair);display:flex;flex-direction:column;gap:10px}
 .coach-text{white-space:pre-wrap;font-size:.92rem;line-height:1.55;min-width:0;overflow-wrap:anywhere}
 .coach-note{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:16px;background:var(--acc-bg)}
+.radar-then{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:5 4}
+.itabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
+.itabs button{flex:none}
 .focusline{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;color:var(--ink)}
 #coach-instr{font-size:.82rem;line-height:1.5;min-height:180px}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;
@@ -813,20 +816,22 @@ function matchView(b){
 }
 
 /* ================= summary of a run ================= */
+const VH_BANDS=["0–19","20–39","40–59","60–79","80–99","100–139","140–179","180"];
+const vhBand=x=>x>=180?7:x>=140?6:x>=100?5:x>=80?4:x>=60?3:x>=40?2:x>=20?1:0;
 function addPd(pd,t,hit){const a=pd[t]||(pd[t]=[0,0]);a[0]++;if(hit)a[1]++;}
 function summarise(R){
   const M={visits:0,total:0,vs:[],tD:0,tH:0,bedH:0,aim20:{},mL:0,mR:0,pd:{},inside:0,outside:0,wide:0,legs:[],n180:0,tons:0,t140:0,atc:null,ladder:null,coList:null,split:null,bobs:null,rtb:null,coDrillAtt:0,coDrillHit:0};
   const drills=[],t0=R.t0||(R.blocks[0]&&R.blocks[0].start)||0;
-  M.extraDd=[];M.match=null;M.pos=[[0,0,0,0],[0,0,0,0],[0,0,0,0]];M.seg={};M.fv=[0,0];M.rest=[0,0];M.bobsPos=[[0,0],[0,0],[0,0]];
+  M.extraDd=[];M.match=null;M.aim19={};M.vh=[0,0,0,0,0,0,0,0];M.pos=[[0,0,0,0],[0,0,0,0],[0,0,0,0]];M.seg={};M.fv=[0,0];M.rest=[0,0];M.bobsPos=[[0,0],[0,0],[0,0]];
   for(const b of R.blocks){
     const e=D[b.k].eng,d=b.data;if(!d||!b.started)continue;let txt="";
     if(e.type==="aim"){let vt=0,tt=0,th=0,bh=0;
-      for(const v of d.visits){const sc=sum(v.d.map(val));M.maxVisit=Math.max(M.maxVisit||0,sc);M.visits++;M.total+=sc;M.vs.push(sc);vt+=sc;if(sc>=100)M.tons++;if(sc>=140)M.t140++;if(sc===180)M.n180++;
+      for(const v of d.visits){const sc=sum(v.d.map(val));M.vh[vhBand(sc)]++;M.maxVisit=Math.max(M.maxVisit||0,sc);M.visits++;M.total+=sc;M.vs.push(sc);vt+=sc;if(sc>=100)M.tons++;if(sc>=140)M.t140++;if(sc===180)M.n180++;
         const [L,Rn]=nb(v.t),vi=d.visits.indexOf(v);
         v.d.forEach((c,j)=>{const q=M.pos[j];if(!q)return;q[0]++;if(c==="T"+v.t)q[1]++;if(numOf(c)===v.t&&c!=="SB"&&c!=="DB")q[2]++;q[3]+=val(c);});
         if(v.ts&&t0){const k=Math.max(0,Math.floor((v.ts-t0)/600000)),a=M.seg[k]||(M.seg[k]=[0,0]);a[0]+=sc;a[1]++;}
         if(vi===0){M.fv[0]+=sc;M.fv[1]++;}else{M.rest[0]+=sc;M.rest[1]++;}
-        for(const c of v.d){M.tD++;tt++;const n=numOf(c),bull=c==="SB"||c==="DB";if(c==="T"+v.t){M.tH++;th++;}if(n===v.t&&!bull){M.bedH++;bh++;}if(v.t===20)M.aim20[c]=(M.aim20[c]||0)+1;if(n===L&&!bull)M.mL++;if(n===Rn&&!bull)M.mR++;}}
+        for(const c of v.d){M.tD++;tt++;const n=numOf(c),bull=c==="SB"||c==="DB";if(c==="T"+v.t){M.tH++;th++;}if(n===v.t&&!bull){M.bedH++;bh++;}if(v.t===20)M.aim20[c]=(M.aim20[c]||0)+1;if(v.t===19)M.aim19[c]=(M.aim19[c]||0)+1;if(n===L&&!bull)M.mL++;if(n===Rn&&!bull)M.mR++;}}
       txt=d.visits.length?`${d.visits.length} visits · avg ${fmt(vt/d.visits.length)} · trebles ${fmt(pctf(th,tt),0)}% · in the bed ${fmt(pctf(bh,tt),0)}%`:"No visits";}
     else if(e.type==="atc"){M.atc={n:d.darts.length,done:d.n>20};txt=d.n>20?`Finished in ${d.darts.length} darts`:`Reached T${d.n} in ${d.darts.length} darts`;}
     else if(e.type==="dbl"||e.type==="split"){let h=0;
@@ -841,7 +846,7 @@ function summarise(R){
       if(d.mode==="ladder"){M.ladder={reached:d.target,best:d.best,r:d.round};txt=`Reached ${d.target} · best checkout ${d.best||"–"} · ${ok}/${d.results.length} rounds`;}
       else{M.coList={w:ok,a:d.results.length};txt=`${ok}/${d.results.length} finishes`;}}
     else if(e.type==="leg"){
-      for(const g of d.legs){M.legs.push(g);M.bestCo=Math.max(M.bestCo||0,g.co||0);M.maxVisit=Math.max(M.maxVisit||0,...g.visits);for(const x of g.dd)addPd(M.pd,x.t,x.r==="H");for(const v of g.visits)if(v===180)M.n180++;}
+      for(const g of d.legs){M.legs.push(g);g.visits.forEach(x=>M.vh[vhBand(x)]++);M.bestCo=Math.max(M.bestCo||0,g.co||0);M.maxVisit=Math.max(M.maxVisit||0,...g.visits);for(const x of g.dd)addPd(M.pd,x.t,x.r==="H");for(const v of g.visits)if(v===180)M.n180++;}
       txt=d.legs.length?`${d.legs.length} leg${d.legs.length>1?"s":""} · ${fmt(mean(d.legs.map(g=>g.n)))} darts/leg · avg ${fmt(mean(d.legs.map(g=>501/g.n*3)))}`:"No legs finished";
       if(d.vs&&d.vs.cfg){const v=d.vs;for(const l of v.lost){for(const x of l.dd)addPd(M.pd,x.t,x.r==="H");M.extraDd.push(...l.dd);}
         const wD=sum(d.legs.map(g=>g.n))+sum(v.lost.map(l=>l.darts)),wP=501*d.legs.length+sum(v.lost.map(l=>l.pts)),pDd=[...d.legs.flatMap(g=>g.dd),...v.lost.flatMap(l=>l.dd)];
@@ -859,7 +864,7 @@ function summarise(R){
     coAtt:legDd.length,coHits:legDd.filter(x=>x.r==="H").length,hiCo:M.legs.length?Math.max(...M.legs.map(g=>g.co||0)):null,
     atc:M.atc,ladder:M.ladder,coList:M.coList,split:M.split,rtb:M.rtb,coDrillAtt:M.coDrillAtt,coDrillHit:M.coDrillHit,
     pos:M.visits?M.pos:null,seg:Object.keys(M.seg).length?M.seg:null,fv:M.fv[1]?M.fv[0]/M.fv[1]:null,fvN:M.fv[1],restAvg:M.rest[1]?M.rest[0]/M.rest[1]:null,bobsPos:M.bobsPos[0][0]?M.bobsPos:null,
-    match:M.match,bestCo:M.bestCo||null,bestLeg:M.legs.length?Math.min(...M.legs.map(g=>g.n)):null,maxVisit:M.maxVisit||null};
+    match:M.match,aim19:Object.keys(M.aim19).length?M.aim19:null,vh:sum(M.vh)?M.vh:null,bestCo:M.bestCo||null,bestLeg:M.legs.length?Math.min(...M.legs.map(g=>g.n)):null,maxVisit:M.maxVisit||null};
   let dAtt=0,dHits=0;for(const k in M.pd){dAtt+=M.pd[k][0];dHits+=M.pd[k][1];}
   return {total:M.visits?M.total:null,visits:M.visits||null,avg3:M.visits?M.total/M.visits:null,dAtt,dHits,bobs:M.bobs,dpl:M.legs.length?mean(M.legs.map(g=>g.n)):null,m,drills,legs:M.legs};
 }
@@ -1114,11 +1119,12 @@ function boardSVG(fillFn,label){
   [["SB",RB.obull],["DB",RB.bull]].forEach(([k,r])=>{s+=`<circle class="${k==="SB"?"sa":"sb"}" r="${r}"/>`;const f=fillFn(k,25);if(f)s+=`<circle class="${f.cls}" style="fill-opacity:${f.o.toFixed(2)}" r="${r}"/>`;s+=`<circle class="wire" r="${r}"/>`;});
   return s+"</svg>";
 }
-function radarSVG(axes){
+function radarSVG(axes,back){
   const N=axes.length,R=105,ang=i=>(-90+i*360/N)*Math.PI/180,pt=(i,r)=>[+(r*Math.cos(ang(i))).toFixed(1),+(r*Math.sin(ang(i))).toFixed(1)];
   let s=`<svg class="dartboard" viewBox="-175 -145 350 290" role="img" aria-label="Skill profile">`;
   [0.25,0.5,0.75,1].forEach(f=>{s+=`<polygon class="radar-grid" points="${axes.map((_,i)=>pt(i,R*f).join(",")).join(" ")}"/>`;});
   axes.forEach((a,i)=>{const [x,y]=pt(i,R);s+=`<line class="radar-grid" x1="0" y1="0" x2="${x}" y2="${y}"/>`;const [lx,ly]=pt(i,R+16);s+=`<text class="radar-lbl" x="${lx}" y="${ly+4}" text-anchor="${Math.abs(lx)<5?"middle":lx>0?"start":"end"}">${esc(a.l)}${a.v==null?" ·":""}</text>`;});
+  if(back&&back.some(a=>a.v!=null))s+=`<polygon class="radar-then" points="${back.map((a,i)=>pt(i,R*(a.v??0)).join(",")).join(" ")}"/>`;
   s+=`<polygon class="radar-shape" points="${axes.map((a,i)=>pt(i,R*(a.v??0)).join(",")).join(" ")}"/>`;
   axes.forEach((a,i)=>{if(a.v!=null){const [x,y]=pt(i,R*a.v);s+=`<circle class="radar-dot" cx="${x}" cy="${y}" r="3.5"/>`;}});
   return s+"</svg>";
@@ -1176,19 +1182,33 @@ function renderInsights(A){
       for(let k=0;k<7;k++)g+=`<text class="axt" x="${10+k*bw+bw/2}" y="${H-8}" text-anchor="middle">${k*10}</text>`;
       return g+`</svg><p class="faint small">Visit average by minutes into the session (bars start at 0, 10, 20…). Only sessions scored since this update count.</p>`;})():`<p class="faint small">After a couple of live sessions this shows whether your scoring fades through the hour.</p>`;
   const n180=sum(rows.map(s=>s.m?s.m.n180||0:0));if(n180)ins.push(["★",`${n180} × 180 logged with the live scorer so far.`]);
+  const toAxes=o=>[{l:"Scoring",v:o.avg!=null?clamp((o.avg-20)/60,0,1):null},{l:"Trebles",v:o.tp!=null?clamp(o.tp/35,0,1):null},{l:"Doubles",v:o.dp!=null?clamp(o.dp/40,0,1):null},
+    {l:"Checkouts",v:o.co!=null?clamp(o.co/45,0,1):null},{l:"Consistency",v:o.sd!=null?clamp((60-o.sd)/45,0,1):null},{l:"Bob's 27",v:o.bobs!=null?clamp(o.bobs/1000,0,1):null}];
+  const bsel=A.bs.length?A.bs[clamp(S.webBase||0,0,A.bs.length-1)]:null;
+  const thenAx=bsel?toAxes({avg:bsel.avg3,tp:bsel.tPct,dp:bsel.dPct,co:bsel.coPct,sd:bsel.m?bsel.m.sd:null,bobs:bsel.bobs}):null;
+  const tab=S.itab||(S.itab=store.get("oche-itab")||"overview");
+  const C={
+    tiles:()=>`<div class="grid3">${tiles}</div>`,
+    chart:()=>`<div class="glass pad stack"><div class="seg" role="group" aria-label="Chart metric">${Object.entries(METRICS).map(([k,m])=>`<button type="button" data-metric="${k}" aria-pressed="${k===S.metric}">${m.label}</button>`).join("")}</div>${chartHtml}</div>`,
+    web:()=>`<div class="glass pad stack"><div class="row between"><span class="eyebrow">Skill profile</span>${A.bs.length>1?`<select id="web-base" aria-label="Compare with baseline" style="width:auto">${A.bs.map((b,i)=>`<option value="${i}" ${i===(S.webBase||0)?"selected":""}>Baseline ${fmtDate(b.date)}</option>`).join("")}</select>`:""}</div>
+      ${radarSVG(axes,thenAx)}<div class="legend"><span class="small"><b style="color:var(--accent)">━</b> Now</span>${bsel?`<span class="small muted">┅ Baseline ${fmtDate(bsel.date)}</span>`:""}</div>
+      <p class="faint small">Each axis reaches the edge at roughly professional level. A dot after a label means no data yet.</p></div>`,
+    t20:()=>aimCard(all),
+    dbd:()=>`<div class="glass pad stack"><span class="eyebrow">Dart by dart</span>${posHtml}<span class="eyebrow" style="margin-top:6px">Across the hour</span>${segHtml}${fvA[1]>=3&&rsA[1]?`<p class="small muted">First visit after switching drills: <b class="mono" style="color:var(--ink)">${fmt(fvA[0]/fvA[1])}</b> against <b class="mono" style="color:var(--ink)">${fmt(rsA[0]/rsA[1])}</b> for the rest.</p>`:""}</div>`,
+    spread:()=>spreadCard(rows),
+    dmap:()=>`<div class="glass pad stack"><span class="eyebrow">Doubles map</span>${dRows.length?`<div class="boards" style="align-items:center">${dbl}<div class="tablebox"><table><thead><tr><th>Double</th><th>Darts</th><th>Hit %</th></tr></thead><tbody>${dRows.map(r=>`<tr><td>${dName(r.t)}</td><td class="num">${r.a}</td><td class="num ${r.r>=0.2?"good":r.r<0.1?"bad":""}">${fmt(r.r*100,0)}%</td></tr>`).join("")}</tbody></table></div></div><p class="faint small">Green is 15%+, red is below. A double shows once it has 5 darts.</p>`:`<div class="empty"><b>No per-double data yet</b><span>Doubles drills, checkouts and legs all fill this in.</span></div>`}</div>`,
+    ins:()=>`<div class="glass pad"><span class="eyebrow">What the data says</span>${ins.length?ins.map(([i,t])=>`<div class="insight"><span class="ic">${esc(i)}</span><p>${esc(t)}</p></div>`).join(""):`<p class="muted small" style="margin-top:8px">After a few live-scored sessions this fills with findings about your miss pattern, doubles and pressure.</p>`}</div>`,
+    vs:()=>vsCard(A),
+    goals:()=>goalsCard(A),
+    ladder:()=>ladderCard(A),
+    cal:()=>calCard(A),
+    ms:()=>milestonesCard()
+  };
+  const TABS=[["overview","Overview",["tiles","chart","web","ins"]],["scoring","Scoring",["t20","dbd","spread"]],["doubles","Doubles & finishing",["dmap"]],["matches","Matches",["vs"]],["progress","Progress",["goals","ladder","cal","ms"]]];
+  const cur=TABS.find(t=>t[0]===tab)||TABS[0];
   el.innerHTML=`<div class="row between"><h2>Insights</h2><span class="muted small">${rows.length} session${rows.length===1?"":"s"} · ${A.bs.length} baseline${A.bs.length===1?"":"s"}</span></div>
-   <div class="grid3">${tiles}</div>
-   ${goalsCard(A)}
-   <div class="glass pad stack"><div class="seg" role="group" aria-label="Chart metric">${Object.entries(METRICS).map(([k,m])=>`<button type="button" data-metric="${k}" aria-pressed="${k===S.metric}">${m.label}</button>`).join("")}</div>${chartHtml}</div>
-   <div class="boards">
-     <div class="glass pad stack"><span class="eyebrow">Skill profile</span>${radarSVG(axes)}<p class="faint small">Each axis reaches the edge at roughly professional level. A dot after a label means no data yet.</p></div>
-     <div class="glass pad stack"><span class="eyebrow">Where your T20 darts land</span>${aimN?heat+`<p class="faint small">${aimN} darts aimed at T20. Brighter means more darts.${aim.M?" "+aim.M+" off the board.":""}</p>`:`<div class="empty"><b>No scoring darts yet</b><span>Every dart you tap in a T20 drill builds this map.</span></div>`}</div>
-   </div>
-   <div class="glass pad stack"><span class="eyebrow">Dart by dart</span>${posHtml}<span class="eyebrow" style="margin-top:6px">Across the hour</span>${segHtml}${fvA[1]>=3&&rsA[1]?`<p class="small muted">First visit after switching drills: <b class="mono" style="color:var(--ink)">${fmt(fvA[0]/fvA[1])}</b> against <b class="mono" style="color:var(--ink)">${fmt(rsA[0]/rsA[1])}</b> for the rest.</p>`:""}</div>
-   <div class="glass pad stack"><span class="eyebrow">Doubles map</span>${dRows.length?`<div class="boards" style="align-items:center">${dbl}<div class="tablebox"><table><thead><tr><th>Double</th><th>Darts</th><th>Hit %</th></tr></thead><tbody>${dRows.map(r=>`<tr><td>${dName(r.t)}</td><td class="num">${r.a}</td><td class="num ${r.r>=0.2?"good":r.r<0.1?"bad":""}">${fmt(r.r*100,0)}%</td></tr>`).join("")}</tbody></table></div></div><p class="faint small">Green is 15%+, red is below. A double shows once it has 5 darts.</p>`:`<div class="empty"><b>No per-double data yet</b><span>Doubles drills, checkouts and legs all fill this in.</span></div>`}</div>
-   <div class="glass pad"><span class="eyebrow">What the data says</span>${ins.length?ins.map(([i,t])=>`<div class="insight"><span class="ic">${esc(i)}</span><p>${esc(t)}</p></div>`).join(""):`<p class="muted small" style="margin-top:8px">After a few live-scored sessions this fills with findings about your miss pattern, doubles and pressure.</p>`}</div>
-   ${vsCard(A)}
-   ${milestonesCard()}`;
+   <div class="seg itabs" role="tablist" aria-label="Insights sections">${TABS.map(t=>`<button type="button" role="tab" data-itab="${t[0]}" aria-pressed="${t[0]===cur[0]}" aria-selected="${t[0]===cur[0]}">${t[1]}</button>`).join("")}</div>
+   ${cur[2].map(k=>C[k]()).join("")}`;
 }
 
 function goalsCard(A){
@@ -1209,6 +1229,64 @@ function goalsCard(A){
       </div>
       <div class="row" style="margin-top:12px"><button type="button" class="btn primary sm" data-act="saveGoal">${gd.edit?"Save changes":"Add goal"}</button>${gd.edit?`<button type="button" class="btn sm" data-act="cancelGoal">Cancel</button>`:""}<span class="status" id="g-status" role="status"></span></div>
     </details></div>`;
+}
+function aimCard(all){
+  const t=S.aimT||20,key=t===19?"aim19":"aim20",aim={};all.forEach(x=>{const a=x.m[key];if(a)for(const k in a)aim[k]=(aim[k]||0)+a[k];});
+  const n=sum(Object.values(aim)),mx=Math.max(1,...Object.entries(aim).filter(([k])=>k!=="M").map(([,v])=>v)),hit=aim["T"+t]||0;
+  const tog=`<div class="seg" role="group" aria-label="Target">${[20,19].map(x=>`<button type="button" data-aimt="${x}" aria-pressed="${x===t}">T${x}</button>`).join("")}</div>`;
+  return `<div class="glass pad stack"><div class="row between"><span class="eyebrow">Where your T${t} darts land</span>${tog}</div>${n?boardSVG((k,nn)=>{const c=aim[k==="SB"||k==="DB"?k:k+nn];return c?{cls:"heat",o:.15+.85*c/mx}:null;},`Where your T${t} darts land`)+`<p class="faint small">${n} darts aimed at T${t} · treble ${fmt(hit/n*100,0)}%. Brighter means more darts.${aim.M?" "+aim.M+" off the board.":""}</p>`:`<div class="empty"><b>No darts at T${t} yet</b><span>${t===19?"Switch to 19s fills this map.":"Every dart you tap in a T20 drill builds this map."}</span></div>`}</div>`;
+}
+function spreadCard(rows){
+  const mode=S.vhMode||"all",src=rows.filter(x=>x.m&&x.m.vh),use=mode==="7"?src.slice(-7):src,vh=[0,0,0,0,0,0,0,0];use.forEach(x=>x.m.vh.forEach((c,i)=>vh[i]+=c));
+  const n=sum(vh),tog=`<div class="seg" role="group" aria-label="Range">${[["7","Last 7"],["all","All"]].map(([k,l])=>`<button type="button" data-vhmode="${k}" aria-pressed="${k===mode}">${l}</button>`).join("")}</div>`;
+  if(!n)return `<div class="glass pad stack"><div class="row between"><span class="eyebrow">Visit score spread</span>${tog}</div><div class="empty"><b>No visits recorded yet</b><span>Every three-dart visit in scoring drills and legs lands in one of these bands.</span></div></div>`;
+  const W=340,H=170,T=20,B=34,bw=(W-10)/8,mx=Math.max(...vh);
+  let g=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Visit scores by band" style="min-width:0">`;
+  vh.forEach((c,i)=>{const h=(H-T-B)*c/mx,x=5+i*bw+3;g+=`<rect x="${x.toFixed(1)}" y="${(H-B-h).toFixed(1)}" width="${(bw-6).toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="${i>=5?"var(--cs)":"var(--accent)"}" opacity="${i>=5?.9:.75}"/>`;
+    if(c)g+=`<text class="axt" x="${(x+(bw-6)/2).toFixed(1)}" y="${(H-B-h-5).toFixed(1)}" text-anchor="middle">${fmt(c/n*100,0)}%</text>`;
+    g+=`<text class="axt" x="${(x+(bw-6)/2).toFixed(1)}" y="${H-18}" text-anchor="middle" style="font-size:9px">${VH_BANDS[i].split("–")[0]}</text>`;});
+  g+=`<text class="axt" x="${W/2}" y="${H-4}" text-anchor="middle" style="font-size:9px">visit score (band start)</text></svg>`;
+  const tons=vh[5]+vh[6]+vh[7],low=vh[0]+vh[1];
+  return `<div class="glass pad stack"><div class="row between"><span class="eyebrow">Visit score spread</span>${tog}</div>${g}
+    <p class="small muted">${n} visits · tons <b class="mono" style="color:var(--ink)">${fmt(tons/n*100,0)}%</b> · 140+ <b class="mono" style="color:var(--ink)">${fmt((vh[6]+vh[7])/n*100,0)}%</b> · under 40 <b class="mono" style="color:var(--ink)">${fmt(low/n*100,0)}%</b>${vh[7]?` · 180s <b class="mono" style="color:var(--ink)">${vh[7]}</b>`:""}</p>
+    <p class="faint small">Pink bars are tons. Cutting the under-40 visits often lifts an average faster than chasing more tons.</p></div>`;
+}
+function ladderCard(A){
+  const mode=S.ladMode||"s",rows=[...A.ss.map(x=>({x,b:false})),...A.bs.map(x=>({x,b:true}))].sort((p,q)=>(p.x.date||"").localeCompare(q.x.date||"")||(p.x.created||0)-(q.x.created||0));
+  const get=mode==="s"?r=>r.avg3:r=>r.dAtt?r.dHits/r.dAtt*100:(r.dPct!=null?r.dPct:null);
+  const pts=rows.map(o=>({y:get(o.x),d:o.x.date,b:o.b})).filter(o=>o.y!=null);
+  const tog=`<div class="seg" role="group" aria-label="Measure">${[["s","Scoring"],["d","Doubles"]].map(([k,l])=>`<button type="button" data-ladmode="${k}" aria-pressed="${k===mode}">${l}</button>`).join("")}</div>`;
+  if(pts.length<2)return `<div class="glass pad stack"><div class="row between"><span class="eyebrow">Level ladder</span>${tog}</div><div class="empty"><b>Two sessions needed</b><span>Your rolling ${mode==="s"?"average":"double rate"} climbs through the level bands here.</span></div></div>`;
+  const bands=LEVELS.map(l=>mode==="s"?l.avg:l.dbl),roll=pts.map((p,i)=>mean(pts.slice(Math.max(0,i-4),i+1).map(q=>q.y)));
+  const lo=mode==="s"?20:0,hi=Math.max(mode==="s"?70:40,...pts.map(p=>p.y))+3;
+  const W=430,H=230,L=34,Rr=86,T=10,B=22,X=i=>L+i*(W-L-Rr)/(pts.length-1),Y=v=>T+(hi-clamp(v,lo,hi))/(hi-lo)*(H-T-B);
+  let g=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Rolling ${mode==="s"?"average":"double rate"} against level bands" style="min-width:0">`;
+  bands.forEach((bd,i)=>{const y0=Y(Math.min(bd[1],hi)),y1=Y(Math.max(bd[0],lo));if(y1-y0<=0)return;g+=`<rect x="${L}" y="${y0.toFixed(1)}" width="${W-L-Rr+6}" height="${(y1-y0).toFixed(1)}" fill="var(--accent)" opacity="${(0.04+i*0.035).toFixed(3)}"/>`;
+    if(y1-y0>=12)g+=`<text class="axt" x="${W-Rr+12}" y="${((y0+y1)/2+4).toFixed(1)}">${LEVELS[i].name}</text>`;});
+  niceTicks(lo,hi).forEach(t=>{g+=`<text class="axt" x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}${mode==="d"?"%":""}</text>`;});
+  pts.forEach((p,i)=>{g+=p.b?`<rect x="${X(i)-4}" y="${Y(p.y)-4}" width="8" height="8" fill="var(--hit)"/>`:`<circle class="raw" cx="${X(i)}" cy="${Y(p.y)}" r="2.6"/>`;});
+  g+=`<path class="ln" d="${roll.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ")}"/><circle class="dotlast" cx="${X(pts.length-1)}" cy="${Y(roll[roll.length-1])}" r="5"/>`;
+  g+=`<text class="axt" x="${L}" y="${H-6}">${fmtDate(pts[0].d)}</text><text class="axt" x="${W-Rr}" y="${H-6}" text-anchor="end">${fmtDate(pts[pts.length-1].d)}</text></svg>`;
+  const L0=mode==="s"?A.sL:A.dL,cv=roll[roll.length-1],nx=L0<4?bands[L0][1]:null;
+  return `<div class="glass pad stack"><div class="row between"><span class="eyebrow">Level ladder</span>${tog}</div><div class="chartbox">${g}</div>
+    <p class="small muted">Rolling 5-session ${mode==="s"?"average":"double rate"} <b class="mono" style="color:var(--ink)">${fmt(cv)}${mode==="d"?"%":""}</b>${nx!=null?` · ${fmt(nx-cv)}${mode==="d"?"%":""} to ${LEVELS[L0+1].name}`:" · top band"}. Green squares are baseline tests.</p></div>`;
+}
+function calCard(A){
+  const mode=S.calMode||"mins",day={};A.ss.forEach(x=>{const o=day[x.date]||(day[x.date]={m:0,a:[]});o.m+=x.mins||0;if(x.avg3!=null)o.a.push(x.avg3);});
+  const today=new Date();today.setHours(12,0,0,0);const ti=(today.getDay()+6)%7,start=new Date(today);start.setDate(today.getDate()-ti-7*25);
+  const lvl=o=>{if(!o)return 0;if(mode==="mins"){const m=o.m||60;return m>=90?4:m>=60?3:m>=30?2:1;}if(!o.a.length)return 0;const v=mean(o.a);return v>=55?4:v>=45?3:v>=35?2:1;};
+  const cs=12,gp=3,W=26*(cs+gp)+22,H=7*(cs+gp)+18;let g=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Practice calendar, last 26 weeks" style="min-width:0">`;let lastM=-1;
+  for(let w=0;w<26;w++)for(let r=0;r<7;r++){const d=new Date(start);d.setDate(start.getDate()+w*7+r);if(d>today)continue;const iso=isoOf(d),o=day[iso],L=lvl(o),x=22+w*(cs+gp),y=14+r*(cs+gp);
+    if(r===0&&d.getMonth()!==lastM){lastM=d.getMonth();g+=`<text class="axt" x="${x}" y="10" style="font-size:9px">${d.toLocaleDateString("en-GB",{month:"short"})}</text>`;}
+    g+=`<rect x="${x}" y="${y}" width="${cs}" height="${cs}" rx="3" fill="${L?"var(--accent)":"var(--seg-b)"}" ${L?`opacity="${[0,.3,.5,.75,1][L]}"`:`stroke="var(--hair)"`} ${iso===isoOf(today)?`stroke="var(--ink)" stroke-width="1.5"`:""}><title>${fmtDate(iso)}${o?`: ${o.m} min${o.a.length?", avg "+fmt(mean(o.a)):""}`:""}</title></rect>`;}
+  ["M","","W","","F","",""].forEach((l,r)=>{if(l)g+=`<text class="axt" x="0" y="${14+r*(cs+gp)+10}" style="font-size:9px">${l}</text>`;});g+=`</svg>`;
+  const dates=Object.keys(day).sort();let best=0,run=0,prev=null;dates.forEach(d=>{const t=Date.parse(d+"T12:00:00");run=prev!=null&&Math.round((t-prev)/864e5)===1?run+1:1;best=Math.max(best,run);prev=t;});
+  const set=new Set(dates),curS=set.has(isoOf(today))?streakEnding(set,isoOf(today)):(()=>{const y=new Date(today);y.setDate(y.getDate()-1);return streakEnding(set,isoOf(y));})();
+  const tog=`<div class="seg" role="group" aria-label="Shade by">${[["mins","Minutes"],["avg","Average"]].map(([k,l])=>`<button type="button" data-calmode="${k}" aria-pressed="${k===mode}">${l}</button>`).join("")}</div>`;
+  const leg=mode==="mins"?["under 30","30–59","60–89","90+"]:["under 35","35–44","45–54","55+"];
+  return `<div class="glass pad stack"><div class="row between"><span class="eyebrow">Practice calendar</span>${tog}</div><div class="chartbox">${g}</div>
+    <div class="legend">${leg.map((l,i)=>`<span class="small muted"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--accent);opacity:${[.3,.5,.75,1][i]};margin-right:5px;vertical-align:-1px"></i>${l}</span>`).join("")}</div>
+    <p class="small muted">Current streak <b class="mono" style="color:var(--ink)">${curS}</b> day${curS===1?"":"s"} · longest <b class="mono" style="color:var(--ink)">${best}</b> · ${dates.filter(d=>d>=isoOf(start)).length} practice days in 26 weeks${mode==="avg"?" · days with no scoring drill stay pale":""}</p></div>`;
 }
 function vsCard(A){
   const mt=A.ss.filter(s=>s.m&&s.m.match&&s.m.match.over);
@@ -1560,6 +1638,11 @@ document.addEventListener("click",e=>{
       if(ds.botadj){dr.avg=clamp(dr.avg+ +ds.botadj,25,90);persistRun();renderRunner();return;}
       if(ds.botfirst){dr.first=+ds.botfirst;persistRun();renderRunner();return;}
       if(a==="vsGo"){t.textContent="Setting up…";t.disabled=true;setTimeout(()=>{v.cfg={botAvg:dr.avg,first:dr.first,sigma:botSigma(dr.avg)};v.turn="W";persistRun();renderRunner();},30);return;}}}
+  if(ds.itab){S.itab=ds.itab;store.set("oche-itab",ds.itab);render();return;}
+  if(ds.aimt){S.aimT=+ds.aimt;render();return;}
+  if(ds.vhmode){S.vhMode=ds.vhmode;render();return;}
+  if(ds.ladmode){S.ladMode=ds.ladmode;render();return;}
+  if(ds.calmode){S.calMode=ds.calmode;render();return;}
   if(ds.revkind){S.rev={kind:ds.revkind,off:1};render();return;}
   if(a==="openLastWeek"){S.rev={kind:"week",off:1};location.hash="history";render();return;}
   if(a==="hideRev"){S.meta.hideRev=periodRange("week",1).key;saveLocal();render();return;}
@@ -1608,7 +1691,7 @@ document.addEventListener("click",e=>{
   if(ds.dr){const r=ds.dr;act(b=>D[b.k].eng.type==="split"?inSplit(b,r):inDbl(b,r));return;}
   if(ds.atc){const r=ds.atc;act(b=>inAtc(b,r));return;}
 });
-document.addEventListener("change",e=>{if(e.target.id==="rv-period"){S.rev.off=+e.target.value;render();}});
+document.addEventListener("change",e=>{if(e.target.id==="rv-period"){S.rev.off=+e.target.value;render();}if(e.target.id==="web-base"){S.webBase=+e.target.value;render();}});
 document.addEventListener("change",e=>{const t=e.target;if(t.dataset&&t.dataset.gd){(S.goalDraft||(S.goalDraft={metric:"avg3",target:"",by:""}))[t.dataset.gd]=t.value;S.goalDraft.open=true;if(t.dataset.gd==="metric")render();}});
 document.addEventListener("input",e=>{const t=e.target;if(t.dataset&&t.dataset.gd){(S.goalDraft||(S.goalDraft={metric:"avg3",target:"",by:""}))[t.dataset.gd]=t.value;S.goalDraft.open=true;}if(t.dataset&&t.dataset.md){(S.msDraft||(S.msDraft={date:todayISO(),text:""}))[t.dataset.md]=t.value;}});
 document.addEventListener("input",e=>{if(e.target.id==="rs-notes"&&S.run){S.run.notes=e.target.value;persistRun();}if(e.target.dataset&&e.target.dataset.cf)S.coachDraft[e.target.dataset.cf]=e.target.value;});

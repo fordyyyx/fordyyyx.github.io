@@ -1,6 +1,6 @@
 /* Oche Training Plan service worker: the app shell is served from cache so it opens instantly and offline;
    each launch fetches a fresh copy in the background, so updates appear on the next launch. */
-const VERSION = "oche-v6";
+const VERSION = "oche-v7";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
