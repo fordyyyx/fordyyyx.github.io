@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /darts/
 
 Sitemap: https://fordyyyx.github.io/sitemap-index.xml

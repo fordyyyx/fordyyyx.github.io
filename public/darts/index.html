@@ -1,0 +1,1190 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Oche Training Plan</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Adaptive hour-a-day darts training with a live dart-by-dart scorer.">
+<meta name="theme-color" content="#EDF0F8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#05060B" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Oche">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500;600;700&display=swap">
+<style>
+/* Layout: single centred column of frosted-glass panels over a slow aurora; floating glass tab bar; full-screen glass session runner */
+:root{
+  --bg:#EDF0F8; --ink:#0D1124; --muted:#596079; --faint:#8A91AB;
+  --glass:rgba(255,255,255,.58); --glass-2:rgba(255,255,255,.84); --edge:rgba(255,255,255,.78); --hair:rgba(18,22,52,.09); --hl:rgba(255,255,255,.95);
+  --shadow:0 14px 40px -14px rgba(38,40,96,.25),0 2px 6px rgba(38,40,96,.06);
+  --overlay:rgba(237,240,248,.72);
+  --grad:linear-gradient(120deg,#6C5CFF 0%,#12B5E5 100%);
+  --grad-text:linear-gradient(120deg,#5A47FF 0%,#0EA2D0 60%,#E0478A 100%);
+  --blob1:rgba(124,108,255,.55); --blob2:rgba(18,181,229,.42); --blob3:rgba(255,95,162,.34);
+  --accent:#6C5CFF; --acc-bg:rgba(108,92,255,.12);
+  --cs:#E8457A; --cd:#10A877; --cc:#DB860F; --cm:#3F72F5; --cw:#7D84A3;
+  --hit:#0F9F70; --miss:#E5484D; --warn:#C97F08; --info:#3F72F5;
+  --hit-bg:rgba(16,168,119,.14); --miss-bg:rgba(229,72,77,.12); --warn-bg:rgba(217,138,11,.15); --info-bg:rgba(63,114,245,.12);
+  --seg-a:rgba(13,17,36,.13); --seg-b:rgba(13,17,36,.04);
+  --sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#05060B; --ink:#F1F2FA; --muted:#A1A7C4; --faint:#6B7191;
+  --glass:rgba(255,255,255,.055); --glass-2:rgba(255,255,255,.1); --edge:rgba(255,255,255,.12); --hair:rgba(255,255,255,.08); --hl:rgba(255,255,255,.16);
+  --shadow:0 18px 50px -14px rgba(0,0,0,.65);
+  --overlay:rgba(5,6,11,.74);
+  --grad:linear-gradient(120deg,#7B6BFF 0%,#22C3EE 100%);
+  --grad-text:linear-gradient(120deg,#A79BFF 0%,#5FDDF8 55%,#FF8CC0 100%);
+  --blob1:rgba(108,92,255,.42); --blob2:rgba(18,181,229,.28); --blob3:rgba(255,95,162,.24);
+  --accent:#8B7DFF; --acc-bg:rgba(139,125,255,.16);
+  --cs:#FF6F98; --cd:#3BE0A8; --cc:#FFB547; --cm:#6E98FF; --cw:#8D93B2;
+  --hit:#3BE0A8; --miss:#FF6B70; --warn:#FFC163; --info:#6E98FF;
+  --hit-bg:rgba(59,224,168,.14); --miss-bg:rgba(255,107,112,.14); --warn-bg:rgba(255,193,99,.14); --info-bg:rgba(110,152,255,.14);
+  --seg-a:rgba(255,255,255,.12); --seg-b:rgba(255,255,255,.035);
+  color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#05060B; --ink:#F1F2FA; --muted:#A1A7C4; --faint:#6B7191;
+  --glass:rgba(255,255,255,.055); --glass-2:rgba(255,255,255,.1); --edge:rgba(255,255,255,.12); --hair:rgba(255,255,255,.08); --hl:rgba(255,255,255,.16);
+  --shadow:0 18px 50px -14px rgba(0,0,0,.65);
+  --overlay:rgba(5,6,11,.74);
+  --grad:linear-gradient(120deg,#7B6BFF 0%,#22C3EE 100%);
+  --grad-text:linear-gradient(120deg,#A79BFF 0%,#5FDDF8 55%,#FF8CC0 100%);
+  --blob1:rgba(108,92,255,.42); --blob2:rgba(18,181,229,.28); --blob3:rgba(255,95,162,.24);
+  --accent:#8B7DFF; --acc-bg:rgba(139,125,255,.16);
+  --cs:#FF6F98; --cd:#3BE0A8; --cc:#FFB547; --cm:#6E98FF; --cw:#8D93B2;
+  --hit:#3BE0A8; --miss:#FF6B70; --warn:#FFC163; --info:#6E98FF;
+  --hit-bg:rgba(59,224,168,.14); --miss-bg:rgba(255,107,112,.14); --warn-bg:rgba(255,193,99,.14); --info-bg:rgba(110,152,255,.14);
+  --seg-a:rgba(255,255,255,.12); --seg-b:rgba(255,255,255,.035);
+  color-scheme:dark;}
+
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0;overscroll-behavior-y:none}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--overlay);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+button,a,label,summary{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.runner{overscroll-behavior:contain}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
+label.btn{cursor:pointer}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));}
+body.lock{overflow:hidden}
+.aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.aurora i{position:absolute;border-radius:50%;filter:blur(70px)}
+.aurora i:nth-child(1){width:60vmax;height:60vmax;left:-18vmax;top:-22vmax;background:var(--blob1)}
+.aurora i:nth-child(2){width:50vmax;height:50vmax;right:-20vmax;top:18vh;background:var(--blob2)}
+.aurora i:nth-child(3){width:46vmax;height:46vmax;left:10vmax;bottom:-26vmax;background:var(--blob3)}
+@media (prefers-reduced-motion:no-preference){
+  .aurora i:nth-child(1){animation:drift1 28s ease-in-out infinite alternate}
+  .aurora i:nth-child(2){animation:drift2 34s ease-in-out infinite alternate}
+  .aurora i:nth-child(3){animation:drift1 40s ease-in-out infinite alternate-reverse}
+}
+@keyframes drift1{to{transform:translate(8vmax,6vmax) scale(1.08)}}
+@keyframes drift2{to{transform:translate(-10vmax,8vmax) scale(.94)}}
+
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding-block:22px calc(110px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:18px}
+h1,h2,h3,h4{margin:0;letter-spacing:-.02em;line-height:1.12;text-wrap:balance}
+h1{font-size:2.15rem;font-weight:800}
+h2{font-size:1.45rem;font-weight:700}
+h3{font-size:1.08rem;font-weight:650}
+p{margin:0}
+.grad-text{background:var(--grad-text);-webkit-background-clip:text;background-clip:text;color:transparent}
+.eyebrow{font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)} .faint{color:var(--faint)}
+.mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.stack{display:flex;flex-direction:column;gap:12px}
+.small{font-size:.86rem}
+
+.glass{position:relative;background:var(--glass);-webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%);
+  border:1px solid var(--edge);border-radius:24px;box-shadow:var(--shadow),inset 0 1px 0 var(--hl)}
+.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(150deg,var(--hl) 0%,transparent 28%);opacity:.35}
+.pad{padding:18px}
+.pad-lg{padding:22px}
+.glass > *{position:relative}
+
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.logo{width:36px;height:36px;border-radius:12px;background:var(--grad);display:grid;place-items:center;box-shadow:0 6px 20px -6px rgba(108,92,255,.7);flex:none}
+.brand b{font-weight:700;letter-spacing:-.01em}
+.sync{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.sync::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--hit);box-shadow:0 0 8px var(--hit)}
+.sync.off::before{background:var(--warn);box-shadow:none}
+
+button{font:inherit;color:inherit}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--edge);background:var(--glass-2);color:var(--ink);
+  font-weight:600;font-size:.95rem;padding:11px 18px;border-radius:999px;cursor:pointer;text-decoration:none;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.btn.primary{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 10px 28px -10px rgba(108,92,255,.8),inset 0 1px 0 rgba(255,255,255,.35)}
+.btn.big{font-size:1.05rem;padding:15px 26px}
+.btn.sm{font-size:.82rem;padding:7px 12px}
+.btn.danger{color:var(--miss)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--acc-bg);color:var(--accent);white-space:nowrap}
+.chip.dot::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.chip.build,.chip.climb{background:var(--hit-bg);color:var(--hit)}
+.chip.dip{background:var(--warn-bg);color:var(--warn)}
+.chip.plateau{background:var(--info-bg);color:var(--info)}
+.chip.new{background:var(--acc-bg);color:var(--accent)}
+.c-s{--c:var(--cs)} .c-d{--c:var(--cd)} .c-c{--c:var(--cc)} .c-m{--c:var(--cm)} .c-warm{--c:var(--cw)}
+.cat{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--c)}
+.cat::before{content:"";width:8px;height:8px;border-radius:3px;background:var(--c)}
+
+.hero{display:flex;flex-direction:column;gap:16px}
+.hero h1{font-size:clamp(1.9rem,6vw,2.6rem)}
+.days{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.days button{flex:1 0 auto;min-width:44px;border:1px solid var(--edge);background:var(--glass);border-radius:14px;padding:7px 8px;cursor:pointer;font-weight:600;font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:1px}
+.days button small{font-size:.66rem;font-weight:500}
+.days button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.days button.today:not([aria-pressed="true"]){color:var(--accent);border-color:var(--accent)}
+.timeline{display:flex;gap:3px;height:10px}
+.timeline span{border-radius:999px;background:var(--c)}
+.legend{display:flex;gap:12px;flex-wrap:wrap}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px}
+.lvl{display:flex;flex-direction:column;gap:8px;min-width:0}
+.lvl .big{font-family:var(--mono);font-weight:700;font-size:2.2rem;line-height:1;letter-spacing:-.03em}
+.bar{height:8px;border-radius:999px;background:var(--seg-b);overflow:hidden;border:1px solid var(--hair)}
+.bar span{display:block;height:100%;border-radius:inherit;background:var(--grad)}
+.week{display:flex;gap:8px;justify-content:space-between}
+.week div{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:.72rem;color:var(--muted)}
+.week i{width:100%;max-width:38px;aspect-ratio:1;border-radius:12px;border:1px solid var(--hair);background:var(--seg-b);display:block}
+.week i.on{background:var(--grad);border-color:transparent;box-shadow:0 6px 16px -8px rgba(108,92,255,.9)}
+.week i.today{outline:2px solid var(--accent);outline-offset:2px}
+
+.blocks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.blk{display:grid;grid-template-columns:56px 1fr;gap:4px 14px;padding:14px 16px}
+.blk .min{grid-row:span 3;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:16px;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c);font-family:var(--mono);font-weight:700;font-size:1.35rem;line-height:1;height:56px}
+.blk .min small{font-size:.6rem;letter-spacing:.12em;font-family:var(--sans);font-weight:600;margin-top:3px}
+.blk h3{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+.blk p{min-width:0;font-size:.9rem;color:var(--muted)}
+.tag{font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--acc-bg);color:var(--accent)}
+.target{font-size:.85rem;display:flex;gap:6px;flex-wrap:wrap;align-items:baseline}
+.target b{font-family:var(--mono);font-size:1rem;color:var(--ink)}
+
+.banner{display:flex;flex-direction:column;gap:6px;padding:16px 18px;border-left:3px solid var(--accent)}
+.banner.dip{border-left-color:var(--warn)} .banner.plateau{border-left-color:var(--info)} .banner.ok{border-left-color:var(--hit)}
+
+.tile{padding:14px;display:flex;flex-direction:column;gap:3px;min-width:0;border-radius:20px}
+.tile .v{font-family:var(--mono);font-weight:700;font-size:1.55rem;line-height:1.1;letter-spacing:-.02em}
+.tile .d{font-size:.76rem}
+.good{color:var(--hit)} .bad{color:var(--miss)} .flat{color:var(--muted)}
+.spark{width:100%;height:26px;display:block}
+.spark path{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{border:1px solid var(--edge);background:var(--glass);border-radius:999px;padding:6px 12px;font-size:.82rem;font-weight:600;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+svg.chart{width:100%;height:auto;display:block;min-width:300px}
+.chartbox{overflow-x:auto}
+.ax{stroke:var(--hair);stroke-width:1}
+.axt{fill:var(--muted);font:11px var(--mono)}
+.ln{fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+.area{fill:var(--acc-bg)}
+.raw{fill:var(--faint);opacity:.7}
+.dotlast{fill:var(--accent);stroke:var(--bg);stroke-width:2}
+.base{stroke:var(--hit);stroke-width:1.5;stroke-dasharray:5 4}
+.baset{fill:var(--hit);font:600 11px var(--sans)}
+
+.boards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px}
+svg.dartboard{width:100%;max-width:340px;height:auto;display:block;margin:0 auto}
+.sa{fill:var(--seg-a)} .sb{fill:var(--seg-b)}
+.wire{fill:none;stroke:var(--hair);stroke-width:.8}
+.heat{fill:var(--accent)}
+.dheat{fill:var(--hit)}
+.dlow{fill:var(--miss)}
+.bnum{fill:var(--muted);font:600 13px var(--mono)}
+.radar-grid{fill:none;stroke:var(--hair)}
+.radar-shape{fill:var(--acc-bg);stroke:var(--accent);stroke-width:2}
+.radar-lbl{fill:var(--muted);font:600 11px var(--sans)}
+.radar-dot{fill:var(--accent)}
+.insight{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:12px 0;border-bottom:1px solid var(--hair)}
+.insight:last-child{border-bottom:0}
+.insight .ic{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;background:var(--acc-bg);color:var(--accent);font-weight:700;font-size:.8rem}
+.insight p{min-width:0;font-size:.92rem}
+
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--hair);white-space:nowrap}
+th{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tablebox{overflow-x:auto}
+
+.hist{display:flex;flex-direction:column;gap:10px}
+.hcard{padding:14px 16px;border-radius:20px}
+.hcard summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:4px 10px}
+.hcard summary::-webkit-details-marker{display:none}
+.hcard .stats{display:flex;gap:6px;flex-wrap:wrap;grid-column:1/-1}
+.hcard .stats span{font-family:var(--mono);font-size:.76rem;padding:3px 8px;border-radius:8px;background:var(--seg-b);border:1px solid var(--hair)}
+.hcard ul{margin:10px 0 0;padding-left:18px;font-size:.86rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+
+details.form > summary{cursor:pointer;font-weight:650;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px}
+details.form > summary::-webkit-details-marker{display:none}
+details.form > summary::after{content:"+";font-family:var(--mono);color:var(--muted);font-size:1.2rem}
+details.form[open] > summary::after{content:"–"}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));gap:12px;margin-top:14px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.8rem;font-weight:600;min-width:0}
+label.f .hint{font-weight:400;color:var(--muted);font-size:.74rem}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--glass-2);border:1px solid var(--hair);border-radius:12px;padding:10px 12px;width:100%;min-width:0}
+textarea{min-height:70px;resize:vertical}
+.calc{font-size:.86rem;color:var(--muted);margin-top:10px} .calc b{color:var(--ink);font-family:var(--mono)}
+.status{font-size:.86rem;min-height:1.2em}
+.status.err{color:var(--miss)} .status.ok{color:var(--hit)}
+.feel{display:flex;gap:6px}
+.feel button{flex:1;border:1px solid var(--edge);background:var(--glass);border-radius:14px;padding:10px 0;font-family:var(--mono);font-weight:700;font-size:1.05rem;cursor:pointer}
+.feel button[aria-pressed="true"]{background:var(--grad);color:#fff;border-color:transparent}
+.empty{padding:26px 18px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center;color:var(--muted);border:1px dashed var(--hair);border-radius:20px}
+.prose{display:flex;flex-direction:column;gap:10px;max-width:65ch}
+.prose ul,.prose ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;counter-reset:s}
+.steps li{counter-increment:s;display:grid;grid-template-columns:34px 1fr;gap:2px 12px}
+.steps li::before{content:counter(s);grid-row:span 2;width:34px;height:34px;border-radius:12px;background:var(--acc-bg);color:var(--accent);display:grid;place-items:center;font-family:var(--mono);font-weight:700}
+.steps li p{min-width:0;font-size:.9rem;color:var(--muted)}
+
+.tabbar{position:fixed;z-index:20;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;gap:2px;padding:6px;border-radius:26px;width:min(calc(100% - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)),460px)}
+.tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 2px;border-radius:20px;text-decoration:none;color:var(--muted);font-size:.66rem;font-weight:600}
+.tabbar svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar a[aria-current="page"]{color:var(--ink);background:var(--glass-2);box-shadow:inset 0 1px 0 var(--hl)}
+.tabbar a[aria-current="page"] svg{stroke:var(--accent)}
+
+.runner{position:fixed;inset:0;z-index:50;background:var(--overlay);-webkit-backdrop-filter:blur(30px) saturate(160%);backdrop-filter:blur(30px) saturate(160%);overflow-y:auto;
+  padding:calc(12px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.rwrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.rtop{display:flex;align-items:center;gap:10px}
+.icon-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--edge);background:var(--glass-2);cursor:pointer;font-size:1.2rem;line-height:1;flex:none}
+.rprog{flex:1;display:flex;gap:4px}
+.rprog span{flex:1;height:5px;border-radius:999px;background:var(--seg-a)}
+.rprog span.done{background:var(--c);opacity:.5}
+.rprog span.cur{background:var(--c)}
+.rcount{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.rhead{padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.timer{font-family:var(--mono);font-weight:600;font-size:.9rem;padding:4px 10px;border-radius:999px;background:var(--seg-b);border:1px solid var(--hair)}
+.timer.over{color:var(--warn);background:var(--warn-bg)}
+.how summary{cursor:pointer;font-size:.82rem;color:var(--accent);font-weight:600}
+.how p{font-size:.88rem;color:var(--muted);margin-top:6px}
+.live{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.bigrow{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.bignum{font-family:var(--mono);font-weight:700;font-size:3rem;line-height:.95;letter-spacing:-.04em}
+.bignum.sm{font-size:2.2rem}
+.slots{display:flex;gap:6px}
+.slots span{width:58px;height:44px;border-radius:12px;border:1px dashed var(--hair);display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:.95rem}
+.slots span.f{border-style:solid;background:var(--glass-2)}
+.slots span.t{color:var(--cs)} .slots span.d{color:var(--cd)} .slots span.m{color:var(--faint)}
+.mini{display:flex;gap:6px;flex-wrap:wrap}
+.mini span{font-size:.76rem;padding:4px 9px;border-radius:999px;background:var(--seg-b);border:1px solid var(--hair);color:var(--muted)}
+.mini b{font-family:var(--mono);color:var(--ink)}
+.trail{display:flex;gap:4px;flex-wrap:wrap}
+.trail i{font-style:normal;font-family:var(--mono);font-size:.7rem;padding:2px 6px;border-radius:6px;background:var(--seg-b);color:var(--muted)}
+.trail i.h{background:var(--hit-bg);color:var(--hit)} .trail i.x{background:var(--miss-bg);color:var(--miss)} .trail i.t{background:color-mix(in srgb,var(--cs) 15%,transparent);color:var(--cs)}
+.route{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.route b{font-family:var(--mono);font-size:.95rem;padding:4px 10px;border-radius:10px;background:var(--acc-bg);color:var(--accent)}
+.keys{display:grid;gap:8px}
+.k3{grid-template-columns:repeat(3,1fr)} .k4{grid-template-columns:repeat(4,1fr)} .k5{grid-template-columns:repeat(5,1fr)}
+.key{min-height:56px;border-radius:16px;border:1px solid var(--edge);background:var(--glass-2);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);cursor:pointer;min-width:0;
+  font-family:var(--mono);font-weight:700;font-size:1.08rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:inset 0 1px 0 var(--hl);touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.key small{font-family:var(--sans);font-weight:500;font-size:.64rem;color:var(--muted)}
+.key:active{transform:scale(.97)}
+.key.tgt{background:var(--grad);color:#fff;border-color:transparent}
+.key.tgt small{color:rgba(255,255,255,.8)}
+.key.t{color:var(--cs)} .key.d{color:var(--cd)} .key.miss{color:var(--faint)}
+.key.hit{background:color-mix(in srgb,var(--hit) 22%,var(--glass-2));color:var(--hit);min-height:72px;font-size:1.25rem}
+.key:disabled{opacity:.35;cursor:default}
+.keys .wide2{grid-column:span 2}
+.keys .wide4{grid-column:span 4}
+.ractions{display:flex;gap:10px}
+.ractions .btn{flex:1}
+.done-badge{display:flex;align-items:center;gap:8px;color:var(--hit);font-weight:650}
+.toast{position:fixed;z-index:60;left:50%;transform:translateX(-50%);top:calc(14px + env(safe-area-inset-top,0px));padding:10px 16px;border-radius:999px;font-weight:600;font-size:.9rem}
+footer{font-size:.76rem;color:var(--faint);text-align:center}
+@media (max-width:380px){.key{min-height:50px;font-size:.98rem}.bignum{font-size:2.5rem}.slots span{width:50px}}
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="#fff"/></svg></div>
+      <div><b>Oche Training Plan</b><div class="sync off" id="sync">Connecting…</div></div>
+    </div>
+    <span class="chip dot new" id="modeChip">Not calibrated</span>
+  </header>
+
+  <main class="stack" style="gap:18px">
+    <section data-view="home" id="v-home" class="stack" style="gap:16px"></section>
+    <section data-view="insights" id="v-insights" class="stack" style="gap:16px" hidden></section>
+    <section data-view="history" id="v-history" class="stack" style="gap:16px" hidden>
+      <div class="row between"><h2>History</h2><span class="muted small" id="h-count"></span></div>
+      <div id="h-list" class="hist"></div>
+      <details class="glass pad form" id="manual">
+        <summary>Add a session without the live scorer</summary>
+        <p class="muted small" style="margin-top:8px">For sessions you played away from your phone. Fields change with the session type.</p>
+        <div class="fgrid">
+          <label class="f">Date<input type="date" id="l-date"></label>
+          <label class="f">Session<select id="l-type"></select></label>
+          <label class="f" data-f="score">Scoring total<span class="hint" id="l-total-hint">from your scoring block</span><input type="number" inputmode="numeric" id="l-total" min="0"></label>
+          <label class="f" data-f="score">Visits<span class="hint">3 darts each</span><input type="number" inputmode="numeric" id="l-visits" min="1"></label>
+          <label class="f" data-f="dbl">Darts at doubles<span class="hint" id="l-datt-hint">all doubles drills today</span><input type="number" inputmode="numeric" id="l-datt" min="0"></label>
+          <label class="f" data-f="dbl">Doubles hit<input type="number" inputmode="numeric" id="l-dhits" min="0"></label>
+          <label class="f" data-f="bobs">Bob's 27<span class="hint">0 if you busted</span><input type="number" inputmode="numeric" id="l-bobs" min="0" max="1437"></label>
+          <label class="f" data-f="dpl">Avg darts per leg<span class="hint" id="l-dpl-hint">across your 501 legs</span><input type="number" inputmode="decimal" id="l-dpl" min="9" step="0.1"></label>
+          <label class="f">Minutes<input type="number" inputmode="numeric" id="l-mins" min="5" value="60"></label>
+        </div>
+        <p class="calc" id="l-calc"></p>
+        <div class="stack" style="margin-top:12px;gap:8px">
+          <span class="small" style="font-weight:600">How did it feel? <span class="muted" style="font-weight:400">1 = awful, 5 = flowing</span></span>
+          <div class="feel" role="group" aria-label="How did it feel">
+            <button type="button" data-lfeel="1" aria-pressed="false">1</button><button type="button" data-lfeel="2" aria-pressed="false">2</button><button type="button" data-lfeel="3" aria-pressed="true">3</button><button type="button" data-lfeel="4" aria-pressed="false">4</button><button type="button" data-lfeel="5" aria-pressed="false">5</button>
+          </div>
+          <label class="f">Notes<textarea id="l-notes" placeholder="What changed today?"></textarea></label>
+          <div class="row"><button class="btn primary" id="l-save" type="button">Save session</button><span class="status" id="l-status" role="status"></span></div>
+        </div>
+      </details>
+    </section>
+
+    <section data-view="baseline" id="v-baseline" class="stack" style="gap:16px" hidden>
+      <div id="b-top" class="stack" style="gap:16px"></div>
+      <details class="glass pad form">
+        <summary>Enter test results by hand</summary>
+        <div class="fgrid">
+          <label class="f">Test date<input type="date" id="b-date"></label>
+          <label class="f">20-visit total<span class="hint">0 to 3600</span><input type="number" inputmode="numeric" id="b-total" min="0" max="3600"></label>
+          <label class="f">T20s hit<span class="hint">out of 60</span><input type="number" inputmode="numeric" id="b-t20" min="0" max="60"></label>
+          <label class="f">Doubles hit<span class="hint">out of 60</span><input type="number" inputmode="numeric" id="b-dhits" min="0" max="60"></label>
+          <label class="f">Bob's 27<span class="hint">0 if you busted</span><input type="number" inputmode="numeric" id="b-bobs" min="0" max="1437"></label>
+          <label class="f">Leg 1 darts<input type="number" inputmode="numeric" id="b-leg1" min="9"></label>
+          <label class="f">Leg 2 darts<input type="number" inputmode="numeric" id="b-leg2" min="9"></label>
+          <label class="f">Leg 3 darts<input type="number" inputmode="numeric" id="b-leg3" min="9"></label>
+          <label class="f">Darts at a double<span class="hint">across the 3 legs</span><input type="number" inputmode="numeric" id="b-coatt" min="0"></label>
+        </div>
+        <p class="calc" id="b-calc"></p>
+        <div class="row" style="margin-top:12px"><button class="btn primary" id="b-save" type="button">Save baseline</button><span class="status" id="b-status" role="status"></span></div>
+      </details>
+    </section>
+
+    <section data-view="guide" id="v-guide" class="stack" style="gap:16px" hidden>
+      <div class="glass pad-lg stack" id="backup">
+        <span class="eyebrow">Your data</span>
+        <h2>Backup</h2>
+        <p class="muted small">Everything is stored on this phone only. Export a backup every week or two and save it to Files, iCloud Drive or Google Drive, so a lost or reset phone doesn't take your history with it. Import adds anything missing and never deletes.</p>
+        <div class="row"><button type="button" class="btn primary" id="bk-export">Export backup</button><label class="btn" for="bk-file">Import backup</label><input type="file" id="bk-file" class="vh" accept="application/json,.json"></div>
+        <span class="status" id="bk-status" role="status"></span>
+      </div>
+      <div class="glass pad-lg prose">
+        <span class="eyebrow">How it works</span>
+        <h2>The plan reads your darts, not your mood</h2>
+        <p>Every dart you tap in the live scorer becomes data. Each session saves the same headline numbers as before (3-dart average, double rate, Bob's 27, darts per leg) plus the detail behind them: where your T20 misses land, your hit rate on each double, first-9 average, checkout rate in legs, and how consistent your visits are.</p>
+        <ul>
+          <li><b>Two levels.</b> Your rolling average (last 7 sessions) sets your scoring level; your rolling double rate sets your doubles level. Every drill target follows one of them.</li>
+          <li><b>Weaker side gets more time.</b> If one level is lower, five minutes move to it that day.</li>
+          <li><b>Your weak doubles come up more.</b> Once a common double has 15+ darts logged, Match doubles swaps in your two weakest, and One-dart doubles picks weak ones more often.</li>
+          <li><b>Dip.</b> Last 5 sessions more than 8% below the 10 before, double rate down more than 15%, or three sessions rated 1–2 in a row: every day becomes a Reset session one level easier, until the numbers come back.</li>
+          <li><b>Plateau.</b> After 21 sessions, if the last week is within 2% of three weeks ago, scoring moves to the 19s, doubles go one-dart, and targets step up.</li>
+          <li><b>Retest</b> every four weeks.</li>
+        </ul>
+      </div>
+      <div class="glass pad-lg prose">
+        <h3>Entering darts quickly</h3>
+        <ul>
+          <li><b>Scoring pad</b> is laid out like the board around your target: left neighbour on the left, right neighbour on the right. Tap where each dart landed. "Other" opens the full board.</li>
+          <li><b>Doubles pad:</b> <b>Hit</b>; <b>Single</b> = landed in the number's single bed (missed inside); <b>Outside</b> = over the wire, no score; <b>Wide</b> = the neighbouring number.</li>
+          <li><b>Full pad</b> (checkouts and legs): pick Double or Treble, then the number. It drops back to single after each dart. Busts are handled for you.</li>
+          <li>Undo steps back one dart. Close the runner mid-session and it resumes where you left it.</li>
+        </ul>
+      </div>
+      <div class="glass pad tablebox">
+        <table>
+          <thead><tr><th>Level</th><th>3-dart avg</th><th>Double rate</th><th>Bob's 27</th><th>Darts / leg</th></tr></thead>
+          <tbody id="lvl-table"></tbody>
+        </table>
+      </div>
+      <div class="glass pad-lg prose">
+        <h3>Check your setup</h3>
+        <ul>
+          <li>Bull centre 1.73 m (5 ft 8 in) from the floor.</li>
+          <li>Oche 2.37 m (7 ft 9¼ in) from the face of the board.</li>
+          <li>Bull to the back of the oche, diagonally: 2.93 m.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+  <footer id="foot">Oche Training Plan · works offline · data stays on this device</footer>
+</div>
+
+<nav class="tabbar glass" id="nav" aria-label="Sections">
+  <a href="#home"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Today</a>
+  <a href="#insights"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Insights</a>
+  <a href="#history"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</a>
+  <a href="#baseline"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Baseline</a>
+  <a href="#guide"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>Guide</a>
+</nav>
+
+<div id="runner" class="runner" hidden></div>
+<div id="toast" class="toast glass" hidden role="status"></div>
+
+<script>
+(function(){
+"use strict";
+/* ================= helpers ================= */
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const isoOf=d=>d.toLocaleDateString("en-CA");
+const todayISO=()=>isoOf(new Date());
+const num=v=>{if(v===""||v==null)return null;const n=Number(v);return Number.isFinite(n)?n:null;};
+const sum=a=>a.reduce((p,c)=>p+c,0);
+const mean=a=>a.length?sum(a)/a.length:null;
+const sdev=a=>{if(a.length<2)return null;const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)**2)));};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const fmt=(v,d=1)=>v==null||!Number.isFinite(v)?"–":(Math.round(v*10**d)/10**d).toFixed(d);
+const pctf=(h,a)=>a?h/a*100:null;
+const fmtDate=iso=>{try{return new Date(iso+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"});}catch(e){return iso;}};
+const range=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
+const store={get(k){try{return JSON.parse(localStorage.getItem(k)||"null");}catch(e){return null;}},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+
+/* ================= darts maths ================= */
+const BOARD=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
+const nb=n=>{const i=BOARD.indexOf(n);return [BOARD[(i+19)%20],BOARD[(i+1)%20]];};
+function val(c){if(!c||c==="M")return 0;if(c==="SB")return 25;if(c==="DB")return 50;const m=/^([SDT])(\d+)$/.exec(c);return m?+m[2]*({S:1,D:2,T:3})[m[1]]:0;}
+const isDbl=c=>c==="DB"||/^D\d+$/.test(c);
+const numOf=c=>c==="SB"||c==="DB"?25:/^[SDT]\d+$/.test(c)?+c.slice(1):0;
+const lab=c=>c==="M"?"–":c==="SB"?"25":c==="DB"?"Bull":c[0]==="S"?c.slice(1):c;
+const dName=t=>t===25?"Bull":"D"+t;
+const oneDart=r=>r===50?"DB":(r>=2&&r<=40&&r%2===0)?"D"+r/2:null;
+const dnum=c=>c==="DB"?25:+c.slice(1);
+const CO_ALL=(()=>{const a=[];for(let n=20;n>=1;n--)a.push("T"+n,"S"+n,"D"+n);a.push("SB","DB");return a;})();
+const DPREF={20:0,16:1,8:2,10:3,18:4,12:5,4:6,6:7,2:8,14:9,25:7};
+const dPen=c=>DPREF[dnum(c)]??12;
+const NUMPEN={20:0,19:1,18:2,17:2,16:3,15:3};
+function sPen(c){if(c==="SB"||c==="DB")return 5;return ({S:0,T:2,D:6})[c[0]]+(NUMPEN[+c.slice(1)]??4);}
+const coMemo={};
+function route(rem,darts){
+  const key=rem+"|"+darts; if(key in coMemo)return coMemo[key];
+  let best=null,bs=1e9;
+  if(rem>=2&&rem<=170){
+    const f=oneDart(rem); if(f)best=[f];
+    if(!best&&darts>=2)for(const a of CO_ALL){const d=oneDart(rem-val(a));if(d){const s=dPen(d)*3+sPen(a);if(s<bs){bs=s;best=[a,d];}}}
+    if(!best&&darts>=3){bs=1e9;for(const a of CO_ALL)for(const b of CO_ALL){const r=rem-val(a)-val(b);if(r<2)continue;const d=oneDart(r);if(d){const s=dPen(d)*3+sPen(a)+sPen(b);if(s<bs){bs=s;best=[a,b,d];}}}}
+  }
+  return coMemo[key]=best;
+}
+
+/* ================= levels + drills ================= */
+const LEVELS=[
+ {name:"Foundation",avg:[0,35],dbl:[0,12],bobs:"under 150",dpl:"30+"},
+ {name:"Developing",avg:[35,45],dbl:[12,20],bobs:"150–350",dpl:"24–30"},
+ {name:"Club",avg:[45,55],dbl:[20,28],bobs:"350–600",dpl:"20–24"},
+ {name:"League",avg:[55,65],dbl:[28,36],bobs:"600–900",dpl:"17–20"},
+ {name:"Advanced",avg:[65,90],dbl:[36,50],bobs:"900+",dpl:"under 17"}
+];
+const lvlAvg=a=>{for(let i=4;i>=0;i--)if(a>=LEVELS[i].avg[0])return i;return 0;};
+const lvlDbl=p=>{for(let i=4;i>=0;i--)if(p>=LEVELS[i].dbl[0])return i;return 0;};
+const T20=()=>20;
+const D={
+ warm:{cat:"warm",name:"Warm-up on the 20",how:"Big 20 only. Watch the grouping, not the score. Finish when three visits in a row land all three darts in the 20 bed.",eng:{type:"timer"}},
+ review:{cat:"warm",name:"Cool-down and notes",how:"Five easy visits, then rate how the session felt and note one thing that changed.",eng:{type:"timer"}},
+ s_t20:{cat:"s",name:"T20 scoring",how:"Full visits at T20 until the block timer runs out. Tap each dart where it lands.",t:{label:"Visit average",v:[32,42,52,62,72],dir:"up"},eng:{type:"aim",target:T20}},
+ s_ton:{cat:"s",name:"Ton chase",how:"20 visits at T20. Every 100+ visit counts as a ton.",t:{label:"Tons in 20 visits",v:[1,3,5,8,11],dir:"up"},eng:{type:"aim",target:T20,visits:20}},
+ s_19:{cat:"s",name:"Switch to 19s",how:"Three visits at T20, then three at T19, repeating. The pad follows the switch. This is your move when T20 gets blocked.",t:{label:"Visit average",v:[30,39,48,57,66],dir:"up"},eng:{type:"aim",target:i=>Math.floor(i/3)%2?19:20}},
+ test_score:{cat:"s",name:"Check-in: 20 visits at T20",how:"Same test every week: 20 visits at T20 on a fresh arm.",t:{label:"Visit average",v:[32,42,52,62,72],dir:"up"},eng:{type:"aim",target:T20,visits:20}},
+ s_atc:{cat:"s",name:"Around the clock trebles",how:"T1 to T20 in order. Move on only when the treble goes in.",t:{label:"Darts to finish",v:[130,100,75,58,46],dir:"down"},eng:{type:"atc"}},
+ d_rtb:{cat:"d",name:"Round the board doubles",how:"D1 to D20, then bull. Move on when you hit.",t:{label:"Darts to finish",v:[120,90,68,52,42],dir:"down"},eng:{type:"dbl",mode:"rtb"}},
+ d_bobs:{cat:"d",name:"Bob's 27",how:"Start on 27. Three darts at each double from D1 to bull. Hits add the double's value; three misses subtract it. Game over at zero.",t:{label:"Final score",v:[80,220,420,650,900],dir:"up"},eng:{type:"dbl",mode:"bobs"}},
+ d_fav:{cat:"d",name:"Match doubles",how:"10 darts at each of five doubles. D20, D16 and D8 always; the other two become your weakest common doubles once there's data.",t:{label:"Hits from 50",v:[6,10,14,18,22],dir:"up"},eng:{type:"dbl",mode:"set"}},
+ d_one:{cat:"d",name:"One-dart doubles",how:"30 darts, one per double, picked for you. Weak doubles come up more often. No second chances.",t:{label:"Hits from 30",v:[3,5,7,10,12],dir:"up"},eng:{type:"dbl",mode:"random",n:30}},
+ d_split:{cat:"d",name:"D16 split",how:"Aim D16. A single 16 leaves D8, a single 8 leaves D4, and so on down. Three darts a round, 10 rounds.",t:{label:"Rounds won",v:[2,4,5,7,8],dir:"up"},eng:{type:"split",rounds:10}},
+ c_ladder:{cat:"c",name:"Checkout ladder",how:"Nine darts to check out the number shown. Success moves it up 1; failure moves it down 1. Ten rounds, with suggested routes.",t:{label:"Number reached",v:[46,66,86,106,126],dir:"up"},start:[41,61,81,101,121],eng:{type:"co",mode:"ladder",rounds:10}},
+ c_two:{cat:"c",name:"Two-dart finishes",how:"Ten finishes from 41 to 100, picked for you. Three darts each.",t:{label:"Finishes from 10",v:[2,3,4,6,7],dir:"up"},eng:{type:"co",mode:"list"}},
+ m_501:{cat:"m",name:"501 legs",how:"Full legs of 501, double out. Darts at a double, first-9 average and checkouts are tracked for you.",t:{label:"Darts per leg",v:[33,27,22,19,16],dir:"down"},eng:{type:"leg"}},
+ r_rhythm:{cat:"warm",name:"Rhythm reset",how:"Slow throws at the 20 segment. Check stance, grip and release on every dart. Count nothing.",eng:{type:"timer"}},
+ r_big:{cat:"s",name:"Big-bed grouping",how:"15 visits at T20. Focus on landing in the 20 bed, singles included.",t:{label:"Darts in the 20 from 45",v:[18,24,30,35,39],dir:"up"},eng:{type:"aim",target:T20,visits:15}},
+ r_dbl:{cat:"d",name:"Confidence doubles",how:"D16, D8 and D20 only. Stay on each until you hit it twice.",eng:{type:"dbl",mode:"until",list:[16,8,20],k:2}},
+ r_easy:{cat:"c",name:"Comfort finishes",how:"32, 40, 36, 50 and 60. Three darts each.",eng:{type:"co",mode:"list",fixed:[32,40,36,50,60]}},
+ r_leg:{cat:"m",name:"One relaxed leg",how:"One leg of 501 with your full routine on every visit. The score doesn't matter.",eng:{type:"leg",legs:1}},
+ base_score:{cat:"s",name:"Scoring test",how:"20 visits at T20. Your 3-dart average is the total divided by 20.",eng:{type:"aim",target:T20,visits:20}},
+ base_dbl:{cat:"d",name:"Doubles test",how:"Three darts at every double from D1 to D20, in order, whether you hit or not. 60 darts.",eng:{type:"dbl",mode:"fixed3"}},
+ base_bobs:{cat:"d",name:"Bob's 27",how:"Start on 27. Three darts at each double from D1 to bull. Hits add the double's value; three misses subtract it.",eng:{type:"dbl",mode:"bobs"}},
+ base_legs:{cat:"m",name:"Three legs of 501",how:"Three solo legs, double out. Darts at a double are counted for you.",eng:{type:"leg",legs:3}}
+};
+const WEEK=[
+ {key:"scoring",name:"Scoring day",blocks:[["warm",5],["s_t20",25],["s_ton",10],["d_fav",15],["review",5]]},
+ {key:"doubles",name:"Doubles day",blocks:[["warm",5],["s_t20",15],["d_rtb",15],["d_bobs",15],["c_ladder",10]]},
+ {key:"finishing",name:"Finishing day",blocks:[["warm",5],["s_19",15],["c_ladder",20],["c_two",10],["d_one",10]]},
+ {key:"trebles",name:"Treble day",blocks:[["warm",5],["s_atc",15],["s_t20",20],["d_split",10],["d_fav",10]]},
+ {key:"pressure",name:"Pressure day",blocks:[["warm",5],["s_ton",15],["d_one",15],["d_bobs",15],["c_ladder",10]]},
+ {key:"match",name:"Match day",blocks:[["warm",5],["m_501",40],["d_fav",10],["review",5]]},
+ {key:"checkin",name:"Check-in day",blocks:[["warm",5],["test_score",15],["d_bobs",15],["m_501",20],["review",5]]}
+];
+const DIP={key:"reset",name:"Reset session",blocks:[["r_rhythm",10],["r_big",15],["r_dbl",15],["r_easy",10],["r_leg",10]]};
+const BASE={key:"baseline",name:"Baseline test",blocks:[["warm",5],["base_score",15],["base_dbl",10],["base_bobs",10],["base_legs",20]]};
+const DAYS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const CATNAME={warm:"Routine",s:"Scoring",d:"Doubles",c:"Checkouts",m:"Match play"};
+const ALLT=[...WEEK,DIP];
+const typeName=k=>k==="baseline"?"Baseline test":(ALLT.find(w=>w.key===k)||{name:"Other"}).name;
+
+/* ================= state + storage ================= */
+const STANDALONE=(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
+const IS_IOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+let deferredInstall=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e;try{render();}catch(_){}});
+window.addEventListener("appinstalled",()=>{deferredInstall=null;store.set("oche-hide-install",1);try{render();}catch(_){}});
+const S={sessions:[],baselines:[],db:null,mode:"local",loaded:false,day:(new Date().getDay()+6)%7,metric:"avg3",pendingDel:null,note:"",run:store.get("oche-run-v2"),lfeel:3};
+if(S.run&&!Array.isArray(S.run.blocks))S.run=null;
+const LKEY="oche-plan-v1";
+const SEED={"sessions":[{"id":"efc2tsvjy8rmbzgvqhsh","avg3":null,"bobs":null,"created":1794084833924,"dAtt":113,"dHits":10,"date":"2026-11-07","dpl":45.2,"feel":3,"mins":60,"notes":"First real session - hit first 180 on new board and first ever 100+ checkout","total":null,"type":"match","visits":null}],"baselines":[{"id":"pmjzvoxgxp5n4458c316","avg3":43.45,"bobs":0,"coAtt":63,"coPct":4.761904761904762,"created":1794074354845,"dHits":8,"dPct":13.333333333333334,"date":"2026-11-07","dpl":63,"legs":[115,41,33],"t20":3,"tPct":5,"total":869}]};
+function loadLocal(){
+  let j=store.get(LKEY);
+  if(!j&&!store.get("oche-seeded")){j=JSON.parse(JSON.stringify(SEED));store.set(LKEY,j);store.set("oche-seeded",1);}
+  j=j||{};S.sessions=j.sessions||[];S.baselines=j.baselines||[];
+}
+function saveLocal(){store.set(LKEY,{sessions:S.sessions,baselines:S.baselines});}
+const sortRows=a=>a.slice().sort((x,y)=>(x.date||"").localeCompare(y.date||"")||((x.created||0)-(y.created||0)));
+async function addRow(coll,row){
+  row.created=Date.now();row=JSON.parse(JSON.stringify(row));
+  if(S.mode==="db"){await S.db.collection(coll).add(row);return;}
+  row.id="l"+row.created;S[coll].push(row);saveLocal();render();
+}
+async function delRow(coll,id){
+  if(S.mode==="db"){await S.db.doc(coll+"/"+id).delete();return;}
+  S[coll]=S[coll].filter(r=>r.id!==id);saveLocal();render();
+}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2600);}
+
+/* ================= analysis ================= */
+function aggPd(rows){const pd={};rows.forEach(r=>{const p=r.m&&r.m.pd;if(!p)return;for(const k in p){const a=pd[k]||(pd[k]=[0,0]);a[0]+=p[k][0];a[1]+=p[k][1];}});return pd;}
+function analyse(){
+  const ss=sortRows(S.sessions),bs=sortRows(S.baselines);
+  const first=bs[0]||null,latest=bs[bs.length-1]||null;
+  const withAvg=ss.filter(s=>s.avg3!=null),withDbl=ss.filter(s=>s.dAtt>0);
+  const last=(a,n,off=0)=>a.slice(Math.max(0,a.length-n-off),a.length-off);
+  const dp=a=>{const h=sum(a.map(c=>c.dHits)),t=sum(a.map(c=>c.dAtt));return t?h/t*100:null;};
+  let sAvg=mean(last(withAvg,7).map(s=>s.avg3));if(sAvg==null&&latest)sAvg=latest.avg3;
+  let dPct=dp(last(withDbl,7));if(dPct==null&&latest)dPct=latest.dPct;
+  const calibrated=sAvg!=null||dPct!=null;
+  const sL=sAvg!=null?lvlAvg(sAvg):1,dL=dPct!=null?lvlDbl(dPct):1;
+  let mode=calibrated?"build":"new";const reasons=[];
+  if(withAvg.length>=8){const r=mean(last(withAvg,5).map(s=>s.avg3)),p=mean(last(withAvg,10,5).map(s=>s.avg3));
+    if(r<p*0.92){mode="dip";reasons.push(`Average over your last 5 sessions (${fmt(r)}) is ${fmt((1-r/p)*100,0)}% below the 10 before (${fmt(p)}).`);}}
+  if(withDbl.length>=8){const r=dp(last(withDbl,5)),p=dp(last(withDbl,10,5));
+    if(p>0&&r<p*0.85){mode="dip";reasons.push(`Double rate over your last 5 sessions (${fmt(r)}%) is down from ${fmt(p)}%.`);}}
+  const lf=last(ss,3);if(lf.length===3&&lf.every(s=>s.feel!=null&&s.feel<=2)){mode="dip";reasons.push("Your last three sessions all felt like a 1 or 2.");}
+  if(mode!=="dip"&&withAvg.length>=21){const r=mean(last(withAvg,7).map(s=>s.avg3)),p=mean(last(withAvg,7,14).map(s=>s.avg3));
+    if(Math.abs(r-p)/p<0.02){mode="plateau";reasons.push(`Last 7 sessions average ${fmt(r)}; three weeks ago it was ${fmt(p)}.`);}
+    else if(r>p*1.03){mode="climb";reasons.push(`Up ${fmt((r/p-1)*100,0)}% on three weeks ago.`);}}
+  const retest=latest?(Date.parse(todayISO())-Date.parse(latest.date))/864e5>=28:false;
+  const pd=aggPd([...ss,...bs]);
+  return {ss,bs,first,latest,sAvg,dPct,sL,dL,mode,reasons,retest,calibrated,withAvg,withDbl,pd};
+}
+const COMMON=[20,16,8,10,18,12,4,6,2,14,19,9];
+function weakDoubles(pd,n){
+  return COMMON.filter(t=>![20,16,8].includes(t)).map(t=>{const a=pd[t];return a&&a[0]>=15?{t,r:a[1]/a[0]}:null;}).filter(Boolean).sort((a,b)=>a.r-b.r).slice(0,n).map(x=>x.t);
+}
+function favList(pd){const w=weakDoubles(pd,2);const fill=[10,18].filter(t=>!w.includes(t));return [20,16,8,...w,...fill].slice(0,5);}
+function randomDoubles(n,pd){
+  const pool=range(1,20).concat([25]);const w=pool.map(t=>{const a=pd[t];return a&&a[0]>=10?1+2*(1-a[1]/a[0]):1.5;});const tw=sum(w);
+  const out=[];let prev=0;
+  for(let i=0;i<n;i++){let t;do{let r=Math.random()*tw;t=pool[pool.length-1];for(let j=0;j<pool.length;j++){r-=w[j];if(r<=0){t=pool[j];break;}}}while(t===prev);out.push(t);prev=t;}
+  return out;
+}
+function pickTwoDart(n){const c=range(41,100).filter(x=>{const r=route(x,2);return r&&r.length===2;});for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}return c.slice(0,n).sort((a,b)=>a-b);}
+
+function buildPlan(A,tpl0){
+  const isBase=tpl0===BASE,dip=!isBase&&A.mode==="dip",plateau=!isBase&&A.mode==="plateau";
+  const tpl=tpl0||(dip?DIP:WEEK[S.day]);
+  let blocks=tpl.blocks.map(([k,m])=>({k,m,tag:""}));
+  if(plateau)blocks.forEach(b=>{if(b.k==="s_t20"){b.k="s_19";b.tag="Plateau swap";}if(b.k==="d_fav"){b.k="d_one";b.tag="Plateau swap";}});
+  if(!isBase&&!dip&&A.calibrated&&A.sL!==A.dL){
+    const weak=A.sL<A.dL?["s"]:["d","c"],strong=A.sL<A.dL?["d","c"]:["s"];
+    const give=blocks.filter(b=>strong.includes(D[b.k].cat)&&b.m>=15).sort((a,b)=>b.m-a.m)[0];
+    const take=blocks.find(b=>weak.includes(D[b.k].cat));
+    if(give&&take){give.m-=5;take.m+=5;take.tag=(take.tag?take.tag+" · ":"")+"+5 min focus";}
+  }
+  const shift=dip?-1:plateau?1:0;
+  blocks=blocks.map(b=>{const d=D[b.k];const base=(d.cat==="d"||d.cat==="c")?A.dL:A.sL;return {...b,L:clamp(base+shift,0,4)};});
+  return {name:tpl.name,key:tpl.key,blocks};
+}
+
+/* ================= session runner: engines ================= */
+const newAtt=(t,allowed)=>({target:t,rem:t,vs:t,vd:0,allowed,darts:[],burn:0,dd:[]});
+const newLeg=()=>({rem:501,vs:501,vd:0,darts:[],burn:0,visits:[],dd:[],f9:null});
+function initData(k,L,pd){
+  const e=D[k].eng;
+  switch(e.type){
+    case "aim":return {visits:[],cur:[]};
+    case "atc":return {n:1,darts:[]};
+    case "dbl":{let q;
+      if(e.mode==="rtb"||e.mode==="bobs")q=range(1,20).concat([25]);
+      else if(e.mode==="fixed3")q=range(1,20).flatMap(n=>[n,n,n]);
+      else if(e.mode==="set")q=favList(pd).flatMap(t=>Array(10).fill(t));
+      else if(e.mode==="random")q=randomDoubles(e.n,pd);
+      else q=e.list.slice();
+      return {q,i:0,darts:[],score:27,hits:0};}
+    case "split":return {round:0,t:16,inRound:0,wins:0,darts:[]};
+    case "co":{if(e.mode==="ladder"){const s=D[k].start[L];return {mode:"ladder",round:0,target:s,start:s,best:0,results:[],att:newAtt(s,9)};}
+      const list=e.fixed||pickTwoDart(10);return {mode:"list",list,idx:0,results:[],att:newAtt(list[0],3)};}
+    case "leg":return {legs:[],cur:newLeg()};
+    default:return {};
+  }
+}
+function dblTarget(b){const e=D[b.k].eng,d=b.data;
+  if(e.mode==="rtb"||e.mode==="until")return d.q[d.i];
+  if(e.mode==="bobs")return d.q[Math.floor(d.darts.length/3)];
+  return d.q[d.darts.length];}
+function blockDone(b){
+  const e=D[b.k].eng,d=b.data;
+  switch(e.type){
+    case "aim":return !!e.visits&&d.visits.length>=e.visits;
+    case "atc":return d.n>20;
+    case "dbl":if(e.mode==="rtb"||e.mode==="until")return d.i>=d.q.length;
+      if(e.mode==="bobs")return d.darts.length>=63||d.score<=0;
+      return d.darts.length>=d.q.length;
+    case "split":return d.round>=e.rounds;
+    case "co":return d.mode==="ladder"?d.round>=e.rounds:d.idx>=d.list.length;
+    case "leg":return !!e.legs&&d.legs.length>=e.legs;
+    default:return true;
+  }
+}
+function inAim(b,code){const d=b.data,e=D[b.k].eng;d.cur.push(code);if(d.cur.length===3){d.visits.push({t:e.target(d.visits.length),d:d.cur});d.cur=[];}}
+function inAtc(b,r){const d=b.data;d.darts.push({t:d.n,r});if(r==="T")d.n++;}
+function inDbl(b,r){
+  const e=D[b.k].eng,d=b.data,t=dblTarget(b);d.darts.push({t,r});
+  if(e.mode==="rtb"){if(r==="H")d.i++;}
+  else if(e.mode==="until"){if(r==="H"){d.hits++;if(d.hits>=e.k){d.i++;d.hits=0;}}}
+  else if(e.mode==="bobs"&&d.darts.length%3===0){const h=d.darts.slice(-3).filter(x=>x.r==="H").length;const v=t===25?50:t*2;d.score+=h?h*v:-v;}
+}
+function inSplit(b,r){
+  const d=b.data;d.darts.push({t:d.t,r});d.inRound++;let end=false;
+  if(r==="H"){d.wins++;end=true;}else if(r==="I"){if(d.t===1)end=true;else d.t=d.t/2;}
+  if(d.inRound>=3)end=true;
+  if(end){d.round++;d.t=16;d.inRound=0;}
+}
+/* shared checkout/leg logic; a bust ends the visit and restores the score */
+function throwInto(a,code){
+  const before=a.rem,one=oneDart(before),nr=before-val(code);
+  a.darts.push(code);a.vd++;
+  const bust=nr<0||nr===1||(nr===0&&!isDbl(code));let won=false;
+  if(bust){a.burn+=3-a.vd;a.vd=0;a.rem=a.vs;if(a.visits)a.visits.push(0);}
+  else{a.rem=nr;if(nr===0){won=true;if(a.visits)a.visits.push(a.vs);}else if(a.vd===3){if(a.visits)a.visits.push(a.vs-nr);a.vs=nr;a.vd=0;}}
+  if(one)a.dd.push({t:dnum(one),r:won?"H":"X"});
+  return {won,bust};
+}
+function inCo(b,code){
+  const d=b.data,a=d.att,{won}=throwInto(a,code);
+  if(won||a.darts.length+a.burn>=a.allowed){
+    d.results.push({t:a.target,ok:won,n:a.darts.length,dd:a.dd,c:a.darts.join(" ")});
+    if(d.mode==="ladder"){if(won)d.best=Math.max(d.best,a.target);d.target=won?a.target+1:Math.max(2,a.target-1);d.round++;if(d.round<D[b.k].eng.rounds)d.att=newAtt(d.target,9);}
+    else{d.idx++;if(d.idx<d.list.length)d.att=newAtt(d.list[d.idx],3);}
+  }
+}
+function inLeg(b,code){
+  const d=b.data,g=d.cur,{won}=throwInto(g,code);
+  if(g.f9==null&&g.visits.length>=3)g.f9=sum(g.visits.slice(0,3))/3;
+  if(won){if(g.f9==null)g.f9=sum(g.visits)/Math.max(1,g.visits.length);
+    d.legs.push({n:g.darts.length+g.burn,f9:g.f9,co:g.visits[g.visits.length-1],visits:g.visits,dd:g.dd,c:g.darts.join(" ")});d.cur=newLeg();}
+}
+
+/* ================= summary of a run ================= */
+function addPd(pd,t,hit){const a=pd[t]||(pd[t]=[0,0]);a[0]++;if(hit)a[1]++;}
+function summarise(R){
+  const M={visits:0,total:0,vs:[],tD:0,tH:0,bedH:0,aim20:{},mL:0,mR:0,pd:{},inside:0,outside:0,wide:0,legs:[],n180:0,tons:0,t140:0,atc:null,ladder:null,coList:null,split:null,bobs:null,rtb:null,coDrillAtt:0,coDrillHit:0};
+  const drills=[];
+  for(const b of R.blocks){
+    const e=D[b.k].eng,d=b.data;if(!d||!b.started)continue;let txt="";
+    if(e.type==="aim"){let vt=0,tt=0,th=0,bh=0;
+      for(const v of d.visits){const sc=sum(v.d.map(val));M.visits++;M.total+=sc;M.vs.push(sc);vt+=sc;if(sc>=100)M.tons++;if(sc>=140)M.t140++;if(sc===180)M.n180++;
+        const [L,Rn]=nb(v.t);
+        for(const c of v.d){M.tD++;tt++;const n=numOf(c),bull=c==="SB"||c==="DB";if(c==="T"+v.t){M.tH++;th++;}if(n===v.t&&!bull){M.bedH++;bh++;}if(v.t===20)M.aim20[c]=(M.aim20[c]||0)+1;if(n===L&&!bull)M.mL++;if(n===Rn&&!bull)M.mR++;}}
+      txt=d.visits.length?`${d.visits.length} visits · avg ${fmt(vt/d.visits.length)} · trebles ${fmt(pctf(th,tt),0)}% · in the bed ${fmt(pctf(bh,tt),0)}%`:"No visits";}
+    else if(e.type==="atc"){M.atc={n:d.darts.length,done:d.n>20};txt=d.n>20?`Finished in ${d.darts.length} darts`:`Reached T${d.n} in ${d.darts.length} darts`;}
+    else if(e.type==="dbl"||e.type==="split"){let h=0;
+      for(const x of d.darts){addPd(M.pd,x.t,x.r==="H");if(x.r==="H")h++;if(x.r==="I")M.inside++;if(x.r==="O")M.outside++;if(x.r==="W")M.wide++;}
+      txt=`${h}/${d.darts.length} doubles (${fmt(pctf(h,d.darts.length),0)}%)`;
+      if(e.mode==="bobs"&&blockDone(b)){M.bobs=Math.max(0,d.score);txt+=` · Bob's 27: ${M.bobs}`;}
+      if(e.mode==="rtb"&&blockDone(b)){M.rtb=d.darts.length;txt+=` · finished in ${d.darts.length}`;}
+      if(e.type==="split"){M.split={w:d.wins,r:d.round};txt=`${d.wins}/${d.round} rounds won · `+txt;}}
+    else if(e.type==="co"){let ok=0;
+      for(const r of d.results){if(r.ok)ok++;for(const x of r.dd){addPd(M.pd,x.t,x.r==="H");M.coDrillAtt++;if(x.r==="H")M.coDrillHit++;}}
+      if(d.mode==="ladder"){M.ladder={reached:d.target,best:d.best,r:d.round};txt=`Reached ${d.target} · best checkout ${d.best||"–"} · ${ok}/${d.results.length} rounds`;}
+      else{M.coList={w:ok,a:d.results.length};txt=`${ok}/${d.results.length} finishes`;}}
+    else if(e.type==="leg"){
+      for(const g of d.legs){M.legs.push(g);for(const x of g.dd)addPd(M.pd,x.t,x.r==="H");for(const v of g.visits)if(v===180)M.n180++;}
+      txt=d.legs.length?`${d.legs.length} leg${d.legs.length>1?"s":""} · ${fmt(mean(d.legs.map(g=>g.n)))} darts/leg · avg ${fmt(mean(d.legs.map(g=>501/g.n*3)))}`:"No legs finished";}
+    else txt="Done";
+    const raw=e.type==="aim"?d.visits.map(v=>v.d.join(" ")).join(" | "):(e.type==="dbl"||e.type==="split"||e.type==="atc")?d.darts.map(x=>x.t+x.r).join(" "):e.type==="leg"?d.legs.map(g=>g.c).join(" | "):e.type==="co"?d.results.map(r=>r.t+":"+r.c).join(" | "):"";
+    drills.push({k:b.k,m:b.m,txt,raw});
+  }
+  const legDd=M.legs.flatMap(g=>g.dd);
+  const m={visits:M.visits,tons:M.tons,t140:M.t140,n180:M.n180,tPct:pctf(M.tH,M.tD),bedPct:pctf(M.bedH,M.tD),sd:sdev(M.vs),mL:M.mL,mR:M.mR,aim20:M.aim20,pd:M.pd,
+    inside:M.inside,outside:M.outside,wide:M.wide,legsN:M.legs.length,f9:M.legs.length?mean(M.legs.map(g=>g.f9)):null,legAvg:M.legs.length?mean(M.legs.map(g=>501/g.n*3)):null,
+    coAtt:legDd.length,coHits:legDd.filter(x=>x.r==="H").length,hiCo:M.legs.length?Math.max(...M.legs.map(g=>g.co||0)):null,
+    atc:M.atc,ladder:M.ladder,coList:M.coList,split:M.split,rtb:M.rtb,coDrillAtt:M.coDrillAtt,coDrillHit:M.coDrillHit};
+  let dAtt=0,dHits=0;for(const k in M.pd){dAtt+=M.pd[k][0];dHits+=M.pd[k][1];}
+  return {total:M.visits?M.total:null,visits:M.visits||null,avg3:M.visits?M.total/M.visits:null,dAtt,dHits,bobs:M.bobs,dpl:M.legs.length?mean(M.legs.map(g=>g.n)):null,m,drills,legs:M.legs};
+}
+
+/* ================= runner control ================= */
+function persistRun(){store.set("oche-run-v2",S.run);}
+function startRun(tpl){
+  const A=analyse(),plan=buildPlan(A,tpl);
+  S.run={kind:tpl===BASE?"baseline":"session",type:plan.key,name:plan.name,date:todayISO(),bi:0,hist:[],phase:"run",feel:3,notes:"",full:false,mult:"S",confirmDiscard:false,
+    blocks:plan.blocks.map(b=>({k:b.k,m:b.m,L:b.L,tag:b.tag,data:initData(b.k,b.L,A.pd),start:null,started:false}))};
+  S.run.blocks[0].start=Date.now();S.run.blocks[0].started=true;
+  persistRun();wake();renderRunner();
+}
+let wl=null;
+function wake(){try{if(navigator.wakeLock&&!wl)navigator.wakeLock.request("screen").then(l=>{wl=l;l.addEventListener("release",()=>{wl=null;});}).catch(()=>{});}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&S.run&&!$("#runner").hidden)wake();});
+const curBlock=()=>S.run.blocks[S.run.bi];
+function act(fn){const b=curBlock();if(blockDone(b))return;try{navigator.vibrate&&navigator.vibrate(8);}catch(e){}S.run.hist.push(JSON.stringify(b.data));if(S.run.hist.length>300)S.run.hist.shift();fn(b);S.run.mult="S";persistRun();renderRunner();}
+function nextBlock(){
+  const R=S.run;R.full=false;R.hist=[];R.mult="S";
+  if(R.bi<R.blocks.length-1){R.bi++;const b=curBlock();b.start=Date.now();b.started=true;}
+  else R.phase="summary";
+  persistRun();renderRunner();$("#runner").scrollTop=0;
+}
+function closeRunner(){$("#runner").hidden=true;document.body.classList.remove("lock");render();}
+
+/* ================= runner rendering ================= */
+const dartCls=c=>c==="M"?"m":c[0]==="T"?"t":isDbl(c)?"d":"";
+function slotsHTML(darts){return `<div class="slots">${[0,1,2].map(i=>{const c=darts[i];return `<span class="${c?"f "+dartCls(c):""}">${c?esc(lab(c)):""}</span>`;}).join("")}</div>`;}
+function miniHTML(items){return `<div class="mini">${items.map(([k,v])=>`<span>${k} <b>${v}</b></span>`).join("")}</div>`;}
+function targetLine(b){const t=D[b.k].t;if(!t)return "";const extra=D[b.k].start?` · start ${D[b.k].start[b.L]}`:"";
+  return `<p class="target"><span class="muted">${t.label}:</span><b>${t.dir==="down"?"≤ ":""}${t.v[b.L]}</b><span class="faint">L${b.L+1} target${extra}</span></p>`;}
+function fullPad(R){
+  const m=R.mult;
+  return `<div class="seg" role="group" aria-label="Multiplier">${["S","D","T"].map(x=>`<button type="button" data-mult="${x}" aria-pressed="${m===x}">${({S:"Single",D:"Double",T:"Treble"})[x]}</button>`).join("")}</div>
+  <div class="keys k5">${range(1,20).map(n=>`<button type="button" class="key ${m==="T"?"t":m==="D"?"d":""}" data-num="${n}">${m==="S"?"":m}${n}</button>`).join("")}</div>
+  <div class="keys k3"><button type="button" class="key" data-dart="SB" ${m==="T"?"disabled":""}>25</button><button type="button" class="key d" data-dart="DB">Bull<small>50</small></button><button type="button" class="key miss" data-dart="M">Miss</button></div>`;
+}
+function quickRow(){return `<div class="keys k5">${["T20","T19","S20","S19","S5"].map(c=>`<button type="button" class="key ${c[0]==="T"?"t":""}" data-dart="${c}">${lab(c)}</button>`).join("")}</div>`;}
+function aimPad(t){const [L,Rn]=nb(t);const k=(c,cls="",sub="")=>`<button type="button" class="key ${cls}" data-dart="${c}">${lab(c)}${sub?`<small>${sub}</small>`:""}</button>`;
+  return `<div class="keys k3">${k("S"+L,"","single")}${k("T"+t,"tgt","treble")}${k("S"+Rn,"","single")}${k("T"+L,"t","treble")}${k("S"+t,"","single")}${k("T"+Rn,"t","treble")}${k("D"+L,"d","double")}${k("D"+t,"d","double")}${k("D"+Rn,"d","double")}</div>
+  <div class="keys k4"><button type="button" class="key miss" data-dart="M">Miss<small>off / other</small></button>${k("SB","","outer bull")}${k("DB","d","bull")}<button type="button" class="key" data-act="full">⋯<small>other</small></button></div>`;}
+function dblPad(){return `<div class="keys k4"><button type="button" class="key hit wide2" data-dr="H">Hit</button><button type="button" class="key" data-dr="I">Single<small>inside</small></button><button type="button" class="key" data-dr="O">Outside<small>no score</small></button><button type="button" class="key wide2" data-dr="W">Wide<small>neighbour</small></button><button type="button" class="key miss wide2" data-dr="X">Other miss</button></div>`;}
+function trail(items){return items.length?`<div class="trail">${items.slice(-24).join("")}</div>`:"";}
+
+function engineView(b){
+  const R=S.run,e=D[b.k].eng,d=b.data,done=blockDone(b);
+  const doneBadge=done?`<div class="done-badge">✓ Block complete. Tap Next.</div>`:"";
+  if(e.type==="timer")return `<div class="glass live"><p class="muted">${esc(D[b.k].how)}</p><p class="small faint">Nothing to score here. Use the timer, then move on.</p></div>`;
+  if(e.type==="aim"){
+    const t=e.target(d.visits.length),vt=d.visits.map(v=>sum(v.d.map(val))),all=d.visits.flatMap(v=>v.d.map(c=>[c,v.t]));
+    const avg=vt.length?mean(vt):null,tr=all.filter(([c,tt])=>c==="T"+tt).length,bed=all.filter(([c,tt])=>numOf(c)===tt&&c!=="SB"&&c!=="DB").length;
+    return `<div class="glass live">
+      <div class="bigrow"><div><span class="eyebrow">${done?"Done":"Aiming T"+t+" · visit "+(d.visits.length+1)+(e.visits?" of "+e.visits:"")}</span><div class="bignum">${sum(d.cur.map(val))}</div></div>${slotsHTML(d.cur)}</div>
+      ${miniHTML([["Avg",fmt(avg)],["Trebles",fmt(pctf(tr,all.length),0)+"%"],["In the bed",fmt(pctf(bed,all.length),0)+"%"],["Tons",vt.filter(v=>v>=100).length],["Visits",vt.length]])}
+      ${trail(vt.map(v=>`<i class="${v>=100?"h":""}">${v}</i>`))}${doneBadge}</div>
+      ${done?"":R.full?`<div class="stack" style="gap:8px">${fullPad(R)}<button type="button" class="btn sm" data-act="full">Back to quick pad</button></div>`:aimPad(t)}`;
+  }
+  if(e.type==="atc"){
+    const h=d.darts.filter(x=>x.r==="T").length;
+    return `<div class="glass live"><div class="bigrow"><div><span class="eyebrow">Target</span><div class="bignum">${d.n>20?"✓":"T"+d.n}</div></div><div class="mono muted">${d.darts.length} darts</div></div>
+      ${miniHTML([["Trebles",h+"/"+d.darts.length],["Rate",fmt(pctf(h,d.darts.length),0)+"%"]])}
+      ${trail(d.darts.map(x=>`<i class="${x.r==="T"?"t":""}">${x.r==="T"?"T"+x.t:x.r}</i>`))}${doneBadge}</div>
+      ${done?"":`<div class="keys k4"><button type="button" class="key hit wide2" data-atc="T">Treble ${d.n}</button><button type="button" class="key" data-atc="S">Single</button><button type="button" class="key d" data-atc="D">Double</button><button type="button" class="key miss wide4" data-atc="M">Miss</button></div>`}`;
+  }
+  if(e.type==="dbl"){
+    const t=done?null:dblTarget(b),h=d.darts.filter(x=>x.r==="H").length;let info;
+    if(e.mode==="bobs")info=`<div class="mono" style="text-align:right"><span class="eyebrow">Score</span><div class="bignum sm">${d.score}</div><span class="faint small">${done?"final":"dart "+(d.darts.length%3+1)+" of 3"}</span></div>`;
+    else if(e.mode==="until")info=`<div class="muted small">${d.hits}/${e.k} hits on this one</div>`;
+    else if(e.mode==="rtb")info=`<div class="muted small mono">${d.i}/21 · ${d.darts.length} darts</div>`;
+    else info=`<div class="muted small mono">${d.darts.length}/${d.q.length}</div>`;
+    return `<div class="glass live"><div class="bigrow"><div><span class="eyebrow">${done?"Finished":"Throwing at"}</span><div class="bignum">${t?dName(t):"✓"}</div></div>${info}</div>
+      ${miniHTML([["Hits",h+"/"+d.darts.length],["Rate",fmt(pctf(h,d.darts.length),0)+"%"],["Inside",d.darts.filter(x=>x.r==="I").length],["Outside",d.darts.filter(x=>x.r==="O").length]])}
+      ${trail(d.darts.map(x=>`<i class="${x.r==="H"?"h":"x"}">${dName(x.t)}</i>`))}${doneBadge}</div>${done?"":dblPad()}`;
+  }
+  if(e.type==="split")
+    return `<div class="glass live"><div class="bigrow"><div><span class="eyebrow">${done?"Finished":"Round "+(d.round+1)+" of "+e.rounds+" · dart "+(d.inRound+1)}</span><div class="bignum">${done?"✓":dName(d.t)}</div></div><div class="mono muted">${d.wins} won</div></div>${doneBadge}</div>${done?"":dblPad()}`;
+  if(e.type==="co"){
+    const a=d.att,left=a.allowed-a.darts.length-a.burn,inVisit=3-a.vd,rt=done?null:route(a.rem,Math.min(inVisit,left)),ok=d.results.filter(r=>r.ok).length,rounds=e.rounds;
+    const head=d.mode==="ladder"?`Round ${d.round+1} of ${rounds} · target ${a.target}`:`Finish ${d.idx+1} of ${d.list.length} · ${a.target}`;
+    return `<div class="glass live"><div class="bigrow"><div><span class="eyebrow">${done?"Finished":head}</span><div class="bignum">${done?"✓":a.rem}</div></div><div class="mono muted small" style="text-align:right">${done?"":left+" dart"+(left===1?"":"s")+" left"}</div></div>
+      ${done?"":`<div class="route">${rt?`<span class="faint small">Route</span>${rt.map(c=>`<b>${lab(c)}</b>`).join("")}`:`<span class="faint small">No checkout with ${Math.min(inVisit,left)} dart${Math.min(inVisit,left)===1?"":"s"}. Set one up.</span>`}</div>${slotsHTML(a.darts.slice(a.darts.length-a.vd))}`}
+      ${miniHTML([["Checked out",ok+"/"+d.results.length],d.mode==="ladder"?["Best",d.best||"–"]:["Rate",fmt(pctf(ok,d.results.length),0)+"%"]])}
+      ${trail(d.results.map(r=>`<i class="${r.ok?"h":"x"}">${r.t}</i>`))}${doneBadge}</div>
+      ${done?"":`<div class="stack" style="gap:8px">${quickRow()}${fullPad(R)}</div>`}`;
+  }
+  if(e.type==="leg"){
+    const g=d.cur,n=g.darts.length+g.burn,rt=done?null:route(g.rem,3-g.vd),legs=d.legs;
+    return `<div class="glass live"><div class="bigrow"><div><span class="eyebrow">${done?"All legs done":"Leg "+(legs.length+1)+(e.legs?" of "+e.legs:"")+" · dart "+(n+1)}</span><div class="bignum">${done?"✓":g.rem}</div></div>${done?"":slotsHTML(g.darts.slice(g.darts.length-g.vd))}</div>
+      ${done?"":`<div class="route">${rt?`<span class="faint small">Checkout</span>${rt.map(c=>`<b>${lab(c)}</b>`).join("")}`:g.rem<=170?`<span class="faint small">No finish with ${3-g.vd} dart${3-g.vd>1?"s":""}. Leave a double.</span>`:""}</div>`}
+      ${miniHTML([["Leg avg",n?fmt((501-g.rem)/n*3):"–"],["First 9",g.f9!=null?fmt(g.f9):"–"],["Legs",legs.length],["Darts/leg",fmt(mean(legs.map(x=>x.n)))],["At a double",g.dd.length]])}
+      ${trail(legs.map(x=>`<i class="h">${x.n} darts</i>`))}${doneBadge}</div>
+      ${done?"":`<div class="stack" style="gap:8px">${quickRow()}${fullPad(R)}</div>`}`;
+  }
+  return "";
+}
+function renderRunner(){
+  const el=$("#runner"),R=S.run;
+  if(!R){el.hidden=true;document.body.classList.remove("lock");return;}
+  el.hidden=false;document.body.classList.add("lock");
+  if(R.phase==="summary"){el.innerHTML=summaryHTML(R);return;}
+  const b=curBlock(),d=D[b.k],done=blockDone(b),last=R.bi===R.blocks.length-1;
+  el.innerHTML=`<div class="rwrap">
+    <div class="rtop"><button type="button" class="icon-btn" data-act="close" aria-label="Close and keep session">×</button>
+      <div class="rprog">${R.blocks.map((x,i)=>`<span class="c-${D[x.k].cat} ${i<R.bi?"done":i===R.bi?"cur":""}"></span>`).join("")}</div><span class="rcount">${R.bi+1}/${R.blocks.length}</span></div>
+    <div class="glass rhead">
+      <div class="row between"><span class="cat c-${d.cat}">${CATNAME[d.cat]}</span><span class="timer" id="rt-timer">--:--</span></div>
+      <h2>${esc(d.name)}${b.tag?` <span class="tag">${esc(b.tag)}</span>`:""}</h2>
+      ${targetLine(b)}
+      <details class="how"><summary>How this drill works</summary><p>${esc(d.how)}</p></details>
+    </div>
+    ${engineView(b)}
+    <div class="ractions"><button type="button" class="btn" data-act="undo" ${R.hist.length?"":"disabled"}>Undo</button>
+      <button type="button" class="btn ${done||D[b.k].eng.type==="timer"?"primary":""}" data-act="next">${last?"Finish session":done||D[b.k].eng.type==="timer"?"Next block":"Skip to next"}</button></div>
+  </div>`;
+  tick();
+}
+function tick(){const el=$("#rt-timer");if(!el||!S.run||S.run.phase!=="run")return;const b=curBlock();const s=Math.round(b.m*60-(Date.now()-b.start)/1000);
+  const a=Math.abs(s),t=`${Math.floor(a/60)}:${String(a%60).padStart(2,"0")}`;el.textContent=s>=0?t+" left":"+"+t+" over";el.classList.toggle("over",s<0);}
+setInterval(tick,1000);
+
+function summaryHTML(R){
+  const sm=summarise(R),m=sm.m,isBase=R.kind==="baseline";
+  const tiles=[["3-dart avg",fmt(sm.avg3)],["Treble rate",m.tPct==null?"–":fmt(m.tPct,0)+"%"],["Double rate",sm.dAtt?fmt(sm.dHits/sm.dAtt*100,0)+"%":"–"],["Checkout in legs",m.coAtt?fmt(m.coHits/m.coAtt*100,0)+"%":"–"],
+    ["Darts / leg",fmt(sm.dpl)],["First 9",fmt(m.f9)],["Bob's 27",sm.bobs??"–"],["Tons · 180s",m.tons+" · "+m.n180]];
+  return `<div class="rwrap">
+    <div class="rtop"><button type="button" class="icon-btn" data-act="close" aria-label="Close and keep session">×</button><div class="rprog">${R.blocks.map(x=>`<span class="c-${D[x.k].cat} done"></span>`).join("")}</div></div>
+    <div class="glass pad-lg stack"><span class="eyebrow">${isBase?"Baseline complete":"Session complete"}</span><h1 class="grad-text">${esc(R.name)}</h1>
+      <div class="grid3">${tiles.map(([k,v])=>`<div class="glass tile"><span class="eyebrow">${k}</span><span class="v">${v}</span></div>`).join("")}</div>
+      <ul class="small muted" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">${sm.drills.map(x=>`<li><b style="color:var(--ink)">${esc(D[x.k].name)}</b> — ${esc(x.txt)}</li>`).join("")}</ul>
+    </div>
+    <div class="glass pad stack">
+      <span class="small" style="font-weight:600">How did it feel?</span>
+      <div class="feel" role="group" aria-label="How did it feel">${[1,2,3,4,5].map(n=>`<button type="button" data-rfeel="${n}" aria-pressed="${R.feel===n}">${n}</button>`).join("")}</div>
+      <label class="f">Notes<textarea id="rs-notes" placeholder="Grip, stance, which doubles went in…">${esc(R.notes)}</textarea></label>
+      <div class="ractions"><button type="button" class="btn danger" data-act="discard">${R.confirmDiscard?"Tap again to discard":"Discard"}</button><button type="button" class="btn primary" data-act="save">${isBase?"Save baseline":"Save session"}</button></div>
+      <span class="status" id="rs-status" role="status"></span>
+    </div></div>`;
+}
+async function saveRun(){
+  const R=S.run,sm=summarise(R),st=$("#rs-status"),mins=sum(R.blocks.filter(b=>b.started).map(b=>b.m));
+  try{
+    if(R.kind==="baseline"){
+      const blk=k=>R.blocks.find(b=>b.k===k);const sc=blk("base_score").data,dbd=blk("base_dbl").data,bo=blk("base_bobs"),lg=blk("base_legs").data;
+      if(!sc.visits.length){st.className="status err";st.textContent="The scoring test has no visits yet. Go back and throw it first.";return;}
+      const darts=sc.visits.flatMap(v=>v.d),total=sum(darts.map(val)),t20=darts.filter(c=>c==="T20").length,dh=dbd.darts.filter(x=>x.r==="H").length;
+      const legs=lg.legs.map(g=>g.n),coAtt=sum(lg.legs.map(g=>g.dd.length));
+      await addRow("baselines",{v:2,date:R.date,total:Math.round(total/sc.visits.length*20),avg3:total/sc.visits.length,t20,tPct:pctf(t20,darts.length),dHits:dh,dPct:pctf(dh,dbd.darts.length),
+        bobs:bo.started&&blockDone(bo)?Math.max(0,bo.data.score):null,legs,dpl:legs.length?mean(legs):null,coAtt,coPct:coAtt?legs.length/coAtt*100:null,m:sm.m,drills:sm.drills});
+    }else{
+      if(sm.avg3==null&&!sm.dAtt&&sm.bobs==null&&sm.dpl==null){st.className="status err";st.textContent="Nothing scored yet. Throw at least one block, or discard.";return;}
+      await addRow("sessions",{v:2,date:R.date,type:R.type,total:sm.total,visits:sm.visits,avg3:sm.avg3,dAtt:sm.dAtt,dHits:sm.dHits,bobs:sm.bobs,dpl:sm.dpl,mins,feel:R.feel,notes:(R.notes||"").trim(),m:sm.m,drills:sm.drills});
+    }
+    S.run=null;persistRun();closeRunner();location.hash=R.kind==="baseline"?"baseline":"insights";toast(R.kind==="baseline"?"Baseline saved":"Session saved");
+  }catch(e){st.className="status err";st.textContent="Couldn't save: "+(e&&e.message||"try again");}
+}
+
+/* ================= main views ================= */
+const MODE={new:["new","Not calibrated"],build:["build","Building"],climb:["climb","Climbing"],dip:["dip","In a dip"],plateau:["plateau","Plateau"]};
+const bandPos=(v,band)=>clamp((v-band[0])/(band[1]-band[0]),0,1);
+function renderHome(A){
+  const plan=buildPlan(A),total=sum(plan.blocks.map(b=>b.m)),todayIdx=(new Date().getDay()+6)%7,R=S.run;let html="";
+  if(!STANDALONE&&!store.get("oche-hide-install")){
+    const how=IS_IOS?`In Safari, tap the Share button (the square with an arrow), then <b>Add to Home Screen</b>.`:deferredInstall?`Tap Install to add it to your home screen.`:`Open your browser menu and choose <b>Install app</b> or <b>Add to Home screen</b>.`;
+    html+=`<div class="glass banner"><span class="eyebrow">Install the app</span><h3>Put Oche on your home screen</h3><p class="muted small">${how} It opens full-screen and works offline. Install before you log anything: the home-screen app keeps its own storage, separate from the browser.</p><div class="row">${deferredInstall?`<button type="button" class="btn primary sm" data-act="install">Install</button>`:""}<button type="button" class="btn sm" data-act="hideInstall">Not now</button></div></div>`;}
+  if(R)html+=`<div class="glass banner"><span class="eyebrow">In progress</span><h3>${esc(R.name)} · ${R.phase==="summary"?"ready to save":"block "+(R.bi+1)+" of "+R.blocks.length}</h3><div class="row"><button type="button" class="btn primary sm" data-act="resume">Resume</button></div></div>`;
+  if(A.mode==="new")html+=`<div class="glass banner"><h3>Start with the baseline test</h3><p class="muted">Until you do, targets sit at Level 2. It takes about an hour and is scored live.</p><div class="row"><a class="btn sm" href="#baseline">Go to baseline</a></div></div>`;
+  else if(A.mode==="dip")html+=`<div class="glass banner dip"><h3>Reset mode</h3><p class="muted">${esc(A.reasons.join(" "))} Every day runs the Reset session, one level easier, until your numbers recover. A day off is fine too.</p></div>`;
+  else if(A.mode==="plateau")html+=`<div class="glass banner plateau"><h3>Plateau mode</h3><p class="muted">${esc(A.reasons.join(" "))} Scoring moves to the 19s, doubles go one-dart, and targets step up a level.</p></div>`;
+  if(A.retest)html+=`<div class="glass banner ok"><h3>Retest due</h3><p class="muted">Your last baseline was ${fmtDate(A.latest.date)}. Retake it this week.</p></div>`;
+  const cats=["warm","s","d","c","m"].filter(c=>plan.blocks.some(b=>D[b.k].cat===c));
+  html+=`<div class="glass pad-lg hero">
+    <div class="row between"><span class="eyebrow">${S.day===todayIdx?new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"}):"Plan for "+["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"][S.day]}</span><span class="chip">${total} min</span></div>
+    <h1><span class="grad-text">${esc(plan.name)}</span></h1>
+    <div class="timeline" aria-hidden="true">${plan.blocks.map(b=>`<span class="c-${D[b.k].cat}" style="flex:${b.m}"></span>`).join("")}</div>
+    <div class="legend">${cats.map(c=>`<span class="cat c-${c}">${CATNAME[c]}</span>`).join("")}</div>
+    <div class="row"><button type="button" class="btn primary big" data-act="start">${R?"Start a new session":"Start session"}</button><span class="muted small">Live, dart-by-dart scoring</span></div>
+    <div class="days" role="group" aria-label="Day of the week">${DAYS.map((d,i)=>`<button type="button" data-day="${i}" aria-pressed="${i===S.day}" class="${i===todayIdx?"today":""}">${d}<small>${A.mode==="dip"?"Reset":WEEK[i].name.split(" ")[0]}</small></button>`).join("")}</div>
+  </div>`;
+  const lv=(title,v,unit,L,bands,cal)=>`<div class="glass pad lvl"><span class="eyebrow">${title}</span><div class="row between" style="align-items:baseline"><span class="big">${v==null?"–":fmt(v)+unit}</span><span class="chip">${cal?"L"+(L+1)+" "+LEVELS[L].name:"Uncalibrated"}</span></div>
+    <div class="bar"><span style="width:${v==null?0:Math.round(bandPos(v,bands[L])*100)}%"></span></div><span class="faint small">${v==null?"Take the baseline":L<4?`${fmt(bands[L][1]-v)}${unit} to Level ${L+2}`:"Top level"}</span></div>`;
+  html+=`<div class="grid2">${lv("Scoring · 3-dart avg",A.sAvg,"",A.sL,LEVELS.map(l=>l.avg),A.calibrated)}${lv("Doubles · hit rate",A.dPct,"%",A.dL,LEVELS.map(l=>l.dbl),A.calibrated)}</div>`;
+  const monday=new Date();monday.setDate(monday.getDate()-todayIdx);const dates=new Set(A.ss.map(s=>s.date));
+  const dayIso=i=>{const x=new Date(monday);x.setDate(monday.getDate()+i);return isoOf(x);};
+  let streak=0;{const x=new Date();if(!dates.has(isoOf(x)))x.setDate(x.getDate()-1);while(dates.has(isoOf(x))){streak++;x.setDate(x.getDate()-1);}}
+  const wkCount=DAYS.filter((_,i)=>dates.has(dayIso(i))).length;
+  html+=`<div class="glass pad stack"><div class="row between"><span class="eyebrow">This week</span><span class="small muted"><b class="mono" style="color:var(--ink)">${wkCount}</b>/7 sessions · streak <b class="mono" style="color:var(--ink)">${streak}</b> day${streak===1?"":"s"}</span></div>
+    <div class="week">${DAYS.map((d,i)=>`<div><i class="${dates.has(dayIso(i))?"on":""} ${i===todayIdx?"today":""}"></i>${d}</div>`).join("")}</div></div>`;
+  const weak=weakDoubles(A.pd,2),parts=[];
+  if(weak.length)parts.push(`Weak doubles right now: <b>${weak.map(dName).join(", ")}</b>. They're built into Match doubles.`);
+  if(A.calibrated&&A.sL!==A.dL)parts.push(`${A.sL<A.dL?"Scoring":"Doubles"} is your weaker side, so it gets five extra minutes on most days.`);
+  if(parts.length)html+=`<div class="glass pad stack"><span class="eyebrow">Focus</span>${parts.map(p=>`<p class="small">${p}</p>`).join("")}</div>`;
+  html+=`<div class="row between"><h2>${DAYS[S.day]} · the hour</h2><span class="muted small">Targets set by your levels</span></div>
+    <ol class="blocks">${plan.blocks.map(b=>{const d=D[b.k];return `<li class="glass blk c-${d.cat}"><div class="min">${b.m}<small>MIN</small></div><h3>${esc(d.name)}${b.tag?`<span class="tag">${esc(b.tag)}</span>`:""}</h3><p>${esc(d.how)}</p>${targetLine(b)}</li>`;}).join("")}</ol>`;
+  $("#v-home").innerHTML=html;
+  const [cls,ml]=MODE[A.mode],mc=$("#modeChip");mc.className="chip dot "+cls;mc.textContent=ml;
+}
+
+/* ---------- insights ---------- */
+const METRICS={
+ avg3:{label:"3-dart avg",get:s=>s.avg3,base:b=>b.avg3,dir:"up",unit:"",d:1},
+ f9:{label:"First 9",get:s=>s.m?s.m.f9:null,base:b=>b.m?b.m.f9:null,dir:"up",unit:"",d:1},
+ dpct:{label:"Double rate",get:s=>s.dAtt?s.dHits/s.dAtt*100:null,base:b=>b.dPct,dir:"up",unit:"%",d:0},
+ co:{label:"Checkout in legs",get:s=>s.m&&s.m.coAtt?s.m.coHits/s.m.coAtt*100:null,base:b=>b.coPct,dir:"up",unit:"%",d:0},
+ tpct:{label:"Treble rate",get:s=>s.m?s.m.tPct:null,base:b=>b.tPct,dir:"up",unit:"%",d:0},
+ ton:{label:"Tons per 10 visits",get:s=>s.m&&s.m.visits?s.m.tons/s.m.visits*10:null,base:()=>null,dir:"up",unit:"",d:1},
+ sd:{label:"Visit spread",get:s=>s.m?s.m.sd:null,base:b=>b.m?b.m.sd:null,dir:"down",unit:"",d:1},
+ bobs:{label:"Bob's 27",get:s=>s.bobs,base:b=>b.bobs,dir:"up",unit:"",d:0},
+ dpl:{label:"Darts per leg",get:s=>s.dpl,base:b=>b.dpl,dir:"down",unit:"",d:1}
+};
+function niceTicks(lo,hi,n=4){const span=hi-lo||1,s0=span/n,mag=10**Math.floor(Math.log10(s0)),st=[1,2,2.5,5,10].map(x=>x*mag).find(x=>x>=s0),t=[];for(let v=Math.ceil(lo/st)*st;v<=hi+1e-9;v+=st)t.push(+v.toFixed(6));return t;}
+function chart(M,pts,baseVal){
+  const W=640,H=230,L=44,R=14,T=16,B=28,ys=pts.map(p=>p.y).concat(baseVal!=null?[baseVal]:[]);
+  let lo=Math.min(...ys),hi=Math.max(...ys);const pad=(hi-lo)*0.18||Math.max(1,Math.abs(hi)*0.1);lo=Math.max(0,lo-pad);hi=hi+pad;
+  const ticks=niceTicks(lo,hi);lo=Math.min(lo,ticks[0]);hi=Math.max(hi,ticks[ticks.length-1]);
+  const X=i=>pts.length<2?L+(W-L-R)/2:L+i*(W-L-R)/(pts.length-1),Y=v=>T+(hi-v)/(hi-lo)*(H-T-B);
+  const roll=pts.map((p,i)=>mean(pts.slice(Math.max(0,i-4),i+1).map(q=>q.y))),line=roll.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+  let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(M.label)} by session">`;
+  ticks.forEach(t=>{s+=`<line class="ax" x1="${L}" x2="${W-R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axt" x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}${M.unit}</text>`;});
+  if(pts.length>1)s+=`<path class="area" d="${line} L${X(pts.length-1).toFixed(1)} ${H-B} L${X(0).toFixed(1)} ${H-B}Z"/>`;
+  if(baseVal!=null)s+=`<line class="base" x1="${L}" x2="${W-R}" y1="${Y(baseVal)}" y2="${Y(baseVal)}"/><text class="baset" x="${W-R}" y="${Y(baseVal)-6}" text-anchor="end">Baseline ${fmt(baseVal,M.d)}${M.unit}</text>`;
+  pts.forEach((p,i)=>{s+=`<circle class="raw" cx="${X(i)}" cy="${Y(p.y)}" r="2.6"/>`;});
+  if(pts.length>1)s+=`<path class="ln" d="${line}"/>`;
+  const li=pts.length-1;s+=`<circle class="dotlast" cx="${X(li)}" cy="${Y(roll[li])}" r="5"/>`;
+  s+=`<text class="axt" x="${L}" y="${H-8}">${fmtDate(pts[0].date)}</text>`;if(pts.length>1)s+=`<text class="axt" x="${W-R}" y="${H-8}" text-anchor="end">${fmtDate(pts[li].date)}</text>`;
+  return s+"</svg>";
+}
+function spark(vals){if(vals.length<2)return `<svg class="spark" viewBox="0 0 120 26" aria-hidden="true"></svg>`;const lo=Math.min(...vals),hi=Math.max(...vals),r=hi-lo||1,W=120,H=26;
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${vals.map((v,i)=>(i?"L":"M")+(i*(W-4)/(vals.length-1)+2).toFixed(1)+" "+(H-3-(v-lo)/r*(H-6)).toFixed(1)).join(" ")}"/></svg>`;}
+const RB={bull:9,obull:20,tin:88,tout:108,din:150,dout:170};
+function arc(r0,r1,a0,a1){const p=(r,a)=>[(r*Math.cos(a)).toFixed(2),(r*Math.sin(a)).toFixed(2)];const [x0,y0]=p(r1,a0),[x1,y1]=p(r1,a1),[x2,y2]=p(r0,a1),[x3,y3]=p(r0,a0);
+  return `M${x0} ${y0}A${r1} ${r1} 0 0 1 ${x1} ${y1}L${x2} ${y2}A${r0} ${r0} 0 0 0 ${x3} ${y3}Z`;}
+function boardSVG(fillFn,label){
+  let s=`<svg class="dartboard" viewBox="-200 -200 400 400" role="img" aria-label="${esc(label)}">`;
+  BOARD.forEach((n,i)=>{const a=(-90+i*18-9)*Math.PI/180,b=(-90+i*18+9)*Math.PI/180;
+    [["S",RB.obull,RB.tin],["T",RB.tin,RB.tout],["S",RB.tout,RB.din],["D",RB.din,RB.dout]].forEach(([k,r0,r1])=>{const p=arc(r0,r1,a,b),base=(k==="S")===(i%2===0)?"sa":"sb";
+      s+=`<path class="${base}" d="${p}"/>`;const f=fillFn(k,n);if(f)s+=`<path class="${f.cls}" style="fill-opacity:${f.o.toFixed(2)}" d="${p}"/>`;s+=`<path class="wire" d="${p}"/>`;});
+    const m=(-90+i*18)*Math.PI/180;s+=`<text class="bnum" x="${(186*Math.cos(m)).toFixed(1)}" y="${(186*Math.sin(m)+4.5).toFixed(1)}" text-anchor="middle">${n}</text>`;});
+  [["SB",RB.obull],["DB",RB.bull]].forEach(([k,r])=>{s+=`<circle class="${k==="SB"?"sa":"sb"}" r="${r}"/>`;const f=fillFn(k,25);if(f)s+=`<circle class="${f.cls}" style="fill-opacity:${f.o.toFixed(2)}" r="${r}"/>`;s+=`<circle class="wire" r="${r}"/>`;});
+  return s+"</svg>";
+}
+function radarSVG(axes){
+  const N=axes.length,R=105,ang=i=>(-90+i*360/N)*Math.PI/180,pt=(i,r)=>[+(r*Math.cos(ang(i))).toFixed(1),+(r*Math.sin(ang(i))).toFixed(1)];
+  let s=`<svg class="dartboard" viewBox="-175 -145 350 290" role="img" aria-label="Skill profile">`;
+  [0.25,0.5,0.75,1].forEach(f=>{s+=`<polygon class="radar-grid" points="${axes.map((_,i)=>pt(i,R*f).join(",")).join(" ")}"/>`;});
+  axes.forEach((a,i)=>{const [x,y]=pt(i,R);s+=`<line class="radar-grid" x1="0" y1="0" x2="${x}" y2="${y}"/>`;const [lx,ly]=pt(i,R+16);s+=`<text class="radar-lbl" x="${lx}" y="${ly+4}" text-anchor="${Math.abs(lx)<5?"middle":lx>0?"start":"end"}">${esc(a.l)}${a.v==null?" ·":""}</text>`;});
+  s+=`<polygon class="radar-shape" points="${axes.map((a,i)=>pt(i,R*(a.v??0)).join(",")).join(" ")}"/>`;
+  axes.forEach((a,i)=>{if(a.v!=null){const [x,y]=pt(i,R*a.v);s+=`<circle class="radar-dot" cx="${x}" cy="${y}" r="3.5"/>`;}});
+  return s+"</svg>";
+}
+function renderInsights(A){
+  const el=$("#v-insights"),rows=A.ss,v2=rows.filter(s=>s.m),all=[...rows,...A.bs].filter(s=>s.m);
+  const tiles=Object.entries(METRICS).filter(([k])=>k!=="ton").map(([k,M])=>{
+    const vals=rows.map(M.get).filter(v=>v!=null),cur=k==="dpct"&&A.dPct!=null?A.dPct:mean(vals.slice(-7)),b=A.first?M.base(A.first):null;let d;
+    if(cur!=null&&b!=null){const diff=cur-b,good=M.dir==="up"?diff>0:diff<0,cls=Math.abs(diff)<(M.d?0.05:0.5)?"flat":good?"good":"bad";d=`<span class="d ${cls}">${diff>0?"+":""}${fmt(diff,M.d)}${M.unit} vs baseline</span>`;}
+    else d=`<span class="d faint">${b!=null?"Baseline "+fmt(b,M.d)+M.unit:vals.length?vals.length+" session"+(vals.length>1?"s":""):"No data yet"}</span>`;
+    return `<div class="glass tile"><span class="eyebrow">${M.label}</span><span class="v">${cur==null?"–":fmt(cur,M.d)+M.unit}</span>${spark(vals.slice(-12))}${d}</div>`;}).join("");
+  const M=METRICS[S.metric],pts=rows.map(s=>({y:M.get(s),date:s.date})).filter(p=>p.y!=null),bv=A.first?M.base(A.first):null;
+  const chartHtml=pts.length?`<div class="chartbox">${chart(M,pts,bv)}</div><p class="faint small">Dots are single sessions; the line is a 5-session rolling average; dashed green is your first baseline.</p>`:`<div class="empty"><b>No ${esc(M.label.toLowerCase())} data yet</b><span>Play a session with the live scorer and it plots here.</span></div>`;
+  const recent=(f,n=7)=>{const x=v2.map(f).filter(v=>v!=null);return x.length?mean(x.slice(-n)):null;};
+  const legCo=(()=>{const a=sum(v2.map(s=>s.m.coAtt||0)),h=sum(v2.map(s=>s.m.coHits||0));return a>=5?h/a*100:(A.latest&&A.latest.coPct!=null?A.latest.coPct:null);})();
+  const tp=recent(s=>s.m.tPct)??(A.latest?A.latest.tPct:null),sdv=recent(s=>s.m.sd);
+  const bobsV=(()=>{const x=rows.map(s=>s.bobs).filter(v=>v!=null);return x.length?mean(x.slice(-5)):(A.latest?A.latest.bobs:null);})();
+  const axes=[{l:"Scoring",v:A.sAvg!=null?clamp((A.sAvg-20)/60,0,1):null},{l:"Trebles",v:tp!=null?clamp(tp/35,0,1):null},{l:"Doubles",v:A.dPct!=null?clamp(A.dPct/40,0,1):null},
+    {l:"Checkouts",v:legCo!=null?clamp(legCo/45,0,1):null},{l:"Consistency",v:sdv!=null?clamp((60-sdv)/45,0,1):null},{l:"Bob's 27",v:bobsV!=null?clamp(bobsV/1000,0,1):null}];
+  const aim={};all.forEach(s=>{const a=s.m.aim20;if(a)for(const k in a)aim[k]=(aim[k]||0)+a[k];});
+  const aimN=sum(Object.values(aim)),aimMax=Math.max(1,...Object.entries(aim).filter(([k])=>k!=="M").map(([,v])=>v));
+  const heat=aimN?boardSVG((k,n)=>{const c=aim[k==="SB"||k==="DB"?k:k+n];return c?{cls:"heat",o:.15+.85*c/aimMax}:null;},"Where your T20 darts land"):"";
+  const pd=A.pd;
+  const dbl=boardSVG((k,n)=>{if(k!=="D"&&k!=="DB")return null;const a=pd[n];if(!a||a[0]<3)return null;const r=a[1]/a[0];return r>=0.15?{cls:"dheat",o:clamp(.3+r*1.5,.3,1)}:{cls:"dlow",o:.3+(.15-r)*2.5};},"Hit rate on each double");
+  const dRows=Object.entries(pd).filter(([,a])=>a[0]>=5).map(([t,a])=>({t:+t,a:a[0],r:a[1]/a[0]})).sort((x,y)=>y.r-x.r);
+  const ins=[];
+  const mL=sum(v2.map(s=>s.m.mL||0)),mR=sum(v2.map(s=>s.m.mR||0));
+  if(mL+mR>=25){const l=mL/(mL+mR);
+    if(l>0.6)ins.push(["←",`When you miss the scoring bed, ${fmt(l*100,0)}% go left. A one-sided miss usually comes from the throwing line rather than aim. Check your elbow stays under the dart and your follow-through points at the target.`]);
+    else if(l<0.4)ins.push(["→",`When you miss the scoring bed, ${fmt((1-l)*100,0)}% go right. A one-sided miss usually comes from the throwing line. Check your follow-through isn't crossing your body.`]);
+    else ins.push(["↕",`Your misses around the scoring bed are balanced left and right (${fmt(l*100,0)}% left). The line is straight; work on height: grip pressure and release point.`]);}
+  if(dRows.length>=4){const best=dRows[0],worst=dRows[dRows.length-1];ins.push(["D",`Best double so far: ${dName(best.t)} at ${fmt(best.r*100,0)}% (${best.a} darts). Weakest: ${dName(worst.t)} at ${fmt(worst.r*100,0)}%. Leave yourself ${dName(best.t)} when the route allows.`]);}
+  const ins_=sum(v2.map(s=>s.m.inside||0)),out=sum(v2.map(s=>s.m.outside||0));
+  if(ins_+out>=20)ins.push(["◎",out>ins_?`${fmt(out/(ins_+out)*100,0)}% of your double misses go outside the wire and score nothing. Aim slightly inside the double so a miss still leaves a finish.`:`Most double misses land inside (${fmt(ins_/(ins_+out)*100,0)}%). That's the right side to miss on, because you keep a number to finish with.`]);
+  const pAtt=sum(v2.map(s=>(s.dAtt||0)-(s.m.coAtt||0))),pHit=sum(v2.map(s=>(s.dHits||0)-(s.m.coHits||0))),lA=sum(v2.map(s=>s.m.coAtt||0)),lH=sum(v2.map(s=>s.m.coHits||0));
+  if(pAtt>=40&&lA>=15){const pr=pHit/pAtt*100,lr=lH/lA*100;ins.push(["P",lr<pr*0.75?`In legs you hit ${fmt(lr,0)}% of darts at a double, against ${fmt(pr,0)}% in practice drills. That gap is pressure; One-dart doubles and the ladder are built for it.`:`Your checkout rate in legs (${fmt(lr,0)}%) holds up against practice (${fmt(pr,0)}%). You're not losing much to pressure.`]);}
+  const f9s=v2.filter(s=>s.m.f9!=null&&s.m.legAvg!=null);if(f9s.length>=2){const g=mean(f9s.map(s=>s.m.f9-s.m.legAvg));if(g>8)ins.push(["9",`Your first-9 average is ${fmt(g)} higher than your leg average, so legs stall on the way in. Practise setting up a double from 100 to 170 with the ladder.`]);}
+  const n180=sum(rows.map(s=>s.m?s.m.n180||0:0));if(n180)ins.push(["★",`${n180} × 180 logged with the live scorer so far.`]);
+  el.innerHTML=`<div class="row between"><h2>Insights</h2><span class="muted small">${rows.length} session${rows.length===1?"":"s"} · ${A.bs.length} baseline${A.bs.length===1?"":"s"}</span></div>
+   <div class="grid3">${tiles}</div>
+   <div class="glass pad stack"><div class="seg" role="group" aria-label="Chart metric">${Object.entries(METRICS).map(([k,m])=>`<button type="button" data-metric="${k}" aria-pressed="${k===S.metric}">${m.label}</button>`).join("")}</div>${chartHtml}</div>
+   <div class="boards">
+     <div class="glass pad stack"><span class="eyebrow">Skill profile</span>${radarSVG(axes)}<p class="faint small">Each axis reaches the edge at roughly professional level. A dot after a label means no data yet.</p></div>
+     <div class="glass pad stack"><span class="eyebrow">Where your T20 darts land</span>${aimN?heat+`<p class="faint small">${aimN} darts aimed at T20. Brighter means more darts.${aim.M?" "+aim.M+" off the board.":""}</p>`:`<div class="empty"><b>No scoring darts yet</b><span>Every dart you tap in a T20 drill builds this map.</span></div>`}</div>
+   </div>
+   <div class="glass pad stack"><span class="eyebrow">Doubles map</span>${dRows.length?`<div class="boards" style="align-items:center">${dbl}<div class="tablebox"><table><thead><tr><th>Double</th><th>Darts</th><th>Hit %</th></tr></thead><tbody>${dRows.map(r=>`<tr><td>${dName(r.t)}</td><td class="num">${r.a}</td><td class="num ${r.r>=0.2?"good":r.r<0.1?"bad":""}">${fmt(r.r*100,0)}%</td></tr>`).join("")}</tbody></table></div></div><p class="faint small">Green is 15%+, red is below. A double shows once it has 5 darts.</p>`:`<div class="empty"><b>No per-double data yet</b><span>Doubles drills, checkouts and legs all fill this in.</span></div>`}</div>
+   <div class="glass pad"><span class="eyebrow">What the data says</span>${ins.length?ins.map(([i,t])=>`<div class="insight"><span class="ic">${esc(i)}</span><p>${esc(t)}</p></div>`).join(""):`<p class="muted small" style="margin-top:8px">After a few live-scored sessions this fills with findings about your miss pattern, doubles and pressure.</p>`}</div>`;
+}
+
+/* ---------- history ---------- */
+function renderHistory(A){
+  $("#h-count").textContent=A.ss.length?`${A.ss.length} session${A.ss.length>1?"s":""}`:"";
+  const el=$("#h-list");
+  if(!A.ss.length){el.innerHTML=`<div class="empty"><b>No sessions yet</b><span>Each session you save appears here with its full breakdown.</span></div>`;return;}
+  el.innerHTML=A.ss.slice().reverse().slice(0,80).map(s=>{
+    const st=[];if(s.avg3!=null)st.push("avg "+fmt(s.avg3));if(s.dAtt)st.push(`dbl ${s.dHits}/${s.dAtt}`);if(s.m&&s.m.coAtt)st.push(`co ${fmt(s.m.coHits/s.m.coAtt*100,0)}%`);
+    if(s.bobs!=null)st.push("Bob's "+s.bobs);if(s.dpl!=null)st.push(fmt(s.dpl)+" d/leg");if(s.m&&s.m.n180)st.push(s.m.n180+"×180");if(s.feel)st.push("feel "+s.feel);
+    const key="sessions:"+s.id;
+    return `<details class="glass hcard"><summary><b>${fmtDate(s.date)} · ${esc(typeName(s.type))}</b><span class="faint small">${s.v===2?"Live":"Manual"}</span><div class="stats">${st.map(x=>`<span>${esc(x)}</span>`).join("")}</div></summary>
+      ${s.drills?`<ul>${s.drills.map(x=>`<li><b style="color:var(--ink)">${esc((D[x.k]||{name:x.k}).name)}</b> — ${esc(x.txt)}</li>`).join("")}</ul>`:""}
+      ${s.notes?`<p class="small muted" style="margin-top:10px">${esc(s.notes)}</p>`:""}
+      <div class="row" style="margin-top:12px"><button type="button" class="btn sm danger" data-del="${esc(key)}">${S.pendingDel===key?"Tap again to delete":"Delete"}</button></div></details>`;}).join("");
+}
+
+/* ---------- baseline ---------- */
+function renderBaseline(A){
+  const rows=A.bs.slice().reverse();
+  $("#b-top").innerHTML=`<div class="glass pad-lg stack"><span class="eyebrow">Baseline test · about an hour</span><h2>Measure where you are</h2>
+    <p class="muted">Same board, same lighting, fresh arm. Retake every four weeks so the plan can recalibrate. It's scored live, dart by dart.</p>
+    <ol class="steps">
+      <li><h3>Scoring: 20 visits at T20</h3><p>3-dart average, treble rate and your miss pattern.</p></li>
+      <li><h3>Doubles: three at every double</h3><p>D1 to D20 in order, 60 darts. Your double rate and a hit rate for each double.</p></li>
+      <li><h3>Bob's 27</h3><p>Scored for you as you go.</p></li>
+      <li><h3>Three legs of 501</h3><p>Darts per leg, first 9, and checkout rate from darts at a double.</p></li>
+    </ol>
+    <div class="row"><button type="button" class="btn primary big" data-act="startBase">${A.bs.length?"Retake baseline":"Start baseline test"}</button>${A.retest?`<span class="chip build">Retest due</span>`:""}</div></div>
+   ${rows.length?`<div class="glass pad tablebox"><table><thead><tr><th>Date</th><th>Avg</th><th>T20 %</th><th>Dbl %</th><th>Bob's</th><th>Darts/leg</th><th>Checkout</th><th></th></tr></thead><tbody>${rows.map(b=>{const k="baselines:"+b.id;return `<tr><td>${fmtDate(b.date)}</td><td class="num">${fmt(b.avg3)}</td><td class="num">${b.tPct==null?"–":fmt(b.tPct,0)}</td><td class="num">${fmt(b.dPct,0)}</td><td class="num">${b.bobs??"–"}</td><td class="num">${fmt(b.dpl)}</td><td class="num">${b.coPct==null?"–":fmt(b.coPct,0)+"%"}</td><td><button type="button" class="btn sm danger" data-del="${esc(k)}">${S.pendingDel===k?"Confirm":"Delete"}</button></td></tr>`;}).join("")}</tbody></table></div>`:`<div class="empty"><b>No baseline yet</b><span>Your first result appears here, with each retest beside it.</span></div>`}`;
+}
+
+/* ---------- manual forms ---------- */
+const LOGF={
+ scoring:{f:["score","dbl"],src:"from your T20 scoring block",dsrc:"Match doubles block"},
+ doubles:{f:["score","dbl","bobs"],src:"from your T20 scoring block",dsrc:"Round the board + Bob's 27"},
+ finishing:{f:["score","dbl"],src:"from your Switch to 19s block",dsrc:"One-dart doubles + ladder darts at doubles"},
+ trebles:{f:["score","dbl"],src:"from your T20 scoring block",dsrc:"D16 split + match doubles"},
+ pressure:{f:["score","dbl","bobs"],src:"from your Ton chase (20 visits)",dsrc:"One-dart doubles + Bob's 27",visits:20},
+ match:{f:["dpl","dbl"],dsrc:"darts at a double in your legs + match doubles",dplsrc:"across today's 501 legs"},
+ checkin:{f:["score","bobs","dpl","dbl"],src:"from the 20 visits at T20",dsrc:"darts at a double in your 501 legs",dplsrc:"across your check-in legs",visits:20},
+ reset:{f:["score","dpl"],src:"from Big-bed grouping (15 visits)",dplsrc:"your one relaxed leg",visits:15},
+ other:{f:["score","dbl","bobs","dpl"],src:"from your scoring block",dsrc:"all doubles drills today"}
+};
+const FIELDS={score:["l-total","l-visits"],dbl:["l-datt","l-dhits"],bobs:["l-bobs"],dpl:["l-dpl"]};
+function applyLogType(){
+  const cfg=LOGF[$("#l-type").value]||LOGF.other;
+  document.querySelectorAll("#manual [data-f]").forEach(el=>{el.hidden=!cfg.f.includes(el.dataset.f);});
+  Object.entries(FIELDS).forEach(([k,ids])=>{if(!cfg.f.includes(k))ids.forEach(id=>{$("#"+id).value="";});});
+  if(cfg.src)$("#l-total-hint").textContent=cfg.src;if(cfg.dsrc)$("#l-datt-hint").textContent=cfg.dsrc;if(cfg.dplsrc)$("#l-dpl-hint").textContent=cfg.dplsrc;
+  if(cfg.visits&&!$("#l-visits").value)$("#l-visits").value=cfg.visits;
+  logCalc();
+}
+function logCalc(){
+  const t=num($("#l-total").value),v=num($("#l-visits").value),a=num($("#l-datt").value),h=num($("#l-dhits").value);
+  const avg=t!=null&&v?t/v:null,p=a?(h||0)/a*100:null,cfg=LOGF[$("#l-type").value]||LOGF.other,parts=[];
+  if(cfg.f.includes("score"))parts.push(`3-dart avg <b>${fmt(avg)}</b>`);if(cfg.f.includes("dbl"))parts.push(`Double rate <b>${p==null?"–":fmt(p,0)+"%"}</b>`);
+  $("#l-calc").innerHTML=parts.join(" · ");return {avg};
+}
+async function saveManual(){
+  const st=$("#l-status"),c=logCalc(),dAtt=num($("#l-datt").value)||0,dHits=num($("#l-dhits").value)||0;
+  if(dHits>dAtt){st.className="status err";st.textContent="Doubles hit can't be more than darts at doubles.";return;}
+  if(c.avg!=null&&c.avg>180){st.className="status err";st.textContent="That average is over 180. Check the total and visits.";return;}
+  const row={date:$("#l-date").value||todayISO(),type:$("#l-type").value,total:num($("#l-total").value),visits:num($("#l-visits").value),avg3:c.avg,dAtt,dHits,bobs:num($("#l-bobs").value),dpl:num($("#l-dpl").value),mins:num($("#l-mins").value),feel:S.lfeel,notes:$("#l-notes").value.trim()};
+  if(row.avg3==null&&!dAtt&&row.bobs==null&&row.dpl==null){st.className="status err";st.textContent="Add at least one number.";return;}
+  try{await addRow("sessions",row);st.className="status ok";st.textContent="Saved.";["#l-total","#l-visits","#l-datt","#l-dhits","#l-bobs","#l-dpl","#l-notes"].forEach(s=>$(s).value="");applyLogType();}
+  catch(e){st.className="status err";st.textContent="Couldn't save: "+(e&&e.message||"try again");}
+}
+function baselineCalc(){
+  const total=num($("#b-total").value),t20=num($("#b-t20").value),dh=num($("#b-dhits").value);
+  const legs=["#b-leg1","#b-leg2","#b-leg3"].map(s=>num($(s).value)).filter(v=>v!=null),coAtt=num($("#b-coatt").value);
+  const r={avg3:total!=null?total/20:null,tPct:t20!=null?t20/60*100:null,dPct:dh!=null?dh/60*100:null,dpl:legs.length?mean(legs):null,coPct:coAtt&&legs.length?legs.length/coAtt*100:null,legs};
+  $("#b-calc").innerHTML=`Avg <b>${fmt(r.avg3)}</b> · T20 <b>${r.tPct==null?"–":fmt(r.tPct,0)+"%"}</b> · Doubles <b>${r.dPct==null?"–":fmt(r.dPct,0)+"%"}</b> · Darts/leg <b>${fmt(r.dpl)}</b> · Checkout <b>${r.coPct==null?"–":fmt(r.coPct,0)+"%"}</b>`;return r;
+}
+async function saveBaselineManual(){
+  const st=$("#b-status"),r=baselineCalc();
+  if(r.avg3==null||r.dPct==null){st.className="status err";st.textContent="Enter at least the 20-visit total and doubles hit.";return;}
+  try{await addRow("baselines",{date:$("#b-date").value||todayISO(),total:num($("#b-total").value),avg3:r.avg3,t20:num($("#b-t20").value),tPct:r.tPct,dHits:num($("#b-dhits").value),dPct:r.dPct,bobs:num($("#b-bobs").value),legs:r.legs,dpl:r.dpl,coAtt:num($("#b-coatt").value),coPct:r.coPct});
+    st.className="status ok";st.textContent="Saved.";["#b-total","#b-t20","#b-dhits","#b-bobs","#b-leg1","#b-leg2","#b-leg3","#b-coatt"].forEach(s=>$(s).value="");baselineCalc();}
+  catch(e){st.className="status err";st.textContent="Couldn't save: "+(e&&e.message||"try again");}
+}
+
+/* ================= backup ================= */
+function bkStatus(cls,msg){const el=$("#bk-status");el.className="status "+cls;el.textContent=msg;}
+async function exportBackup(){
+  const data={app:"oche",format:2,exported:new Date().toISOString(),sessions:S.sessions,baselines:S.baselines};
+  const name=`oche-backup-${todayISO()}.json`,text=JSON.stringify(data);
+  const blob=new Blob([text],{type:"application/json"});
+  try{const file=new File([blob],name,{type:"application/json"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Oche backup"});bkStatus("ok",`Backup shared: ${S.sessions.length} sessions, ${S.baselines.length} baselines.`);return;}}
+  catch(e){if(e&&e.name==="AbortError")return;}
+  try{const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+    bkStatus("ok",`Saved ${name}.`);}
+  catch(e){bkStatus("err","Couldn't export on this device. Try again from the home-screen app.");}
+}
+function importBackup(file){
+  const rd=new FileReader();
+  rd.onload=()=>{try{const j=JSON.parse(rd.result);if(!j||!Array.isArray(j.sessions)||!Array.isArray(j.baselines))throw 0;
+      const have=new Set([...S.sessions,...S.baselines].map(r=>r.id));let a=0,b=0;
+      j.sessions.forEach(r=>{if(r&&r.id&&!have.has(r.id)){S.sessions.push(r);a++;}});
+      j.baselines.forEach(r=>{if(r&&r.id&&!have.has(r.id)){S.baselines.push(r);b++;}});
+      saveLocal();render();bkStatus("ok",a||b?`Added ${a} session${a===1?"":"s"} and ${b} baseline${b===1?"":"s"}.`:"Nothing new in that backup. Your data already has all of it.");}
+    catch(e){bkStatus("err","That file isn't an Oche backup. Pick the .json file you exported.");}};
+  rd.onerror=()=>bkStatus("err","Couldn't read that file.");rd.readAsText(file);
+}
+
+/* ================= routing + render ================= */
+const VIEWS=["home","insights","history","baseline","guide"];
+function routeView(){const h=location.hash.replace("#","");const v=VIEWS.includes(h)?h:"home";
+  document.querySelectorAll("section[data-view]").forEach(s=>s.hidden=s.dataset.view!==v);
+  document.querySelectorAll("#nav a").forEach(a=>a.getAttribute("href")==="#"+v?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));window.scrollTo(0,0);}
+function render(){
+  const A=analyse();renderHome(A);renderInsights(A);renderHistory(A);renderBaseline(A);
+  const sy=$("#sync");sy.textContent=S.note||"Saved on this phone";sy.classList.toggle("off",!!S.note);
+}
+
+/* ================= events ================= */
+function dispatchDart(b,code){const type=D[b.k].eng.type;if(type==="aim")inAim(b,code);else if(type==="co")inCo(b,code);else if(type==="leg")inLeg(b,code);}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button,a");if(!t)return;const ds=t.dataset;
+  if(ds.day!=null){S.day=+ds.day;render();return;}
+  if(ds.metric){S.metric=ds.metric;render();return;}
+  if(ds.lfeel){S.lfeel=+ds.lfeel;document.querySelectorAll("[data-lfeel]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.lfeel===ds.lfeel));return;}
+  if(ds.del){const k=ds.del;if(S.pendingDel!==k){S.pendingDel=k;render();return;}S.pendingDel=null;const i=k.indexOf(":");delRow(k.slice(0,i),k.slice(i+1)).catch(()=>toast("Couldn't delete"));render();return;}
+  if(t.id==="l-save"){saveManual();return;}
+  if(t.id==="b-save"){saveBaselineManual();return;}
+  const a=ds.act;
+  if(a==="start"||a==="startBase"){if(S.run&&!ds.sure){ds.sure="1";t.textContent="Tap again: replaces the session in progress";return;}startRun(a==="startBase"?BASE:null);return;}
+  if(a==="resume"){wake();renderRunner();return;}
+  if(a==="hideInstall"){store.set("oche-hide-install",1);render();return;}
+  if(a==="install"&&deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.finally(()=>{deferredInstall=null;render();});return;}
+  if(t.id==="bk-export"){exportBackup();return;}
+  if(!S.run)return;
+  if(a==="close"){closeRunner();return;}
+  if(a==="undo"){const p=S.run.hist.pop();if(p)curBlock().data=JSON.parse(p);persistRun();renderRunner();return;}
+  if(a==="next"){nextBlock();return;}
+  if(a==="full"){S.run.full=!S.run.full;persistRun();renderRunner();return;}
+  if(a==="save"){saveRun();return;}
+  if(a==="discard"){if(!S.run.confirmDiscard){S.run.confirmDiscard=true;renderRunner();return;}S.run=null;persistRun();closeRunner();toast("Session discarded");return;}
+  if(ds.rfeel){S.run.feel=+ds.rfeel;persistRun();document.querySelectorAll("[data-rfeel]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.rfeel===ds.rfeel));return;}
+  if(ds.mult){S.run.mult=ds.mult;renderRunner();return;}
+  if(S.run.phase!=="run")return;
+  if(ds.num){const code=S.run.mult+ds.num;S.run.full=false;act(b=>dispatchDart(b,code));return;}
+  if(ds.dart){const code=ds.dart;S.run.full=false;act(b=>dispatchDart(b,code));return;}
+  if(ds.dr){const r=ds.dr;act(b=>D[b.k].eng.type==="split"?inSplit(b,r):inDbl(b,r));return;}
+  if(ds.atc){const r=ds.atc;act(b=>inAtc(b,r));return;}
+});
+document.addEventListener("input",e=>{if(e.target.id==="rs-notes"&&S.run){S.run.notes=e.target.value;persistRun();}});
+["l-total","l-visits","l-datt","l-dhits"].forEach(id=>$("#"+id).addEventListener("input",logCalc));
+$("#l-type").addEventListener("change",()=>{$("#l-visits").value="";applyLogType();});
+["b-total","b-t20","b-dhits","b-bobs","b-leg1","b-leg2","b-leg3","b-coatt"].forEach(id=>$("#"+id).addEventListener("input",baselineCalc));
+window.addEventListener("hashchange",routeView);
+$("#bk-file").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)importBackup(f);e.target.value="";});
+
+/* ================= boot ================= */
+$("#l-type").innerHTML=ALLT.map(w=>`<option value="${w.key}">${w.name}</option>`).join("")+`<option value="other">Other</option>`;
+$("#lvl-table").innerHTML=LEVELS.map((l,i)=>`<tr><td><b>${i+1}</b> ${l.name}</td><td class="num">${i===4?"65+":l.avg[0]+"–"+l.avg[1]}</td><td class="num">${i===4?"36%+":l.dbl[0]+"–"+l.dbl[1]+"%"}</td><td class="num">${l.bobs}</td><td class="num">${l.dpl}</td></tr>`).join("");
+$("#b-date").value=todayISO();$("#l-date").value=todayISO();$("#l-type").value=WEEK[S.day].key;
+baselineCalc();applyLogType();routeView();render();
+
+loadLocal();render();
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});}catch(e){}
+if("serviceWorker" in navigator&&location.protocol!=="file:")window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{});});
+})();
+</script>
+</body>
+</html>

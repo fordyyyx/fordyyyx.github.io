@@ -42,6 +42,9 @@ src/
   styles/global.css     design tokens and base styles
   assets/projects/      project screenshots (optimised to WebP at build time)
 public/                 files served as-is: CV, icons, preview image, robots.txt
+  darts/                Oche, a personal darts training app (installable web
+                        app, works offline); not linked from the site and
+                        kept out of search
 scripts/                generate-images.mjs (preview image and favicons),
                         fetch-strava.mjs (live run count for the hero)
 .github/workflows/      deploy.yml (build and deploy)
