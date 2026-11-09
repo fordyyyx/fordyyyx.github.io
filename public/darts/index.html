@@ -102,6 +102,7 @@ label.btn{cursor:pointer}
 .lg{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-2px}
 .fx-video{width:100%;max-height:52vh;border-radius:18px;background:#000;display:block}
 .fx-still{width:100%;display:block;border-radius:14px;touch-action:none;background:#000;-webkit-user-select:none;user-select:none}
+.fxref{stroke:var(--pin);opacity:.75;fill:none}
 .fxln{stroke:var(--pb-hl);stroke-linecap:round;fill:none}
 .fxpt{fill:var(--accent);stroke:var(--pin)}
 .fxlbl{fill:var(--pin);font-family:var(--mono);font-weight:700;paint-order:stroke;stroke:var(--pin-edge)}
@@ -1458,11 +1459,12 @@ function renderInsights(A){
     cal:()=>calCard(A),
     ms:()=>milestonesCard(),
     fhead:()=>formHeadCard(),
+    fpair:()=>formPairCard(),
     fchart:()=>formChartCard(),
     fcmp:()=>formCmpCard(),
     flist:()=>formListCard()
   };
-  const TABS=[["overview","Overview",["tiles","chart","web","ins"]],["scoring","Scoring",["t20","grpAim","each","dbd","spread"]],["doubles","Doubles & finishing",["group","dmap","cogrid","bobs"]],["matches","Matches",["vs","worm"]],["progress","Progress",["goals","ladder","cal","ms"]],["form","Form",["fhead","fchart","fcmp","flist"]]];
+  const TABS=[["overview","Overview",["tiles","chart","web","ins"]],["scoring","Scoring",["t20","grpAim","each","dbd","spread"]],["doubles","Doubles & finishing",["group","dmap","cogrid","bobs"]],["matches","Matches",["vs","worm"]],["progress","Progress",["goals","ladder","cal","ms"]],["form","Form",["fhead","fpair","fchart","fcmp","flist"]]];
   const cur=TABS.find(t=>t[0]===tab)||TABS[0];
   el.innerHTML=`<div class="row between"><h2>Insights</h2><span class="muted small">${rows.length} session${rows.length===1?"":"s"} · ${A.bs.length} baseline${A.bs.length===1?"":"s"}</span></div>
    <div class="seg itabs" role="tablist" aria-label="Insights sections">${TABS.map(t=>`<button type="button" role="tab" data-itab="${t[0]}" aria-pressed="${t[0]===cur[0]}" aria-selected="${t[0]===cur[0]}">${t[1]}</button>`).join("")}</div>
@@ -1948,18 +1950,47 @@ async function imgDel(id){delete IMGC[id];try{const db=await idb();db.transactio
 function hydrateImgs(){document.querySelectorAll("[data-imgid]").forEach(el=>{if(el.dataset.ok)return;const id=el.dataset.imgid;imgGet(id).then(d=>{if(!d)return;el.dataset.ok="1";if(el.tagName.toLowerCase()==="image")el.setAttribute("href",d);else el.src=d;});});}
 const SLOTS=[["setup","Set-up"],["release","Release"],["follow","Follow-through"]];
 const slotName=k=>(SLOTS.find(x=>x[0]===k)||[k,k])[1];
+const FVIEWS={side:"Side-on",rear:"From behind"},FADJ={side:"side-on",rear:"from-behind"};
+const fView=f=>f&&f.view==="rear"?"rear":"side";
+const curFView=()=>S.fview||(S.fview=store.get("oche-fview")==="rear"?"rear":"side");
 function armAngles(p){if(!p||!p.S||!p.E||!p.H)return null;const v1=[p.S.x-p.E.x,p.S.y-p.E.y],v2=[p.H.x-p.E.x,p.H.y-p.E.y],c=(v1[0]*v2[0]+v1[1]*v2[1])/((Math.hypot(...v1)*Math.hypot(...v2))||1);
   return {elbow:Math.acos(clamp(c,-1,1))*180/Math.PI,upper:Math.atan2(p.S.y-p.E.y,Math.abs(p.E.x-p.S.x))*180/Math.PI,fore:Math.atan2(Math.abs(p.H.x-p.E.x),p.E.y-p.H.y)*180/Math.PI};}
-const angTxt=a=>a?`elbow ${fmt(a.elbow,0)}°, upper arm ${fmt(a.upper,0)}° ${a.upper>=0?"above":"below"} horizontal, forearm ${fmt(a.fore,0)}° from vertical`:"points not marked";
-function armOverlay(pts,w){const r=w*.017,lw=w*.009,fs=w*.04;let g="";const P=pts||{};
+/* From behind, image left/right is the thrower's left/right (and the board's). Sideways distances are divided by the forearm
+   length in the same still, so they don't depend on how far away the phone is. */
+function rearMeas(p){if(!p||!p.S||!p.E||!p.H)return null;const len=Math.hypot(p.H.x-p.E.x,p.H.y-p.E.y)||1;
+  return {lean:Math.atan2(p.H.x-p.E.x,p.E.y-p.H.y)*180/Math.PI,offset:(p.E.x-p.S.x)/len*100,len,hx:p.H.x,sx:p.S.x};}
+const meas=(p,v)=>v==="rear"?rearMeas(p):armAngles(p);
+function rearSum(f){const g=k=>f.frames[k]&&f.frames[k].angles,r=g("release"),fo=g("follow"),su=g("setup"),o={};
+  if(r&&fo&&r.len)o.drift=(fo.hx-r.hx)/r.len*100;if(r&&su&&r.len)o.sway=(r.sx-su.sx)/r.len*100;return o;}
+const lrS=(v,u)=>Math.abs(v)<.5?`0${u}`:`${fmt(Math.abs(v),0)}${u} ${v>0?"R":"L"}`;
+const lrW=(v,u)=>Math.abs(v)<.5?`0${u}`:`${fmt(Math.abs(v),0)}${u} ${v>0?"right":"left"}`;
+const sg=d=>`${d>=0?"+":"−"}${fmt(Math.abs(d),0)}`;
+const shiftW=(d,u)=>Math.abs(d)<.5?"unchanged":`${fmt(Math.abs(d),0)}${u} further ${d>0?"right":"left"}`;
+const sideTxt=a=>a?`elbow ${fmt(a.elbow,0)}°, upper arm ${fmt(a.upper,0)}° ${a.upper>=0?"above":"below"} horizontal, forearm ${fmt(a.fore,0)}° from vertical`:"points not marked";
+const rearTxt=a=>a?`forearm ${Math.abs(a.lean)<1.5?"close to vertical":`leans ${fmt(Math.abs(a.lean),0)}° ${a.lean>0?"right":"left"} of vertical`}, elbow ${Math.abs(a.offset)<3?"in line with the shoulder":`${fmt(Math.abs(a.offset),0)}% of a forearm length ${a.offset>0?"right":"left"} of the shoulder`}`:"points not marked";
+const angTxt=(a,v)=>v==="rear"?rearTxt(a):sideTxt(a);
+const sumTxt=o=>[o.drift!=null?(Math.abs(o.drift)<3?"hand follows straight through (under 3% of a forearm length sideways)":`hand drifts ${fmt(Math.abs(o.drift),0)}% of a forearm length ${o.drift>0?"right":"left"} between release and follow-through`):null,
+  o.sway!=null?(Math.abs(o.sway)<3?"shoulder stays still from set-up to release":`shoulder moves ${fmt(Math.abs(o.sway),0)}% of a forearm length ${o.sway>0?"right":"left"} from set-up to release`):null].filter(Boolean);
+function missLR(){const pb=[],pd=[];let mL=0,mR=0;[...S.sessions,...S.baselines].filter(x=>x.m).forEach(x=>{const q=x.m.pins;if(q){pb.push(...(q.bull||[]));pd.push(...(q.dbl||[]).map(z=>[z[0],z[1]]));}mL+=x.m.mL||0;mR+=x.m.mR||0;});return {sd:pinStats(pd),sb:pinStats(pb),mL,mR};}
+function pinLinkTxt(o){const m=missLR(),bits=[];let lp=null;
+  if(m.sd&&m.sd.n>=10){bits.push(`${fmt(m.sd.left,0)}% of your pinned doubles land left of the target`);lp=m.sd.left;}
+  if(m.mL+m.mR>=10){const p=m.mL/(m.mL+m.mR)*100;bits.push(`${fmt(p,0)}% of your scoring misses go left`);if(lp==null)lp=p;}
+  if(!bits.length)return "";let s=bits.join(", and ")+".";const s0=s[0].toUpperCase()+s.slice(1);s=s0;
+  if(o&&o.drift!=null&&Math.abs(o.drift)>=3){const side=o.drift>0?"right":"left",match=side==="left"?lp>55:lp<45;s+=match?` That matches your ${side} drift, so it's worth working on.`:` That doesn't clearly match your ${side} drift, so the drift may not be what's costing you.`;}
+  return s;}
+function armOverlay(pts,w,h,v){const r=w*.017,lw=w*.009,fs=w*.04;let g="";const P=pts||{};
+  if(v==="rear"&&P.S)g+=`<line class="fxref" stroke-width="${lw*.5}" stroke-dasharray="${lw*1.6} ${lw*1.6}" x1="${P.S.x}" y1="0" x2="${P.S.x}" y2="${h}"/>`;
   if(P.S&&P.E)g+=`<line class="fxln" stroke-width="${lw}" x1="${P.S.x}" y1="${P.S.y}" x2="${P.E.x}" y2="${P.E.y}"/>`;if(P.E&&P.H)g+=`<line class="fxln" stroke-width="${lw}" x1="${P.E.x}" y1="${P.E.y}" x2="${P.H.x}" y2="${P.H.y}"/>`;
   ["S","E","H"].forEach(k=>{if(P[k])g+=`<circle class="fxpt" stroke-width="${lw*.5}" cx="${P[k].x}" cy="${P[k].y}" r="${r}"/><text class="fxlbl" stroke-width="${lw*.6}" font-size="${fs}" x="${P[k].x+r*1.6}" y="${P[k].y-r*1.2}">${k}</text>`;});return g;}
-function stillSVG(fr,id){return `<svg class="fx-still" viewBox="0 0 ${fr.w} ${fr.h}" role="img" aria-label="Still with arm markings"><image ${id?`data-imgid="${id}" href="${IMGC[id]||""}"`:`href="${fr.img}"`} width="${fr.w}" height="${fr.h}"/>${armOverlay(fr.pts,fr.w)}</svg>`;}
+function stillSVG(fr,id,v){return `<svg class="fx-still" viewBox="0 0 ${fr.w} ${fr.h}" role="img" aria-label="${v==="rear"?"From-behind":"Side-on"} still with arm markings"><image ${id?`data-imgid="${id}" href="${IMGC[id]||""}"`:`href="${fr.img}"`} width="${fr.w}" height="${fr.h}"/>${armOverlay(fr.pts,fr.w,fr.h,v)}</svg>`;}
+const FX_HELP={side:"Film side-on from your throwing-arm side, with the phone at shoulder height about 2–3 m away and your whole arm in frame.",
+  rear:"Put the phone behind your throwing shoulder, slightly above head height so your head doesn't hide your arm, and line it up with the middle of the board. Use the same spot each time. Left and right are as seen from behind, the same as on the board."};
 let FX=null;
-function openFX(){FX={url:null,slots:{},cur:null,notes:"",confirm:false};const el=$("#formx");el.hidden=false;document.body.classList.add("lock");
+function openFX(view){FX={url:null,slots:{},cur:null,notes:"",confirm:false,view:view||curFView()};const el=$("#formx");el.hidden=false;document.body.classList.add("lock");
   el.innerHTML=`<div class="rwrap">
     <div class="rtop"><button type="button" class="icon-btn" data-act="fxClose" aria-label="Close form review">×</button><b style="flex:1">Form review</b><span class="faint small">2D estimates</span></div>
-    <div class="glass pad stack" id="fx-load"><p class="small muted">Film side-on from your throwing-arm side, with the phone at shoulder height about 2–3 m away and your whole arm in frame. Use slow motion if your phone has it. The clip isn't saved; only the stills you grab are kept.</p>
+    <div class="glass pad stack" id="fx-load"><div class="seg" role="group" aria-label="Camera view">${Object.entries(FVIEWS).map(([k,l])=>`<button type="button" data-fxview="${k}" aria-pressed="${k===FX.view}">${l}</button>`).join("")}</div>
+      <p class="small muted"><span id="fx-help">${FX_HELP[FX.view]}</span> Use slow motion if your phone has it. The clip isn't saved; only the stills you grab are kept.</p>
       <div class="row"><label class="btn primary" for="fx-rec">Record a clip</label><label class="btn" for="fx-pick">Choose a video</label></div>
       <input type="file" id="fx-rec" class="vh" accept="video/*" capture="environment"><input type="file" id="fx-pick" class="vh" accept="video/*"></div>
     <div class="glass pad stack" id="fx-player" hidden>
@@ -1981,71 +2012,104 @@ function openFX(){FX={url:null,slots:{},cur:null,notes:"",confirm:false};const e
   sc.addEventListener("input",()=>{v.pause();v.currentTime=+sc.value;});
   renderFXPanel();
 }
+function setFXView(v){FX.view=v;document.querySelectorAll("[data-fxview]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.fxview===v));$("#fx-help").textContent=FX_HELP[v];renderFXPanel();}
 function closeFX(){if(FX&&FX.url)URL.revokeObjectURL(FX.url);FX=null;const el=$("#formx");el.hidden=true;el.innerHTML="";if($("#runner").hidden)document.body.classList.remove("lock");render();}
 function fxGrab(k){const v=$("#fx-video");if(!v||!v.videoWidth)return;const w=Math.min(540,v.videoWidth),h=Math.round(w*v.videoHeight/v.videoWidth),c=document.createElement("canvas");c.width=w;c.height=h;
   c.getContext("2d").drawImage(v,0,0,w,h);let img;try{img=c.toDataURL("image/jpeg",.72);}catch(e){toast("Couldn't grab that frame");return;}
   FX.slots[k]={img,w,h,pts:{},t:v.currentTime};FX.cur=k;renderFXPanel();$("#fx-panel").scrollIntoView({block:"start",behavior:"smooth"});}
+function fxSummary(){if(FX.view!=="rear")return "";const fr={};for(const k in FX.slots)fr[k]={angles:rearMeas(FX.slots[k].pts)};const t=sumTxt(rearSum({frames:fr}));return t.length?t.map(x=>x[0].toUpperCase()+x.slice(1)+".").join(" "):"";}
 function renderFXPanel(){
-  const el=$("#fx-panel");if(!el||!FX)return;const ks=SLOTS.map(x=>x[0]).filter(k=>FX.slots[k]);
-  if(!ks.length){el.innerHTML=`<p class="faint small" style="text-align:center">Step to the moment the dart leaves your hand and grab it as Release. Set-up and Follow-through are optional but help Claude.</p>`;return;}
-  if(!FX.cur||!FX.slots[FX.cur])FX.cur=ks[0];const fr=FX.slots[FX.cur],a=armAngles(fr.pts),next=["S","E","H"].find(k=>!fr.pts[k]);
-  el.innerHTML=`<div class="glass pad stack"><div class="seg" role="group" aria-label="Still">${ks.map(k=>`<button type="button" data-fxslot="${k}" aria-pressed="${k===FX.cur}">${slotName(k)}${armAngles(FX.slots[k].pts)?" ✓":""}</button>`).join("")}</div>
-    <div id="fx-still-wrap">${stillSVG(fr)}</div>
-    <p class="small">${next?`Tap your <b>${({S:"shoulder",E:"elbow",H:"hand (where you grip the dart)"})[next]}</b>.`:"Drag any point to adjust it."}</p>
-    <p class="small muted" id="fx-ang">${a?angTxt(a):"Mark shoulder, elbow and hand to measure the arm."}</p>
+  const el=$("#fx-panel");if(!el||!FX)return;const ks=SLOTS.map(x=>x[0]).filter(k=>FX.slots[k]),V=FX.view;
+  if(!ks.length){el.innerHTML=`<p class="faint small" style="text-align:center">Step to the moment the dart leaves your hand and grab it as Release. Set-up and Follow-through are optional but help Claude${V==="rear"?", and from behind they're what show sideways movement":""}.</p>`;return;}
+  if(!FX.cur||!FX.slots[FX.cur])FX.cur=ks[0];const fr=FX.slots[FX.cur],a=meas(fr.pts,V),next=["S","E","H"].find(k=>!fr.pts[k]),sm=fxSummary();
+  el.innerHTML=`<div class="glass pad stack"><div class="seg" role="group" aria-label="Still">${ks.map(k=>`<button type="button" data-fxslot="${k}" aria-pressed="${k===FX.cur}">${slotName(k)}${meas(FX.slots[k].pts,V)?" ✓":""}</button>`).join("")}</div>
+    <div id="fx-still-wrap">${stillSVG(fr,null,V)}</div>
+    <p class="small">${next?`Tap your <b>${({S:V==="rear"?"throwing shoulder":"shoulder",E:"elbow",H:"hand (where you grip the dart)"})[next]}</b>.`:"Drag any point to adjust it."}</p>
+    <p class="small muted" id="fx-ang">${a?angTxt(a,V):"Mark shoulder, elbow and hand to measure the arm."}</p>
+    ${V==="rear"?`<p class="small" id="fx-sum">${sm||"Mark the set-up and follow-through too to measure sideways movement."}</p>`:""}
     <div class="row"><button type="button" class="btn sm" data-act="fxClear">Clear points</button></div></div>
     <div class="glass pad stack"><label class="f">Notes<textarea id="fx-notes" placeholder="How did the throws feel? Anything you were trying?">${esc(FX.notes)}</textarea></label>
-      <div class="row"><button type="button" class="btn primary" data-act="fxSave">Save review</button><span class="status" id="fx-status" role="status"></span></div></div>`;
+      <div class="row"><button type="button" class="btn primary" data-act="fxSave">Save ${FADJ[V]} review</button><span class="status" id="fx-status" role="status"></span></div></div>`;
   $("#fx-notes").addEventListener("input",e=>{FX.notes=e.target.value;});bindStill();
 }
 function bindStill(){
-  const svg=$("#fx-still-wrap svg");if(!svg)return;const fr=FX.slots[FX.cur];let drag=null;
+  const svg=$("#fx-still-wrap svg");if(!svg)return;const fr=FX.slots[FX.cur],V=FX.view;let drag=null;
   const toPx=ev=>{const pt=svg.createSVGPoint();pt.x=ev.clientX;pt.y=ev.clientY;const m=pt.matrixTransform(svg.getScreenCTM().inverse());return {x:clamp(m.x,0,fr.w),y:clamp(m.y,0,fr.h)};};
-  const redraw=()=>{svg.querySelectorAll(".fxln,.fxpt,.fxlbl").forEach(n=>n.remove());svg.insertAdjacentHTML("beforeend",armOverlay(fr.pts,fr.w));const a=armAngles(fr.pts);$("#fx-ang").textContent=a?angTxt(a):"Mark shoulder, elbow and hand to measure the arm.";};
+  const redraw=()=>{svg.querySelectorAll(".fxln,.fxpt,.fxlbl,.fxref").forEach(n=>n.remove());svg.insertAdjacentHTML("beforeend",armOverlay(fr.pts,fr.w,fr.h,V));const a=meas(fr.pts,V);$("#fx-ang").textContent=a?angTxt(a,V):"Mark shoulder, elbow and hand to measure the arm.";const s=$("#fx-sum");if(s)s.textContent=fxSummary()||"Mark the set-up and follow-through too to measure sideways movement.";};
   svg.addEventListener("pointerdown",ev=>{ev.preventDefault();const q=toPx(ev),near=["S","E","H"].filter(k=>fr.pts[k]).map(k=>({k,d:Math.hypot(fr.pts[k].x-q.x,fr.pts[k].y-q.y)})).sort((a,b)=>a.d-b.d)[0];
-    const next=["S","E","H"].find(k=>!fr.pts[k]);const k=near&&(near.d<fr.w*.06||!next)?near.k:next;fr.pts[k]=q;drag=k;redraw();try{svg.setPointerCapture(ev.pointerId);}catch(e){}});
+    const next=["S","E","H"].find(k=>!fr.pts[k]);const k=near&&(!next||near.d<fr.w*.025)?near.k:next;fr.pts[k]=q;drag=k;redraw();try{svg.setPointerCapture(ev.pointerId);}catch(e){}});
   svg.addEventListener("pointermove",ev=>{if(!drag)return;fr.pts[drag]=toPx(ev);redraw();});
   svg.addEventListener("pointerup",()=>{if(!drag)return;drag=null;renderFXPanel();});
 }
 async function fxSave(){
   const ks=Object.keys(FX.slots);if(!ks.length){setStatus("fx-status","err","Grab at least the release frame first.");return;}
-  const id="fm"+Date.now().toString(36),frames={},A=analyse(),todays=A.ss.filter(x=>x.date===todayISO()).slice(-1)[0];
-  try{for(const k of ks){const fr=FX.slots[k],iid=id+"-"+k;await imgPut(iid,fr.img);frames[k]={img:iid,w:fr.w,h:fr.h,pts:fr.pts,angles:armAngles(fr.pts),t:fr.t};}}
+  const V=FX.view,id="fm"+Date.now().toString(36),frames={},A=analyse(),todays=A.ss.filter(x=>x.date===todayISO()).slice(-1)[0];
+  try{for(const k of ks){const fr=FX.slots[k],iid=id+"-"+k;await imgPut(iid,fr.img);frames[k]={img:iid,w:fr.w,h:fr.h,pts:fr.pts,angles:meas(fr.pts,V),t:fr.t};}}
   catch(e){setStatus("fx-status","err","Couldn't store the stills on this phone. Free up some space and try again.");return;}
-  S.forms=S.forms||[];S.forms.push({id,date:todayISO(),created:Date.now(),sessionId:todays?todays.id:null,notes:(FX.notes||"").trim(),frames});saveLocal();
-  S.itab="form";store.set("oche-itab","form");S.openForm=id;closeFX();location.hash="insights";toast("Form review saved");
+  S.forms=S.forms||[];S.forms.push({id,view:V,date:todayISO(),created:Date.now(),sessionId:todays?todays.id:null,notes:(FX.notes||"").trim(),frames});saveLocal();
+  S.fview=V;store.set("oche-fview",V);S.fcmpA=S.fcmpB=null;S.itab="form";store.set("oche-itab","form");S.openForm=id;closeFX();location.hash="insights";toast(`${V==="rear"?"From-behind":"Side-on"} review saved`);
 }
-function formRecs(){return (S.forms||[]).slice().sort((a,b)=>(a.created||0)-(b.created||0));}
-function formHeadCard(){const n=(S.forms||[]).length;
-  return `<div class="glass pad-lg stack"><span class="eyebrow">Form check</span><h2>Film your throw</h2><p class="small muted">Record a few throws side-on, grab the set-up, release and follow-through, and mark your shoulder, elbow and hand. Comparing reviews shows whether your release is repeatable, and the stills can go to Claude for technique feedback.</p>
-    <div class="row"><button type="button" class="btn primary" data-act="fxOpen">New form review</button>${S.run?`<button type="button" class="btn" data-act="resume">Back to your session</button>`:""}<span class="faint small">${n} review${n===1?"":"s"}</span></div></div>`;}
+function formRecs(v){return (S.forms||[]).filter(f=>!v||fView(f)===v).sort((a,b)=>(a.created||0)-(b.created||0));}
+function pairFor(date){const d=formRecs().filter(f=>f.date===date),s=d.filter(f=>fView(f)==="side").pop(),r=d.filter(f=>fView(f)==="rear").pop();return s&&r?[s,r]:null;}
+function formHeadCard(){const V=curFView(),n=v=>formRecs(v).length;
+  return `<div class="glass pad-lg stack"><span class="eyebrow">Form check</span><h2>Film your throw</h2><p class="small muted">Film a few throws, grab the set-up, release and follow-through, and mark your shoulder, elbow and hand. Side-on shows your arm angles; from behind shows sideways movement. Comparing reviews shows whether your throw is repeatable, and the stills can go to Claude for technique feedback.</p>
+    <div class="seg" role="group" aria-label="Camera view">${Object.entries(FVIEWS).map(([k,l])=>`<button type="button" data-fview="${k}" aria-pressed="${k===V}">${l} · ${n(k)}</button>`).join("")}</div>
+    <div class="row"><button type="button" class="btn primary" data-act="fxOpen">New ${FADJ[V]} review</button>${S.run?`<button type="button" class="btn" data-act="resume">Back to your session</button>`:""}</div></div>`;}
 function formChartCard(){
-  const rs=formRecs().filter(f=>f.frames&&f.frames.release&&f.frames.release.angles);if(rs.length<2)return "";
-  const ys=rs.map(f=>f.frames.release.angles.elbow),W=420,H=170,L=36,Rr=12,T=14,B=24,lo=Math.min(...ys)-5,hi=Math.max(...ys)+5,X=i=>L+i*(W-L-Rr)/(rs.length-1),Y=v=>T+(hi-v)/(hi-lo)*(H-T-B);
-  let g=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Release elbow angle by review" style="min-width:0">`;niceTicks(lo,hi,3).forEach(t=>{g+=`<line class="ax" x1="${L}" x2="${W-Rr}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axt" x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}°</text>`;});
+  const V=curFView(),rs=formRecs(V).filter(f=>f.frames&&f.frames.release&&f.frames.release.angles);if(rs.length<2)return "";
+  const ys=rs.map(f=>V==="rear"?f.frames.release.angles.lean:f.frames.release.angles.elbow),W=420,H=170,L=40,Rr=12,T=14,B=24,lo=Math.min(...ys)-5,hi=Math.max(...ys)+5,X=i=>L+i*(W-L-Rr)/(rs.length-1),Y=v=>T+(hi-v)/(hi-lo)*(H-T-B);
+  const tl=t=>V==="rear"?(t>0?`${t}° R`:t<0?`${-t}° L`:"0°"):`${t}°`,title=V==="rear"?"Release forearm lean":"Release elbow angle";
+  let g=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${title} by review" style="min-width:0">`;niceTicks(lo,hi,3).forEach(t=>{g+=`<line class="ax" x1="${L}" x2="${W-Rr}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axt" x="${L-6}" y="${Y(t)+4}" text-anchor="end">${tl(t)}</text>`;});
   g+=`<path class="ln" d="${ys.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ")}"/>`;ys.forEach((v,i)=>{g+=`<circle class="dotlast" cx="${X(i)}" cy="${Y(v)}" r="4"/>`;});
   g+=`<text class="axt" x="${L}" y="${H-6}">${fmtDate(rs[0].date)}</text><text class="axt" x="${W-Rr}" y="${H-6}" text-anchor="end">${fmtDate(rs[rs.length-1].date)}</text></svg>`;
-  return `<div class="glass pad stack"><span class="eyebrow">Release elbow angle</span><div class="chartbox">${g}</div><p class="small muted">Across ${rs.length} reviews your release elbow varies by about <b class="mono" style="color:var(--ink)">±${fmt(sdS(ys),0)}°</b>. Smaller is more repeatable; a few degrees is normal measurement wobble.</p></div>`;
+  let extra="";if(V==="rear"){const ds=rs.map(f=>rearSum(f).drift).filter(x=>x!=null);if(ds.length>=2){const m=mean(ds);extra=` Your follow-through drift averages <b class="mono" style="color:var(--ink)">${lrW(m,"%")}</b> of a forearm length.`;}}
+  return `<div class="glass pad stack"><span class="eyebrow">${title}</span><div class="chartbox">${g}</div><p class="small muted">Across ${rs.length} reviews this varies by about <b class="mono" style="color:var(--ink)">±${fmt(sdS(ys),0)}°</b>. Smaller is more repeatable; a few degrees is normal measurement wobble.${extra}</p></div>`;
 }
 function formCmpCard(){
-  const rs=formRecs();if(rs.length<2)return "";const ia=S.fcmpA&&rs.find(f=>f.id===S.fcmpA)?S.fcmpA:rs[rs.length-2].id,ib=S.fcmpB&&rs.find(f=>f.id===S.fcmpB)?S.fcmpB:rs[rs.length-1].id,A1=rs.find(f=>f.id===ia),B1=rs.find(f=>f.id===ib);
+  const V=curFView(),rs=formRecs(V);if(rs.length<2)return "";const ia=S.fcmpA&&rs.find(f=>f.id===S.fcmpA)?S.fcmpA:rs[rs.length-2].id,ib=S.fcmpB&&rs.find(f=>f.id===S.fcmpB)?S.fcmpB:rs[rs.length-1].id,A1=rs.find(f=>f.id===ia),B1=rs.find(f=>f.id===ib);
   const opt=sel=>rs.map(f=>`<option value="${f.id}" ${f.id===sel?"selected":""}>${fmtDate(f.date)}${f.notes?" · "+esc(f.notes.slice(0,20)):""}</option>`).join("");
-  const rows=SLOTS.map(([k,l])=>{const a=A1.frames[k]&&A1.frames[k].angles,b=B1.frames[k]&&B1.frames[k].angles;if(!a&&!b)return "";const c=(x,y)=>x!=null&&y!=null?`${y-x>=0?"+":"−"}${fmt(Math.abs(y-x),0)}°`:"–";
-    const cell=key=>`<td class="num">${b?fmt(b[key],0)+"°":"–"}${a&&b?`<br><span class="faint small">${c(a[key],b[key])}</span>`:""}</td>`;
-    return `<tr><td>${k==="follow"?"Follow":l}</td>${cell("elbow")}${cell("upper")}${cell("fore")}</tr>`;}).join("");
-  const pic=(f,k)=>f.frames[k]?stillSVG(f.frames[k],f.frames[k].img):`<div class="empty small">No ${slotName(k).toLowerCase()}</div>`;
-  return `<div class="glass pad stack"><span class="eyebrow">Compare two reviews</span><div class="fgrid2"><select id="fcmp-a" aria-label="First review">${opt(ia)}</select><select id="fcmp-b" aria-label="Second review">${opt(ib)}</select></div>
+  let rows,head,foot;
+  if(V==="rear"){head=`<th>Still</th><th>Forearm lean</th><th>Elbow offset</th>`;
+    const cell=(a,b,key,u)=>`<td class="num">${b?lrS(b[key],u):"–"}${a&&b?`<br><span class="faint small">Δ ${lrS(b[key]-a[key],u)}</span>`:""}</td>`;
+    rows=SLOTS.map(([k,l])=>{const a=A1.frames[k]&&A1.frames[k].angles,b=B1.frames[k]&&B1.frames[k].angles;if(!a&&!b)return "";return `<tr><td>${k==="follow"?"Follow":l}</td>${cell(a,b,"lean","°")}${cell(a,b,"offset","%")}</tr>`;}).join("");
+    const o1=rearSum(A1),o2=rearSum(B1);[["drift","Drift"],["sway","Sway"]].forEach(([k,l])=>{if(o2[k]==null)return;rows+=`<tr><td>${l}</td><td class="num" colspan="2">${lrS(o2[k],"%")}${o1[k]!=null?`<br><span class="faint small">Δ ${lrS(o2[k]-o1[k],"%")}</span>`:""}</td></tr>`;});
+    foot="R and L are right and left as seen from behind, the same as on the board. Offset, drift (hand, release to follow-through) and sway (shoulder, set-up to release) are % of a forearm length. Δ is the shift since the first review.";}
+  else{head=`<th>Still</th><th>Elbow</th><th>Upper arm</th><th>Forearm</th>`;const c=(x,y)=>`${sg(y-x)}°`;
+    rows=SLOTS.map(([k,l])=>{const a=A1.frames[k]&&A1.frames[k].angles,b=B1.frames[k]&&B1.frames[k].angles;if(!a&&!b)return "";
+      const cell=key=>`<td class="num">${b?fmt(b[key],0)+"°":"–"}${a&&b?`<br><span class="faint small">${c(a[key],b[key])}</span>`:""}</td>`;
+      return `<tr><td>${k==="follow"?"Follow":l}</td>${cell("elbow")}${cell("upper")}${cell("fore")}</tr>`;}).join("");
+    foot="Each cell shows the second review's angle and the change from the first. Angles are 2D estimates from side-on stills.";}
+  const pic=(f,k)=>f.frames[k]?stillSVG(f.frames[k],f.frames[k].img,V):`<div class="empty small">No ${slotName(k).toLowerCase()}</div>`;
+  return `<div class="glass pad stack"><span class="eyebrow">Compare two ${FADJ[V]} reviews</span><div class="fgrid2"><select id="fcmp-a" aria-label="First review">${opt(ia)}</select><select id="fcmp-b" aria-label="Second review">${opt(ib)}</select></div>
     <div class="fgrid2">${pic(A1,"release")}${pic(B1,"release")}</div><div class="fgrid2">${pic(A1,"follow")}${pic(B1,"follow")}</div>
-    <div class="tablebox"><table><thead><tr><th>Still</th><th>Elbow</th><th>Upper arm</th><th>Forearm</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <p class="faint small">Each cell shows the second review's angle and the change from the first. Angles are 2D estimates from side-on stills. Film from the same spot each time so the comparison is fair.</p></div>`;
+    <div class="tablebox"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="faint small">${foot} Film from the same spot each time so the comparison is fair.</p></div>`;
+}
+function formPairCard(){
+  if(!S.fpair)return "";const pr=pairFor(S.fpair);if(!pr)return "";const [sd,rr]=pr;
+  const pic=(f,k)=>f.frames[k]?stillSVG(f.frames[k],f.frames[k].img,fView(f)):`<div class="empty small">No ${slotName(k).toLowerCase()}</div>`;
+  const list=f=>`<ul class="small muted" style="margin:0;padding-left:18px">${SLOTS.map(([k,l])=>f.frames[k]?`<li><b style="color:var(--ink)">${l}:</b> ${angTxt(f.frames[k].angles,fView(f))}</li>`:"").join("")}</ul>`;
+  const sm=sumTxt(rearSum(rr)),pl=pinLinkTxt(rearSum(rr));
+  return `<div class="glass pad stack" id="fpair"><div class="row between"><span class="eyebrow">Same day · ${fmtDate(S.fpair)}</span><button type="button" class="btn sm" data-act="fpairClose">Close</button></div>
+    <div class="fgrid2"><b class="small">Side-on</b><b class="small">From behind</b></div>
+    <div class="fgrid2">${pic(sd,"release")}${pic(rr,"release")}</div><div class="fgrid2"><span class="faint small">Release</span><span class="faint small">Release</span></div>
+    <div class="fgrid2">${pic(sd,"follow")}${pic(rr,"follow")}</div><div class="fgrid2"><span class="faint small">Follow-through</span><span class="faint small">Follow-through</span></div>
+    <span class="small" style="font-weight:600">Side-on</span>${list(sd)}<span class="small" style="font-weight:600">From behind</span>${list(rr)}
+    ${sm.length?`<p class="small">${sm.map(x=>x[0].toUpperCase()+x.slice(1)+".").join(" ")}</p>`:""}${pl?`<p class="small muted">${pl}</p>`:""}
+    <div class="row"><button type="button" class="btn primary sm" data-fpshare="${S.fpair}">Share all stills</button><button type="button" class="btn sm" data-fpcopy="${S.fpair}">Copy both for Claude</button></div>
+    <span class="status" id="fp-status" role="status"></span></div>`;
 }
 function formListCard(){
-  const rs=formRecs().reverse();if(!rs.length)return `<div class="glass pad stack"><span class="eyebrow">Your reviews</span><div class="empty"><b>No form reviews yet</b><span>Your first review appears here, and the comparison and trend fill in from the second.</span></div></div>`;
-  return `<div class="glass pad stack"><span class="eyebrow">Your reviews</span>${rs.map(f=>{const rel=f.frames.release,k="forms:"+f.id,cd=S.coachDraft["fm:"+f.id],editing=!f.coach||S.editCoach==="fm:"+f.id;
-    return `<details class="hcard glass" ${S.openForm===f.id?"open":""}><summary><div class="row" style="flex-wrap:nowrap;gap:12px">${rel?`<img class="fthumb" data-imgid="${rel.img}" src="${IMGC[rel.img]||""}" alt="Release still from ${fmtDate(f.date)}">`:""}<div style="min-width:0"><b>${fmtDate(f.date)}</b>${f.coach?` <span class="faint small">· Reviewed</span>`:""}<br><span class="small muted">${rel&&rel.angles?`Release elbow ${fmt(rel.angles.elbow,0)}°, forearm ${fmt(rel.angles.fore,0)}°`:"Release not measured"}</span></div></div></summary>
-      <div class="stack" style="margin-top:12px"><div class="fgrid3">${SLOTS.map(([s2,l])=>f.frames[s2]?`<div class="stack" style="gap:4px">${stillSVG(f.frames[s2],f.frames[s2].img)}<span class="faint small">${l}</span></div>`:"").join("")}</div>
-        <ul class="small muted" style="margin:0;padding-left:18px">${SLOTS.map(([s2,l])=>f.frames[s2]?`<li><b style="color:var(--ink)">${l}:</b> ${angTxt(f.frames[s2].angles)}</li>`:"").join("")}</ul>
+  const V=curFView(),rs=formRecs(V).reverse(),other=V==="rear"?"side":"rear";
+  if(!rs.length)return `<div class="glass pad stack"><span class="eyebrow">Your ${FADJ[V]} reviews</span><div class="empty"><b>No ${FADJ[V]} reviews yet</b><span>Your first one appears here, and the comparison and trend fill in from the second.</span></div></div>`;
+  return `<div class="glass pad stack"><span class="eyebrow">Your ${FADJ[V]} reviews</span>${rs.map(f=>{const rel=f.frames.release,k="forms:"+f.id,cd=S.coachDraft["fm:"+f.id],editing=!f.coach||S.editCoach==="fm:"+f.id,ra=rel&&rel.angles,pair=pairFor(f.date),rsum=V==="rear"?rearSum(f):null;
+    const line=ra?(V==="rear"?`Release: forearm ${lrS(ra.lean,"°")}, elbow ${lrS(ra.offset,"%")}`:`Release elbow ${fmt(ra.elbow,0)}°, forearm ${fmt(ra.fore,0)}°`):"Release not measured";
+    return `<details class="hcard glass" ${S.openForm===f.id?"open":""}><summary><div class="row" style="flex-wrap:nowrap;gap:12px">${rel?`<img class="fthumb" data-imgid="${rel.img}" src="${IMGC[rel.img]||""}" alt="${FVIEWS[V]} release still from ${fmtDate(f.date)}">`:""}<div style="min-width:0"><b>${fmtDate(f.date)}</b>${f.coach?` <span class="faint small">· Reviewed</span>`:""}<br><span class="small muted">${line}</span></div></div></summary>
+      <div class="stack" style="margin-top:12px"><div class="fgrid3">${SLOTS.map(([s2,l])=>f.frames[s2]?`<div class="stack" style="gap:4px">${stillSVG(f.frames[s2],f.frames[s2].img,V)}<span class="faint small">${l}</span></div>`:"").join("")}</div>
+        <ul class="small muted" style="margin:0;padding-left:18px">${SLOTS.map(([s2,l])=>f.frames[s2]?`<li><b style="color:var(--ink)">${l}:</b> ${angTxt(f.frames[s2].angles,V)}</li>`:"").join("")}${rsum?sumTxt(rsum).map(t=>`<li><b style="color:var(--ink)">Movement:</b> ${t}</li>`).join(""):""}</ul>
+        ${rsum&&pinLinkTxt(rsum)?`<p class="small">${pinLinkTxt(rsum)}</p>`:""}
         ${f.notes?`<p class="small muted">${esc(f.notes)}</p>`:""}
+        ${pair?`<div class="row"><button type="button" class="btn sm" data-fpair="${f.date}">Show with the ${FADJ[other]} review</button></div>`:""}
         <div class="row"><button type="button" class="btn primary sm" data-fshare="${f.id}">Share stills</button><button type="button" class="btn sm" data-fcopy="${f.id}">Copy for Claude</button></div>
         <p class="faint small">Copy the text, paste it into your Darts coach project, then attach the shared stills.</p>
         ${f.coach&&!editing?`<div class="coach-note"><span class="eyebrow">Coach feedback · ${fmtDate(f.coach.date)}</span><div class="coach-text">${esc(f.coach.text)}</div><div class="row"><button type="button" class="btn sm" data-fcoachedit="${f.id}">Edit</button></div></div>`:
@@ -2053,27 +2117,36 @@ function formListCard(){
         <span class="status" id="fs-${f.id}" role="status"></span>
         <div class="row"><button type="button" class="btn sm danger" data-del="${esc(k)}">${S.pendingDel===k?"Tap again to delete":"Delete review"}</button></div></div></details>`;}).join("")}</div>`;
 }
-function formText(f){
-  const rs=formRecs(),i=rs.findIndex(x=>x.id===f.id),prev=i>0?rs[i-1]:null,L=[],P=x=>L.push(x);
-  P("FORM REVIEW. I'm attaching side-on stills of my darts throw (set-up, release and follow-through where I have them). Review my technique as my coach: what looks repeatable, the one or two things most likely to cause the miss pattern below, and one specific cue or drill to fix it. Be honest, and say if a still is too unclear to judge. Under 250 words, British English, plain text. End with the FOCUS: and DRILL: lines (and CUSTOM: if useful) from your instructions.");
-  P("");P(`DATE ${fmtDate(f.date)}`);P("MEASUREMENTS (2D estimates from side-on stills, so treat them as approximate)");
-  SLOTS.forEach(([k,l])=>{const fr=f.frames[k];if(fr)P(`- ${l}: ${angTxt(fr.angles)}`);});
-  if(prev){P("");P(`CHANGE SINCE MY PREVIOUS REVIEW (${fmtDate(prev.date)})`);SLOTS.forEach(([k,l])=>{const a=prev.frames[k]&&prev.frames[k].angles,b=f.frames[k]&&f.frames[k].angles;if(a&&b)P(`- ${l}: elbow ${b.elbow-a.elbow>=0?"+":""}${fmt(b.elbow-a.elbow,0)}°, upper arm ${b.upper-a.upper>=0?"+":""}${fmt(b.upper-a.upper,0)}°, forearm ${b.fore-a.fore>=0?"+":""}${fmt(b.fore-a.fore,0)}°`);});}
-  const all=[...S.sessions,...S.baselines].filter(x=>x.m),pb=[],pd=[];let mL=0,mR=0;all.forEach(x=>{const q=x.m.pins;if(q){pb.push(...q.bull);pd.push(...q.dbl.map(z=>[z[0],z[1]]));}mL+=x.m.mL||0;mR+=x.m.mR||0;});
-  const sd=pinStats(pd),sb=pinStats(pb);P("");P("MY MISS PATTERN");
-  if(sd&&sd.n>=10)P(`- Doubles (${sd.n} pinned darts): average miss ${pinDir(sd.mx,sd.my)}, ${fmt(sd.low,0)}% low, ${fmt(sd.left,0)}% left`);
-  if(sb&&sb.n>=10)P(`- Bull (${sb.n} pinned darts): average miss ${pinDir(sb.mx,sb.my)}, half within ${fmt(sb.r50,0)} mm`);
-  if(mL+mR>=10)P(`- Scoring misses into neighbouring numbers: ${mL} left, ${mR} right`);
-  if(L[L.length-1]==="MY MISS PATTERN")P("- Not enough pinned darts yet.");
-  if(f.notes){P("");P("MY NOTES");P(f.notes);}
+function measLines(f,P){const v=fView(f);
+  P(v==="rear"?"FROM BEHIND (camera behind my throwing shoulder; left and right are as seen from behind, the same as on the board; sideways distances are % of a forearm length)":"SIDE-ON (camera at shoulder height on my throwing-arm side)");
+  SLOTS.forEach(([k,l])=>{const fr=f.frames[k];if(fr)P(`- ${l}: ${angTxt(fr.angles,v)}`);});
+  if(v==="rear")sumTxt(rearSum(f)).forEach(t=>P(`- Movement: ${t}`));
+  const rs=formRecs(v),i=rs.findIndex(x=>x.id===f.id),prev=i>0?rs[i-1]:null;if(!prev)return;
+  P(`Change since my previous ${FADJ[v]} review (${fmtDate(prev.date)}):`);
+  SLOTS.forEach(([k,l])=>{const a=prev.frames[k]&&prev.frames[k].angles,b=f.frames[k]&&f.frames[k].angles;if(!a||!b)return;
+    if(v==="rear")P(`- ${l}: forearm lean ${shiftW(b.lean-a.lean,"°")}, elbow ${shiftW(b.offset-a.offset,"%")}`);
+    else P(`- ${l}: elbow ${sg(b.elbow-a.elbow)}°, upper arm ${sg(b.upper-a.upper)}°, forearm ${sg(b.fore-a.fore)}°`);});
+  if(v==="rear"){const o1=rearSum(prev),o2=rearSum(f);if(o1.drift!=null&&o2.drift!=null)P(`- Follow-through drift: was ${lrW(o1.drift,"%")}, now ${lrW(o2.drift,"%")}`);}
+}
+function formText(fs){
+  const L=[],P=x=>L.push(x),both=fs.length>1,rear=fs.some(f=>fView(f)==="rear");
+  P(`FORM REVIEW. I'm attaching ${both?"side-on and from-behind stills from the same day":rear?"stills of my darts throw filmed from behind":"side-on stills of my darts throw"} (set-up, release and follow-through where I have them). Review my technique as my coach: what looks repeatable, the one or two things most likely to cause the miss pattern below${rear?" (from behind, look especially for sideways movement: the elbow flaring out, the hand crossing the line to the target, or the body swaying)":""}, and one specific cue or drill to fix it. Be honest, and say if a still is too unclear to judge. Under ${both?300:250} words, British English, plain text. End with the FOCUS: and DRILL: lines (and CUSTOM: if useful) from your instructions.`);
+  P("");P(`DATE ${fmtDate(fs[0].date)}`);P("MEASUREMENTS (2D estimates from stills, so treat them as approximate)");
+  fs.forEach(f=>{P("");measLines(f,P);});
+  const m=missLR();P("");P("MY MISS PATTERN");const n0=L.length;
+  if(m.sd&&m.sd.n>=10)P(`- Doubles (${m.sd.n} pinned darts): average miss ${pinDir(m.sd.mx,m.sd.my)}, ${fmt(m.sd.low,0)}% low, ${fmt(m.sd.left,0)}% left`);
+  if(m.sb&&m.sb.n>=10)P(`- Bull (${m.sb.n} pinned darts): average miss ${pinDir(m.sb.mx,m.sb.my)}, half within ${fmt(m.sb.r50,0)} mm`);
+  if(m.mL+m.mR>=10)P(`- Scoring misses into neighbouring numbers: ${m.mL} left, ${m.mR} right`);
+  if(L.length===n0)P("- Not enough pinned darts yet.");
+  const ns=fs.filter(f=>f.notes);if(ns.length){P("");P("MY NOTES");ns.forEach(f=>P(both?`(${FADJ[fView(f)]}) ${f.notes}`:f.notes));}
   return L.join("\n");
 }
-async function shareStills(f){
-  const files=[];for(const [k,l] of SLOTS){const fr=f.frames[k];if(!fr)continue;const d=await imgGet(fr.img);if(!d)continue;const bin=atob(d.split(",")[1]),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);files.push(new File([u],`oche-${f.date}-${k}.jpg`,{type:"image/jpeg"}));}
-  if(!files.length){setStatus("fs-"+f.id,"err","No stills found on this phone.");return;}
-  try{if(navigator.canShare&&navigator.canShare({files})){await navigator.share({files,title:"Oche form stills"});setStatus("fs-"+f.id,"ok","Shared. Attach them in your Claude chat.");return;}}catch(e){if(e&&e.name==="AbortError")return;}
+async function shareStills(fs,sid){
+  const files=[];for(const f of fs)for(const [k] of SLOTS){const fr=f.frames[k];if(!fr)continue;const d=await imgGet(fr.img);if(!d)continue;const bin=atob(d.split(",")[1]),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);files.push(new File([u],`oche-${f.date}-${fView(f)==="rear"?"behind":"side"}-${k}.jpg`,{type:"image/jpeg"}));}
+  if(!files.length){setStatus(sid,"err","No stills found on this phone.");return;}
+  try{if(navigator.canShare&&navigator.canShare({files})){await navigator.share({files,title:"Oche form stills"});setStatus(sid,"ok","Shared. Attach them in your Claude chat.");return;}}catch(e){if(e&&e.name==="AbortError")return;}
   files.forEach(fl=>{const url=URL.createObjectURL(fl),a=document.createElement("a");a.href=url;a.download=fl.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);});
-  setStatus("fs-"+f.id,"ok","Saved the stills. Attach them in your Claude chat.");
+  setStatus(sid,"ok","Saved the stills. Attach them in your Claude chat.");
 }
 
 /* ================= backup ================= */
@@ -2152,11 +2225,17 @@ document.addEventListener("click",e=>{
     if((a==="fxBack"||a==="fxFwd")&&v){v.pause();v.currentTime=clamp(v.currentTime+(a==="fxFwd"?1:-1)/60,0,v.duration||0);return;}
     if(ds.fxrate&&v){v.playbackRate=+ds.fxrate;document.querySelectorAll("[data-fxrate]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.fxrate===ds.fxrate));return;}
     if(ds.fxgrab){fxGrab(ds.fxgrab);return;}
+    if(ds.fxview){setFXView(ds.fxview==="rear"?"rear":"side");return;}
     if(ds.fxslot){FX.cur=ds.fxslot;renderFXPanel();return;}
     if(a==="fxClear"&&FX.cur){FX.slots[FX.cur].pts={};renderFXPanel();return;}
     if(a==="fxSave"){fxSave();return;}}
-  if(ds.fcopy){const f=(S.forms||[]).find(x=>x.id===ds.fcopy);if(f)copyText(formText(f)).then(ok=>setStatus("fs-"+f.id,ok?"ok":"err",ok?"Copied. Paste it into your Darts coach project, then attach the stills.":"Couldn't copy on this device."));return;}
-  if(ds.fshare){const f=(S.forms||[]).find(x=>x.id===ds.fshare);if(f)shareStills(f);return;}
+  if(ds.fview){S.fview=ds.fview==="rear"?"rear":"side";store.set("oche-fview",S.fview);S.fcmpA=S.fcmpB=null;render();return;}
+  if(ds.fpair){S.fpair=ds.fpair;render();const el=document.getElementById("fpair");if(el)el.scrollIntoView({block:"start",behavior:"smooth"});return;}
+  if(a==="fpairClose"){S.fpair=null;render();return;}
+  if(ds.fpcopy){const pr=pairFor(ds.fpcopy);if(pr)copyText(formText(pr)).then(ok=>setStatus("fp-status",ok?"ok":"err",ok?"Copied. Paste it into your Darts coach project, then attach all the stills.":"Couldn't copy on this device."));return;}
+  if(ds.fpshare){const pr=pairFor(ds.fpshare);if(pr)shareStills(pr,"fp-status");return;}
+  if(ds.fcopy){const f=(S.forms||[]).find(x=>x.id===ds.fcopy);if(f)copyText(formText([f])).then(ok=>setStatus("fs-"+f.id,ok?"ok":"err",ok?"Copied. Paste it into your Darts coach project, then attach the stills.":"Couldn't copy on this device."));return;}
+  if(ds.fshare){const f=(S.forms||[]).find(x=>x.id===ds.fshare);if(f)shareStills([f],"fs-"+f.id);return;}
   if(ds.fcoachedit){S.editCoach="fm:"+ds.fcoachedit;S.openForm=ds.fcoachedit;render();return;}
   if(ds.fcoachsave){const f=(S.forms||[]).find(x=>x.id===ds.fcoachsave);if(!f)return;const ta=document.getElementById("fc-"+f.id),tx=(ta?ta.value:"").trim();if(!tx){setStatus("fs-"+f.id,"err","Paste Claude's reply into the box first.");return;}
     const pf=parseFocus(tx),cs=parseCustom(tx),good=cs&&!cs.bad?cs:null;f.coach={text:tx,date:todayISO(),at:Date.now(),focus:pf.focus||(good?customName(good):null),drill:pf.drill,custom:good};const cx=good?registerCustom(good,f.id):null;
