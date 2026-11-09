@@ -459,6 +459,13 @@ footer{font-size:.76rem;color:var(--faint);text-align:center}
           <li>Undo steps back one dart. Close the runner mid-session and it resumes where you left it.</li>
         </ul>
         <div id="pin-setting"></div>
+        <h3>Checkout suggestions</h3>
+        <ul>
+          <li><b>Your odds, not a fixed chart.</b> For every score and darts left, the app works out your chance of checking out with each target, using your hit rate on each double, your treble rate, your bull rate and where your misses usually land (a miss inside D16 still leaves D8, a miss outside scores nothing). It also gives some credit for leaving a good finish if you don't get there.</li>
+          <li><b>The usual route first.</b> It shows the usual checkout unless another route is clearly better for you (at least 10% better and half a percentage point), and then it shows both, for example "28% this visit · usual T16 D12, 16%". It never sets up on a double.</li>
+          <li><b>Early on it's an estimate.</b> Until you've thrown 50 darts at doubles or 150 at trebles it always shows the usual route, and "(est.)" means that double still has fewer than 20 darts logged.</li>
+          <li>The chance is for this visit only. The virtual opponent follows the usual routes at its own accuracy.</li>
+        </ul>
       </div>
       <div class="glass pad tablebox">
         <table>
@@ -525,17 +532,85 @@ const DPREF={20:0,16:1,8:2,10:3,18:4,12:5,4:6,6:7,2:8,14:9,25:7};
 const dPen=c=>DPREF[dnum(c)]??12;
 const NUMPEN={20:0,19:1,18:2,17:2,16:3,15:3};
 function sPen(c){if(c==="SB"||c==="DB")return 5;return ({S:0,T:2,D:6})[c[0]]+(NUMPEN[+c.slice(1)]??4);}
-const coMemo={};
-function route(rem,darts){
-  const key=rem+"|"+darts; if(key in coMemo)return coMemo[key];
-  let best=null,bs=1e9;
-  if(rem>=2&&rem<=170){
-    const f=oneDart(rem); if(f)best=[f];
-    if(!best&&darts>=2)for(const a of CO_ALL){const d=oneDart(rem-val(a));if(d){const s=dPen(d)*3+sPen(a);if(s<bs){bs=s;best=[a,d];}}}
-    if(!best&&darts>=3){bs=1e9;for(const a of CO_ALL)for(const b of CO_ALL){const r=rem-val(a)-val(b);if(r<2)continue;const d=oneDart(r);if(d){const s=dPen(d)*3+sPen(a)+sPen(b);if(s<bs){bs=s;best=[a,b,d];}}}}
-  }
-  return coMemo[key]=best;
+/* The usual checkout chart (61–170), as printed on most charts. Scores up to 60 follow the usual single-then-double rule below. */
+const CHART_TXT="61 T15 D8|62 T10 D16|63 T13 D12|64 T16 D8|65 T19 D4|66 T10 D18|67 T17 D8|68 T20 D4|69 T19 D6|70 T18 D8|71 T13 D16|72 T16 D12|73 T19 D8|74 T14 D16|75 T17 D12|76 T20 D8|77 T19 D10|78 T18 D12|79 T19 D11|80 T20 D10|81 T19 D12|82 T14 D20|83 T17 D16|84 T20 D12|85 T15 D20|86 T18 D16|87 T17 D18|88 T20 D14|89 T19 D16|90 T20 D15|91 T17 D20|92 T20 D16|93 T19 D18|94 T18 D20|95 T19 D19|96 T20 D18|97 T19 D20|98 T20 D19|99 T19 S10 D16|100 T20 D20|101 T20 S9 D16|102 T20 S10 D16|103 T19 S6 D20|104 T18 S18 D16|105 T20 S13 D16|106 T20 S6 D20|107 T19 S18 D16|108 T20 S16 D16|109 T20 S17 D16|110 T20 S10 D20|111 T20 S19 D16|112 T20 S20 D16|113 T20 S13 D20|114 T20 S14 D20|115 T20 S15 D20|116 T20 S16 D20|117 T20 S17 D20|118 T20 S18 D20|119 T19 T10 D16|120 T20 S20 D20|121 T20 T11 D14|122 T20 T10 D16|123 T19 T16 D9|124 T20 T16 D8|125 SB T20 D20|126 T19 T15 D12|127 T20 T17 D8|128 T18 T14 D16|129 T19 T16 D12|130 T20 T18 D8|131 T20 T13 D16|132 T20 T16 D12|133 T20 T19 D8|134 T20 T14 D16|135 T20 T17 D12|136 T20 T20 D8|137 T20 T19 D10|138 T20 T18 D12|139 T19 T14 D20|140 T20 T20 D10|141 T20 T19 D12|142 T20 T14 D20|143 T20 T17 D16|144 T20 T20 D12|145 T20 T15 D20|146 T20 T18 D16|147 T20 T17 D18|148 T20 T16 D20|149 T20 T19 D16|150 T20 T18 D18|151 T20 T17 D20|152 T20 T20 D16|153 T20 T19 D18|154 T20 T18 D20|155 T20 T19 D19|156 T20 T20 D18|157 T20 T19 D20|158 T20 T20 D19|160 T20 T20 D20|161 T20 T17 DB|164 T20 T18 DB|167 T20 T19 DB|170 T20 T20 DB";
+const CHART2={101:"T17 DB",104:"T18 DB",107:"T19 DB",110:"T20 DB"};
+const CHART=(()=>{const c={};CHART_TXT.split("|").forEach(x=>{const p=x.split(" ");c[+p[0]]=p.slice(1);});
+  const odd={3:"S1 D1",5:"S1 D2",7:"S3 D2",9:"S1 D4",11:"S3 D4",13:"S5 D4",15:"S7 D4",17:"S1 D8",19:"S3 D8",21:"S5 D8",23:"S7 D8",25:"S9 D8",27:"S11 D8",29:"S13 D8",31:"S15 D8",33:"S1 D16",35:"S3 D16",37:"S5 D16",39:"S7 D16"};
+  for(let r=2;r<=40;r+=2)c[r]=["D"+r/2];for(const k in odd)c[k]=odd[k].split(" ");
+  for(let r=41;r<=60;r++)c[r]=r===50?["S18","D16"]:[41,42,45,47,48,49,50,51,52].includes(r)?["S"+(r-32),"D16"]:["S"+(r-40),"D20"];
+  return c;})();
+/* The usual target for this score with this many darts left in the visit, or null if the usual route needs more darts. */
+function usualRoute(rem,d){if(rem===50&&d===1)return ["DB"];const two=CHART2[rem];if(d===2&&two)return two.split(" ");const c=CHART[rem];return c&&c.length<=d?c:null;}
+
+/* ================= checkout finder =================
+   For every score 2–170 with 1–3 darts left in the visit, work out the best thing to aim at, using a model of where the
+   darts land. Each dart lowers (or keeps) the score and uses up a dart, so the answer for d darts only needs the answers
+   for d−1 darts, which are already worked out: that's dynamic programming. A target's value is the chance of checking
+   out this visit, plus LEAVE_CREDIT times the chance of checking out next visit from whatever is left.
+   For you it sticks to the usual chart unless another route is clearly better on your odds (CLEARLY: at least 10% better
+   and at least half a percentage point), and it never sets up on a double. Until there's enough data to judge
+   (50 darts at doubles or 150 at trebles) it always shows the usual route. */
+const CLEARLY={rel:.10,abs:.005};
+const LEAVE_CREDIT=0.5;
+const CO_PRIOR={dbl:.15,bull:.07,sb:.28,tre:.08,wide:.15,qi:.45,qo:.40,qw:.15};
+function playerRates(rows){
+  const mr=rows.filter(x=>x.m),pd=aggPd(mr);
+  let A=0,H=0;rows.forEach(x=>{A+=x.dAtt||0;H+=x.dHits||0;});if(!A)for(const k in pd){if(+k===25)continue;A+=pd[k][0];H+=pd[k][1];}
+  const pbar=(H+30*CO_PRIOR.dbl)/(A+30),d={},est={};
+  for(let n=1;n<=20;n++){const [a,h]=pd[n]||[0,0];d[n]=(h+20*pbar)/(a+20);est[n]=a<20||A<50;}
+  let bn=0,bd=0,bs=0;mr.forEach(x=>{const b=x.m.bull;if(b){bn+=b.n;bd+=b.db;bs+=b.sb;}});const [ba,bh]=pd[25]||[0,0];
+  d[25]=(bd+bh+30*CO_PRIOR.bull)/(bn+ba+30);const psb=(bs+30*CO_PRIOR.sb)/(bn+30);est[25]=bn+ba<30;
+  let tN=0,tH=0;mr.forEach(x=>{if(x.m.tPct!=null&&x.m.visits){tN+=x.m.visits*3;tH+=x.m.tPct/100*x.m.visits*3;}});const t=(tH+60*CO_PRIOR.tre)/(tN+60);
+  let miss=0,nbr=0;mr.forEach(x=>[[x.m.aim20,20],[x.m.aim19,19]].forEach(([g,n])=>{if(!g)return;const [l,r]=nb(n);for(const c in g){if(c==="T"+n)continue;miss+=g[c];if(numOf(c)===l||numOf(c)===r)nbr+=g[c];}}));
+  const w=(nbr+20*CO_PRIOR.wide)/(miss+20);
+  let I=0,O=0,W=0;mr.forEach(x=>{I+=x.m.inside||0;O+=x.m.outside||0;W+=x.m.wide||0;});const N=I+O+W+10;
+  const q={i:(I+10*CO_PRIOR.qi)/N,o:(O+10*CO_PRIOR.qo)/N,w:(W+10*CO_PRIOR.qw)/N};
+  const out=a=>{
+    if(a==="DB"||a==="SB"){const r=[["DB",d[25]],["SB",psb]],rest=Math.max(0,1-d[25]-psb)/20;for(let n=1;n<=20;n++)r.push(["S"+n,rest]);return r;}
+    const n=+a.slice(1),[l,r]=nb(n);
+    if(a[0]==="T")return [[a,t],["S"+n,(1-t)*(1-w)],["S"+l,(1-t)*w/2],["S"+r,(1-t)*w/2]];
+    if(a[0]==="D"){const p=d[n],m=1-p;return [[a,p],["S"+n,m*q.i],["M",m*q.o],["S"+l,m*q.w/2],["S"+r,m*q.w/2]];}
+    const pt=t*.3,pdd=.02,pw=w*.6;return [["S"+n,1-pt-pdd-pw],["T"+n,pt],["D"+n,pdd],["S"+l,pw/2],["S"+r,pw/2]];
+  };
+  return {out,est,player:true,thin:A<50&&tN<150};
 }
+function buildCo(R){
+  const oc={};for(const a of CO_ALL)oc[a]=R.out(a).filter(o=>o[1]>0);
+  const mk=()=>[null,new Float64Array(171),new Float64Array(171),new Float64Array(171)];
+  const F=mk(),V=mk(),Fp=mk(),P=[null,[],[],[]],pen=a=>(isDbl(a)?dPen(a)*3:sPen(a))*1e-6;
+  const val3=(a,rem,d,tab,term)=>{let v=0;for(const [c,p] of oc[a]){const n=rem-val(c);if(n===0){if(isDbl(c))v+=p;continue;}if(n<2)continue;v+=p*(d>1?tab[d-1][n]:term(n));}return v;};
+  // pass 1: the best possible chance of checking out this visit
+  for(let d=1;d<=3;d++)for(let rem=2;rem<=170;rem++){let b=0;for(const a of CO_ALL){const v=val3(a,rem,d,F,()=>0);if(v>b)b=v;}F[d][rem]=b;}
+  // pass 2: the chosen target (finish chance plus credit for the leave), keeping to a complete checkout path when one exists
+  const term=n=>n<=170?LEAVE_CREDIT*F[3][n]:0;
+  for(let d=1;d<=3;d++)for(let rem=2;rem<=170;rem++){const can=F[d][rem]>0;let bv=-1,ba=null;
+    const pick=strict=>{for(const a of CO_ALL){if(can){const n=rem-val(a);if(!((n===0&&isDbl(a))||(d>1&&n>=2&&F[d-1][n]>0&&!(strict&&isDbl(a)))))continue;}const v=val3(a,rem,d,V,term)-pen(a);if(v>bv){bv=v;ba=a;}}};
+    pick(!!R.player);if(!ba)pick(false);
+    if(R.player&&can){const u=usualRoute(rem,d);if(u&&u[0]!==ba){const fb=val3(ba,rem,d,Fp,()=>0),fu=val3(u[0],rem,d,Fp,()=>0);if(R.thin||fu>=fb-Math.max(CLEARLY.abs,CLEARLY.rel*fb)){ba=u[0];bv=val3(ba,rem,d,V,term);}}}
+    V[d][rem]=bv;P[d][rem]=ba;Fp[d][rem]=val3(ba,rem,d,Fp,()=>0);}
+  return {F,Fp,P,est:R.est,player:!!R.player,chanceOf:(a,rem,d)=>val3(a,rem,d,Fp,()=>0)};
+}
+const CO_CACHE={};
+function coTable(){
+  const last=S.sessions[S.sessions.length-1],k="p"+S.sessions.length+"|"+S.baselines.length+"|"+(last&&last.created||0);
+  if(CO_CACHE.pk!==k){CO_CACHE.pk=k;CO_CACHE.p=buildCo(playerRates([...S.sessions,...S.baselines]));}return CO_CACHE.p;
+}
+/* Whether a checkout exists doesn't depend on anyone's odds, so existence checks use one fixed table of typical rates. */
+const coGen=()=>CO_CACHE.g||(CO_CACHE.g=buildCo(playerRates([])));
+const coExists=(rem,darts)=>coPath(coGen(),rem,darts);
+function coPath(T,rem,darts){
+  const d0=Math.min(3,darts|0);if(rem<2||rem>170||d0<1||!(T.F[d0][rem]>0))return null;
+  if(T.player){const u=usualRoute(rem,d0);if(u&&T.P[d0][rem]===u[0])return u;}
+  const seq=[];let r=rem,d=d0;while(d>0&&r>0){const a=T.P[d][r];if(!a)return null;seq.push(a);r-=val(a);d--;}
+  return r===0&&isDbl(seq[seq.length-1])?seq:null;
+}
+function route(rem,darts){return coPath(coTable(),rem,darts);}
+function coChance(rem,darts){const T=coTable(),d=Math.min(3,darts|0),rt=coPath(T,rem,d);if(!rt)return null;return {p:T.Fp[d][rem],est:!!T.est[dnum(rt[rt.length-1])]};}
+const pctTxt=p=>p*100<1?"under 1%":fmt(p*100,p*100<10?1:0)+"%";
+function chanceTag(rem,darts){const c=coChance(rem,darts);if(!c)return "";const d=Math.min(3,darts|0),T=coTable(),rt=coPath(T,rem,d),u=usualRoute(rem,d);
+  const diff=u&&rt&&u.join(" ")!==rt.join(" ")?` · usual ${u.map(lab).join(" ")}, ${pctTxt(T.chanceOf(u[0],rem,d))}`:"";
+  return `<span class="faint small co-p">· ${c.est?`${c.p*100<1?"":"about "}${pctTxt(c.p)} this visit (est.)`:`${pctTxt(c.p)} this visit`}${diff}</span>`;}
 
 /* ================= levels + drills ================= */
 const LEVELS=[
@@ -649,7 +724,7 @@ function parseCustom(text){
   if(type==="scoring"){const x=/t\s?(\d{1,2})|\b(\d{1,2})s?\b/i.exec(rest);const t=x?+(x[1]||x[2]):20;if(!(t>=1&&t<=20))return {bad:true,raw};return {type,targets:[t],n:clamp(num(/(\d+)\s*visits?/,20),5,30),min,raw};}
   if(type==="checkouts"){let pool=[];const rg=/(\d{1,3})\s*(?:-|–|to)\s*(\d{1,3})/.exec(rest);
     if(rg){const a=Math.max(2,Math.min(+rg[1],+rg[2])),b=Math.min(170,Math.max(+rg[1],+rg[2]));pool=range(a,b);}else pool=(rest.split(/\|/)[0].match(/\b\d{1,3}\b/g)||[]).map(Number);
-    pool=pool.filter(x=>x>=2&&x<=170&&!BOGEY.includes(x)&&route(x,3));if(!pool.length)return {bad:true,raw};
+    pool=pool.filter(x=>x>=2&&x<=170&&!BOGEY.includes(x)&&coExists(x,3));if(!pool.length)return {bad:true,raw};
     return {type,pool,n:clamp(num(/(\d+)\s*finish/,10),3,20),each:clamp(num(/(\d+)\s*darts?\s*each/,6),3,9),min,raw};}
   return {type,n:clamp(num(/(\d+)\s*darts?/,30),10,90),min,raw};
 }
@@ -754,7 +829,7 @@ function randomDoubles(n,pd){
   for(let i=0;i<n;i++){let t;do{let r=Math.random()*tw;t=pool[pool.length-1];for(let j=0;j<pool.length;j++){r-=w[j];if(r<=0){t=pool[j];break;}}}while(t===prev);out.push(t);prev=t;}
   return out;
 }
-function pickTwoDart(n){const c=range(41,100).filter(x=>{const r=route(x,2);return r&&r.length===2;});for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}return c.slice(0,n).sort((a,b)=>a-b);}
+function pickTwoDart(n){const c=range(41,100).filter(x=>{const r=coExists(x,2);return r&&r.length===2;});for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}return c.slice(0,n).sort((a,b)=>a-b);}
 
 const sunShort=()=>!!store.get("oche-sun30");
 function buildPlan(A,tpl0){
@@ -883,7 +958,8 @@ function scoreAt(x,y){const r=Math.hypot(x,y);if(r<=BR.db)return "DB";if(r<=BR.s
 function aimXY(c){if(c==="DB"||c==="SB")return [0,0];const n=+c.slice(1),a=BOARD.indexOf(n)*18*Math.PI/180,r=c[0]==="T"?103:c[0]==="D"?166:134;return [r*Math.sin(a),r*Math.cos(a)];}
 function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
 function botLand(aim,sig){const [x,y]=aimXY(aim);return scoreAt(x+gauss()*sig,y+gauss()*sig);}
-function botAim(leg){const left=3-leg.vd,rt=route(leg.rem,left);if(rt)return rt[0];if(leg.rem<=170){const r3=route(leg.rem,3);if(r3)return r3[0];}return "T20";}
+/* The opponent follows the usual chart; when no finish is on, it sets up using the typical-rates table. Where its darts land comes from its own accuracy (botLand). */
+function botAim(leg){if(leg.rem>170)return "T20";const left=3-leg.vd,u=usualRoute(leg.rem,left);if(u)return u[0];return coGen().P[left][leg.rem]||"T20";}
 function simLegDarts(sig){const leg=newLeg();for(let i=0;i<500;i++){if(throwInto(leg,botLand(botAim(leg),sig)).won)break;}return leg.darts.length+leg.burn;}
 let SIGTAB=null;
 function sigTable(){if(SIGTAB)return SIGTAB;const t=[];for(let sg=6;sg<=118;sg+=4){let n=0;const L=160;for(let i=0;i<L;i++)n+=simLegDarts(sg);t.push([sg,501*L*3/n]);}
@@ -998,7 +1074,7 @@ function matchView(b){
   if(v.lastLeg&&!done&&!an&&g.darts.length===0)h+=`<p class="small ${v.lastLeg.who==="W"?"good":"bad"}">${v.lastLeg.who==="W"?`You took leg ${v.lastLeg.no}, checking out ${v.lastLeg.co}.`:`Opponent took leg ${v.lastLeg.no}, checking out ${v.lastLeg.co}.`}</p>`;
   if(done)h+=`<div class="done-badge">${v.won?`✓ You won ${v.legsW}–${v.legsB}`:`Opponent won ${v.legsB}–${v.legsW}`}. Tap ${R.bi===R.blocks.length-1?"Finish session":"Next block"}.</div>`;
   else if(an)h+=`<span class="faint small">Opponent throwing…</span>${slotsHTML(an.codes.slice(0,an.shown))}`;
-  else{const rt=route(g.rem,3-g.vd);h+=`<div class="route">${rt?`<span class="faint small">Checkout</span>${rt.map(c=>`<b>${lab(c)}</b>`).join("")}`:""}</div>${slotsHTML(g.darts.slice(g.darts.length-g.vd))}`;}
+  else{const rt=route(g.rem,3-g.vd);h+=`<div class="route">${rt?`<span class="faint small">Checkout</span>${rt.map(c=>`<b>${lab(c)}</b>`).join("")}${chanceTag(g.rem,3-g.vd)}`:""}</div>${slotsHTML(g.darts.slice(g.darts.length-g.vd))}`;}
   h+=`</div>`;
   if(willTurn)h+=`<div class="stack" style="gap:8px">${quickRow()}${fullPad(R)}</div>`;
   return h;
@@ -1041,7 +1117,7 @@ function summarise(R){
     else if(e.type==="leg"){
       for(const g of d.legs){M.legs.push(g);g.visits.forEach(x=>M.vh[vhBand(x)]++);M.bestCo=Math.max(M.bestCo||0,g.co||0);M.maxVisit=Math.max(M.maxVisit||0,...g.visits);for(const x of g.dd)addPd(M.pd,x.t,x.r==="H");for(const v of g.visits)if(v===180)M.n180++;}
       txt=d.legs.length?`${d.legs.length} leg${d.legs.length>1?"s":""} · ${fmt(mean(d.legs.map(g=>g.n)))} darts/leg · avg ${fmt(mean(d.legs.map(g=>501/g.n*3)))}`:"No legs finished";
-      const coLeg=(vis,won)=>{let rem=501;vis.forEach((x,i)=>{if(rem<=170&&route(rem,3)){const ca=M.co[rem]||(M.co[rem]=[0,0]);ca[0]++;if(won&&i===vis.length-1&&x===rem)ca[1]++;}rem-=x;});};
+      const coLeg=(vis,won)=>{let rem=501;vis.forEach((x,i)=>{if(rem<=170&&coExists(rem,3)){const ca=M.co[rem]||(M.co[rem]=[0,0]);ca[0]++;if(won&&i===vis.length-1&&x===rem)ca[1]++;}rem-=x;});};
       d.legs.forEach(g=>coLeg(g.visits,true));
       if(d.vs&&d.vs.cfg){(d.vs.lost||[]).forEach(l=>{if(l.visits)coLeg(l.visits,false);});(d.vs.log||[]).forEach(l=>M.legsLog.push(l));}
       else d.legs.forEach(g=>M.legsLog.push({w:g.visits,b:null,won:"W",st:"W"}));
@@ -1173,7 +1249,7 @@ function engineView(b){
     const a=d.att,left=a.allowed-a.darts.length-a.burn,inVisit=3-a.vd,rt=done?null:route(a.rem,Math.min(inVisit,left)),ok=d.results.filter(r=>r.ok).length,rounds=e.rounds;
     const head=d.mode==="ladder"?`Round ${d.round+1} of ${rounds} · target ${a.target}`:`Finish ${d.idx+1} of ${d.list.length} · ${a.target}`;
     return `<div class="glass live"><div class="bigrow"><div><span class="eyebrow">${done?"Finished":head}</span><div class="bignum">${done?"✓":a.rem}</div></div><div class="mono muted small" style="text-align:right">${done?"":left+" dart"+(left===1?"":"s")+" left"}</div></div>
-      ${done?"":`<div class="route">${rt?`<span class="faint small">Route</span>${rt.map(c=>`<b>${lab(c)}</b>`).join("")}`:`<span class="faint small">No checkout with ${Math.min(inVisit,left)} dart${Math.min(inVisit,left)===1?"":"s"}. Set one up.</span>`}</div>${slotsHTML(a.darts.slice(a.darts.length-a.vd))}`}
+      ${done?"":`<div class="route">${rt?`<span class="faint small">Route</span>${rt.map(c=>`<b>${lab(c)}</b>`).join("")}${chanceTag(a.rem,Math.min(inVisit,left))}`:`<span class="faint small">No checkout with ${Math.min(inVisit,left)} dart${Math.min(inVisit,left)===1?"":"s"}. Set one up.</span>`}</div>${slotsHTML(a.darts.slice(a.darts.length-a.vd))}`}
       ${miniHTML([["Checked out",ok+"/"+d.results.length],d.mode==="ladder"?["Best",d.best||"–"]:["Rate",fmt(pctf(ok,d.results.length),0)+"%"]])}
       ${trail(d.results.map(r=>`<i class="${r.ok?"h":"x"}">${r.t}</i>`))}${doneBadge}</div>
       ${done?"":`<div class="stack" style="gap:8px">${quickRow()}${fullPad(R)}</div>`}`;
@@ -1192,7 +1268,7 @@ function engineView(b){
     if(d.vs)return matchView(b);
     const g=d.cur,n=g.darts.length+g.burn,rt=done?null:route(g.rem,3-g.vd),legs=d.legs;
     return `<div class="glass live"><div class="bigrow"><div><span class="eyebrow">${done?"All legs done":"Leg "+(legs.length+1)+(e.legs?" of "+e.legs:"")+" · dart "+(n+1)}</span><div class="bignum">${done?"✓":g.rem}</div></div>${done?"":slotsHTML(g.darts.slice(g.darts.length-g.vd))}</div>
-      ${done?"":`<div class="route">${rt?`<span class="faint small">Checkout</span>${rt.map(c=>`<b>${lab(c)}</b>`).join("")}`:g.rem<=170?`<span class="faint small">No finish with ${3-g.vd} dart${3-g.vd>1?"s":""}. Leave a double.</span>`:""}</div>`}
+      ${done?"":`<div class="route">${rt?`<span class="faint small">Checkout</span>${rt.map(c=>`<b>${lab(c)}</b>`).join("")}${chanceTag(g.rem,3-g.vd)}`:g.rem<=170?`<span class="faint small">No finish with ${3-g.vd} dart${3-g.vd>1?"s":""}. Leave a double.</span>`:""}</div>`}
       ${miniHTML([["Leg avg",n?fmt((501-g.rem)/n*3):"–"],["First 9",g.f9!=null?fmt(g.f9):"–"],["Legs",legs.length],["Darts/leg",fmt(mean(legs.map(x=>x.n)))],["At a double",g.dd.length]])}
       ${trail(legs.map(x=>`<i class="h">${x.n} darts</i>`))}${doneBadge}
       ${!done&&!e.legs&&!legs.length&&!g.darts.length?`<button type="button" class="btn sm" data-act="vsOn">Play these legs against the opponent</button>`:""}</div>
@@ -1538,7 +1614,7 @@ function coGridCard(all){
   const cell=n=>{if(BOGEY.includes(n))return `<button type="button" class="cocell bogey" data-cosel="${n}" aria-label="${n}: no checkout">${n}</button>`;
     const a=co[n];let st="";if(a&&a[0]>=2){const r=a[1]/a[0];st=r>0?`background:color-mix(in srgb,var(--hit) ${Math.round(25+r*75)}%,transparent);color:var(--ink)`:`background:color-mix(in srgb,var(--miss) 35%,transparent)`;}else if(a)st="outline:1px dashed var(--muted);outline-offset:-2px";
     return `<button type="button" class="cocell${sel===n?" sel":""}" data-cosel="${n}" style="${st}" aria-label="${n}${a?`: ${a[1]} of ${a[0]}`:": not tried"}">${n}</button>`;};
-  let det="";if(sel){const a=co[sel],rt=route(sel,3);det=`<div class="coach-note"><span class="eyebrow">${sel}</span><p class="small">${BOGEY.includes(sel)?"No three-dart checkout exists. Leave yourself something else.":a?`Checked out ${a[1]} of ${a[0]} attempt${a[0]===1?"":"s"} (${fmt(a[1]/a[0]*100,0)}%).`:"Not tried yet."}${rt?` Route: <b class="mono">${rt.map(lab).join(" ")}</b>`:""}</p></div>`;}
+  let det="";if(sel){const a=co[sel],rt=route(sel,3);det=`<div class="coach-note"><span class="eyebrow">${sel}</span><p class="small">${BOGEY.includes(sel)?"No three-dart checkout exists. Leave yourself something else.":a?`Checked out ${a[1]} of ${a[0]} attempt${a[0]===1?"":"s"} (${fmt(a[1]/a[0]*100,0)}%).`:"Not tried yet."}${rt?` Route: <b class="mono">${rt.map(lab).join(" ")}</b> ${chanceTag(sel,3)}`:""}</p></div>`;}
   const sum2=Object.entries(co).filter(([,a])=>a[0]>=2).map(([n,a])=>({n:+n,r:a[1]/a[0],a:a[0]})),worst=sum2.filter(x=>x.r===0).sort((p,q)=>q.a-p.a).slice(0,3);
   return `<div class="glass pad stack"><div class="row between"><span class="eyebrow">Checkout grid</span><span class="faint small">${tried} of 162 finishes tried</span></div>
     <div class="cogrid">${range(2,170).map(cell).join("")}</div>
