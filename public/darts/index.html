@@ -100,6 +100,18 @@ label.btn{cursor:pointer}
 .cocell.sel{outline:2px solid var(--accent);outline-offset:1px}
 .cocell.bogey,.bogeylg{background:repeating-linear-gradient(45deg,var(--seg-a) 0 3px,transparent 3px 6px);color:var(--faint)}
 .lg{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-2px}
+.fx-video{width:100%;max-height:52vh;border-radius:18px;background:#000;display:block}
+.fx-still{width:100%;display:block;border-radius:14px;touch-action:none;background:#000;-webkit-user-select:none;user-select:none}
+.fxln{stroke:var(--pb-hl);stroke-linecap:round;fill:none}
+.fxpt{fill:var(--accent);stroke:var(--pin)}
+.fxlbl{fill:var(--pin);font-family:var(--mono);font-weight:700;paint-order:stroke;stroke:var(--pin-edge)}
+.fthumb{width:96px;height:auto;border-radius:10px;display:block;background:var(--seg-b);flex:none}
+.fgrid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.fgrid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.vchip{align-self:flex-start;margin-top:4px;font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--seg-b);border:1px solid var(--hair);color:var(--muted)}
+.vchip.v-real{background:var(--info-bg);color:var(--info);border-color:transparent}.vchip.v-real.good{background:var(--hit-bg);color:var(--hit)}.vchip.v-real.bad{background:var(--miss-bg);color:var(--miss)}
+.vchip.v-maybe{color:var(--warn)}
+.cband{fill:var(--accent);opacity:.12}
 .radar-then{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:5 4}
 .itabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
 .itabs button{flex:none}
@@ -475,6 +487,7 @@ footer{font-size:.76rem;color:var(--faint);text-align:center}
 </nav>
 
 <div id="runner" class="runner" hidden></div>
+<div id="formx" class="runner" hidden></div>
 <div id="toast" class="toast glass" hidden role="status"></div>
 
 <script>
@@ -602,13 +615,22 @@ Trend: if the recent form section shows a pattern building, say so.
 
 If the report has a LAST COACH FOCUS section, start by saying whether I achieved it.
 
+Changes marked "probably noise" or "maybe" are within normal variation, so don't treat them as trends, and don't call a single session inside my recent-form range good or bad form.
+
 For a weekly or monthly report (it starts with WEEK or MONTH), use these sections instead: Trend (one line on the direction of travel against the previous period and my baseline), Biggest gain, Biggest leak (where I'm losing the most points or legs), Coach focus check (whether I improved on the focuses set during the period), and Next week or Next month (one focus and the drill for it).
 
 Rules: be honest and specific, and don't praise anything without a number behind it. Only use stats that are in the report, and say when a sample is too small to judge. Keep it under 250 words, in British English, as plain text with no tables or markdown, because I paste your reply back into the app.
 
 End every reply with exactly these two lines, so my app can adjust my next session:
 FOCUS: the one thing to work on, in one sentence
-DRILL: one drill name from the list above, spelt exactly`;
+DRILL: one drill name from the list above, spelt exactly
+
+When a specific drill would help more than anything in the list, add a third line, CUSTOM:, in one of these four formats (it replaces DRILL in my plan):
+CUSTOM: doubles | D16, D8 | 30 darts | 10 min   (one dart per target in turn; write "3 each" for three darts per target)
+CUSTOM: scoring | T19 | 20 visits | 10 min
+CUSTOM: checkouts | 61-80 | 10 finishes, 6 darts each | 15 min
+CUSTOM: bull | 30 darts | 10 min
+Keep it between 5 and 20 minutes.`;
 const FOCUS_DRILLS=["s_t20","s_ton","s_19","s_atc","d_rtb","d_bobs","d_fav","d_one","d_split","c_ladder","c_two","m_501"];
 const normName=x=>String(x).toLowerCase().replace(/[’‘`]/g,"'").replace(/[^a-z0-9' ]/g," ").replace(/\s+/g," ").trim();
 function parseFocus(text){
@@ -616,23 +638,55 @@ function parseFocus(text){
   if(d){const n=normName(d[1]);drill=FOCUS_DRILLS.find(k=>normName(D[k].name)===n)||FOCUS_DRILLS.find(k=>{const m=normName(D[k].name);return n.startsWith(m)||(n.length>=5&&m.startsWith(n));})||null;}
   const ft=f?f[1].replace(/^[\s*_]+|[\s*_]+$/g,""):"";return {focus:ft||null,drill};
 }
+function parseCustom(text){
+  const m=/^[\s*_>•·-]*CUSTOM\s*:?\s*(.+)$/im.exec(text||"");if(!m)return null;
+  const raw=m[1].replace(/[*_`]+/g,"").trim(),parts=raw.split(/\s*[|｜]\s*/),ty=(parts[0]||"").toLowerCase(),rest=parts.slice(1).join(" | "),all=raw.toLowerCase();
+  const type=/doub/.test(ty)?"doubles":/bull/.test(ty)?"bull":/check|finish|out/.test(ty)?"checkouts":/scor|treb|t\d/.test(ty)?"scoring":null;if(!type)return {bad:true,raw};
+  const num=(re,d)=>{const x=re.exec(all);return x?+x[1]:d;},min=clamp(num(/(\d+)\s*min/,type==="checkouts"?15:10),5,20);
+  if(type==="doubles"){const tg=[];(rest.match(/\b(?:d\s?(\d{1,2})|(bull|bullseye|db))\b/gi)||[]).forEach(x=>{const n=/bull|db/i.test(x)?25:+x.replace(/\D/g,"");if((n>=1&&n<=20||n===25)&&!tg.includes(n))tg.push(n);});
+    if(!tg.length)return {bad:true,raw};return {type,targets:tg,n:clamp(num(/(\d+)\s*darts?/,30),10,90),per:/3\s*each|three\s*each/.test(all)?3:1,min,raw};}
+  if(type==="scoring"){const x=/t\s?(\d{1,2})|\b(\d{1,2})s?\b/i.exec(rest);const t=x?+(x[1]||x[2]):20;if(!(t>=1&&t<=20))return {bad:true,raw};return {type,targets:[t],n:clamp(num(/(\d+)\s*visits?/,20),5,30),min,raw};}
+  if(type==="checkouts"){let pool=[];const rg=/(\d{1,3})\s*(?:-|–|to)\s*(\d{1,3})/.exec(rest);
+    if(rg){const a=Math.max(2,Math.min(+rg[1],+rg[2])),b=Math.min(170,Math.max(+rg[1],+rg[2]));pool=range(a,b);}else pool=(rest.split(/\|/)[0].match(/\b\d{1,3}\b/g)||[]).map(Number);
+    pool=pool.filter(x=>x>=2&&x<=170&&!BOGEY.includes(x)&&route(x,3));if(!pool.length)return {bad:true,raw};
+    return {type,pool,n:clamp(num(/(\d+)\s*finish/,10),3,20),each:clamp(num(/(\d+)\s*darts?\s*each/,6),3,9),min,raw};}
+  return {type,n:clamp(num(/(\d+)\s*darts?/,30),10,90),min,raw};
+}
+function customName(sp){if(sp.type==="doubles"){const n=sp.targets.map(dName);return "Coach drill: "+(n.length>3?n.slice(0,3).join(", ")+` +${n.length-3}`:n.join(" & "));}
+  if(sp.type==="scoring")return "Coach drill: T"+sp.targets[0];if(sp.type==="checkouts")return `Coach drill: finishes ${Math.min(...sp.pool)}–${Math.max(...sp.pool)}`;return "Coach drill: bull";}
+function registerCustom(sp,id){
+  if(!sp||sp.bad)return null;const key="cx_"+id;if(D[key])return key;const name=customName(sp);
+  if(sp.type==="doubles"){const list=range(0,sp.n-1).map(i=>sp.targets[Math.floor(i/sp.per)%sp.targets.length]);D[key]={cat:"d",name,how:`${sp.n} darts at ${sp.targets.map(dName).join(", ")}, ${sp.per===3?"three darts at each target in turn":"one dart at each target in turn"}. Set by your coach.`,eng:{type:"dbl",mode:"list",list},custom:sp};}
+  else if(sp.type==="scoring"){const t=sp.targets[0];D[key]={cat:"s",name,how:`${sp.n} visits at T${t}. Set by your coach.`,eng:{type:"aim",target:()=>t,visits:sp.n},custom:sp};}
+  else if(sp.type==="checkouts")D[key]={cat:"c",name,how:`${sp.n} finishes from ${Math.min(...sp.pool)} to ${Math.max(...sp.pool)}, ${sp.each} darts each. Set by your coach.`,eng:{type:"co",mode:"list",pool:sp.pool,count:sp.n,allowed:sp.each},custom:sp};
+  else D[key]={cat:"d",name,how:`${sp.n} darts at the bull. Set by your coach.`,eng:{type:"bull",n:sp.n},custom:sp};
+  return key;
+}
+function registerAllCustom(){[...S.sessions,...S.reviews,...(S.forms||[])].forEach(r=>{if(r.coach&&r.coach.custom)registerCustom(r.coach.custom,r.id);});}
+function coachToast(pf,cx,cxBad,what){
+  if(cx)return `${what} saved. ${D[cx].name} added, ${D[cx].custom.min} min.`;
+  const base=pf.focus?(pf.drill?`${what} saved. ${D[pf.drill].name} gets extra time next session.`:`${what} saved. Focus set; no drill named.`):`${what} saved. No FOCUS line found, so the plan is unchanged.`;
+  return cxBad?base+" (Couldn't read the CUSTOM line.)":base;
+}
 function focusList(){
   const out=[];
-  S.sessions.forEach(s=>{if(s.coach&&s.coach.focus)out.push({focus:s.coach.focus,drill:s.coach.drill||null,at:s.coach.at||Date.parse(s.coach.date+"T12:00:00"),src:"session",id:s.id});});
-  (S.reviews||[]).forEach(r=>{if(r.coach&&r.coach.focus)out.push({focus:r.coach.focus,drill:r.coach.drill||null,at:r.coach.at,src:"review",id:r.id});});
+  S.sessions.forEach(s=>{if(s.coach&&s.coach.focus)out.push({focus:s.coach.focus,drill:s.coach.drill||null,cx:s.coach.custom?registerCustom(s.coach.custom,s.id):null,at:s.coach.at||Date.parse(s.coach.date+"T12:00:00"),src:"session",id:s.id});});
+  (S.reviews||[]).forEach(r=>{if(r.coach&&r.coach.focus)out.push({focus:r.coach.focus,drill:r.coach.drill||null,cx:r.coach.custom?registerCustom(r.coach.custom,r.id):null,at:r.coach.at,src:"review",id:r.id});});
+  (S.forms||[]).forEach(r=>{if(r.coach&&r.coach.focus)out.push({focus:r.coach.focus,drill:r.coach.drill||null,cx:r.coach.custom?registerCustom(r.coach.custom,r.id):null,at:r.coach.at,src:"form",id:r.id});});
   return out.sort((a,b)=>b.at-a.at);
 }
 function activeFocus(before){const cl=(S.meta&&S.meta.focusClearedAt)||0;return focusList().find(f=>f.at>cl&&(before==null||f.at<before))||null;}
-const S={open:new Set(),editCoach:null,coachDraft:{},sessions:[],baselines:[],reviews:[],goals:[],milestones:[],meta:{},db:null,mode:"local",loaded:false,day:(new Date().getDay()+6)%7,metric:"avg3",pendingDel:null,note:"",run:store.get("oche-run-v2"),lfeel:3};
+const S={forms:[],open:new Set(),editCoach:null,coachDraft:{},sessions:[],baselines:[],reviews:[],goals:[],milestones:[],meta:{},db:null,mode:"local",loaded:false,day:(new Date().getDay()+6)%7,metric:"avg3",pendingDel:null,note:"",run:store.get("oche-run-v2"),lfeel:3};
 if(S.run&&!Array.isArray(S.run.blocks))S.run=null;
 const LKEY="oche-plan-v1";
 const SEED={"sessions":[{"id":"efc2tsvjy8rmbzgvqhsh","avg3":null,"bobs":null,"created":1794084833924,"dAtt":113,"dHits":10,"date":"2026-11-07","dpl":45.2,"feel":3,"mins":60,"notes":"First real session - hit first 180 on new board and first ever 100+ checkout","total":null,"type":"match","visits":null}],"baselines":[{"id":"pmjzvoxgxp5n4458c316","avg3":43.45,"bobs":0,"coAtt":63,"coPct":4.761904761904762,"created":1794074354845,"dHits":8,"dPct":13.333333333333334,"date":"2026-11-07","dpl":63,"legs":[115,41,33],"t20":3,"tPct":5,"total":869}]};
 function loadLocal(){
   let j=store.get(LKEY);
   if(!j&&!store.get("oche-seeded")){j=JSON.parse(JSON.stringify(SEED));store.set(LKEY,j);store.set("oche-seeded",1);}
-  j=j||{};S.sessions=j.sessions||[];S.baselines=j.baselines||[];S.reviews=j.reviews||[];S.goals=j.goals||[];S.milestones=j.milestones||[];S.meta=j.meta||{};
+  j=j||{};S.sessions=j.sessions||[];S.baselines=j.baselines||[];S.reviews=j.reviews||[];S.goals=j.goals||[];S.milestones=j.milestones||[];S.meta=j.meta||{};S.forms=j.forms||[];
+  try{registerAllCustom();}catch(e){}
 }
-function saveLocal(){store.set(LKEY,{sessions:S.sessions,baselines:S.baselines,reviews:S.reviews,goals:S.goals,milestones:S.milestones,meta:S.meta});}
+function saveLocal(){store.set(LKEY,{sessions:S.sessions,baselines:S.baselines,reviews:S.reviews,goals:S.goals,milestones:S.milestones,meta:S.meta,forms:S.forms||[]});}
 const sortRows=a=>a.slice().sort((x,y)=>(x.date||"").localeCompare(y.date||"")||((x.created||0)-(y.created||0)));
 async function addRow(coll,row){
   row.created=Date.now();row=JSON.parse(JSON.stringify(row));
@@ -640,6 +694,7 @@ async function addRow(coll,row){
   row.id="l"+row.created;S[coll].push(row);saveLocal();render();return row.id;
 }
 async function delRow(coll,id){
+  if(coll==="forms"){const f=(S.forms||[]).find(r=>r.id===id);if(f)Object.values(f.frames||{}).forEach(fr=>{if(fr&&fr.img)imgDel(fr.img);});}
   if(S.mode==="db"){await S.db.doc(coll+"/"+id).delete();return;}
   S[coll]=S[coll].filter(r=>r.id!==id);saveLocal();render();
 }
@@ -647,6 +702,23 @@ function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTi
 
 /* ================= analysis ================= */
 function aggPd(rows){const pd={};rows.forEach(r=>{const p=r.m&&r.m.pd;if(!p)return;for(const k in p){const a=pd[k]||(pd[k]=[0,0]);a[0]+=p[k][0];a[1]+=p[k][1];}});return pd;}
+function sdS(a){if(a.length<2)return 0;const m=mean(a);return Math.sqrt(sum(a.map(x=>(x-m)**2))/(a.length-1));}
+function welch(a,b){if(a.length<3||b.length<3)return null;const ma=mean(a),mb=mean(b),se=Math.sqrt(sdS(a)**2/a.length+sdS(b)**2/b.length);return {diff:ma-mb,se,t:se?(ma-mb)/se:(ma===mb?0:99*Math.sign(ma-mb))};}
+function propZ(h1,n1,h2,n2){if(n1<20||n2<20)return null;const p1=h1/n1,p2=h2/n2,pp=(h1+h2)/(n1+n2),se=Math.sqrt(pp*(1-pp)*(1/n1+1/n2));return {diff:(p1-p2)*100,se:se*100,t:se?(p1-p2)/se:0};}
+function verdict(r){if(!r)return {k:"early",l:"Too early to tell"};const a=Math.abs(r.t);return a>=2?{k:"real",l:"Likely real"}:a>=1?{k:"maybe",l:"Maybe"}:{k:"noise",l:"Probably noise"};}
+const RATE_K={dpct:x=>[x.dHits||0,x.dAtt||0],co:x=>x.m&&x.m.coAtt?[x.m.coHits,x.m.coAtt]:[0,0],tpct:x=>x.m&&x.m.tPct!=null&&x.m.visits?[Math.round(x.m.tPct/100*x.m.visits*3),x.m.visits*3]:[0,0]};
+function compareRows(k,a,b){
+  if(RATE_K[k]){const f=RATE_K[k],pa=a.map(f),pb=b.map(f);return propZ(sum(pa.map(q=>q[0])),sum(pa.map(q=>q[1])),sum(pb.map(q=>q[0])),sum(pb.map(q=>q[1])));}
+  const M=METRICS[k];return welch(a.map(M.get).filter(v=>v!=null),b.map(M.get).filter(v=>v!=null));
+}
+function recentChange(k,A){
+  const M=METRICS[k],rows=A.core.filter(x=>RATE_K[k]?RATE_K[k](x)[1]>0:M.get(x)!=null),rec=rows.slice(-7),prev=rows.slice(-14,-7);
+  let r=compareRows(k,rec,prev),basis="the 7 before";
+  if(!r&&A.first&&rec.length>=3){const b=A.first;
+    if(k==="avg3"&&b.avg3!=null){const vals=rec.map(M.get),seR=sdS(vals)/Math.sqrt(vals.length),seB=((b.m&&b.m.sd)||25)/Math.sqrt(20),se=Math.sqrt(seR**2+seB**2),d=mean(vals)-b.avg3;r={diff:d,se,t:se?d/se:0};basis="your first baseline";}
+    if(k==="dpct"&&b.dHits!=null){const pa=rec.map(RATE_K.dpct);r=propZ(sum(pa.map(q=>q[0])),sum(pa.map(q=>q[1])),b.dHits,60);basis="your first baseline";}}
+  return {r,v:verdict(r),basis};
+}
 function analyse(){
   const ss=sortRows(S.sessions),bs=sortRows(S.baselines),core=ss.filter(s=>s.type!=="free");
   const first=bs[0]||null,latest=bs[bs.length-1]||null;
@@ -658,13 +730,13 @@ function analyse(){
   const calibrated=sAvg!=null||dPct!=null;
   const sL=sAvg!=null?lvlAvg(sAvg):1,dL=dPct!=null?lvlDbl(dPct):1;
   let mode=calibrated?"build":"new";const reasons=[];
-  if(withAvg.length>=8){const r=mean(last(withAvg,5).map(s=>s.avg3)),p=mean(last(withAvg,10,5).map(s=>s.avg3));
-    if(r<p*0.92){mode="dip";reasons.push(`Average over your last 5 sessions (${fmt(r)}) is ${fmt((1-r/p)*100,0)}% below the 10 before (${fmt(p)}).`);}}
-  if(withDbl.length>=8){const r=dp(last(withDbl,5)),p=dp(last(withDbl,10,5));
-    if(p>0&&r<p*0.85){mode="dip";reasons.push(`Double rate over your last 5 sessions (${fmt(r)}%) is down from ${fmt(p)}%.`);}}
+  if(withAvg.length>=8){const r=mean(last(withAvg,5).map(s=>s.avg3)),p=mean(last(withAvg,10,5).map(s=>s.avg3)),w=welch(last(withAvg,5).map(s=>s.avg3),last(withAvg,10,5).map(s=>s.avg3));
+    if(r<p*0.92&&w&&w.t<=-2){mode="dip";reasons.push(`Average over your last 5 sessions (${fmt(r)}) is ${fmt((1-r/p)*100,0)}% below the 10 before (${fmt(p)}).`);}}
+  if(withDbl.length>=8){const r=dp(last(withDbl,5)),p=dp(last(withDbl,10,5)),A5=last(withDbl,5),B10=last(withDbl,10,5),z=propZ(sum(A5.map(c=>c.dHits)),sum(A5.map(c=>c.dAtt)),sum(B10.map(c=>c.dHits)),sum(B10.map(c=>c.dAtt)));
+    if(p>0&&r<p*0.85&&z&&z.t<=-2){mode="dip";reasons.push(`Double rate over your last 5 sessions (${fmt(r)}%) is down from ${fmt(p)}%.`);}}
   const lf=last(core,3);if(lf.length===3&&lf.every(s=>s.feel!=null&&s.feel<=2)){mode="dip";reasons.push("Your last three sessions all felt like a 1 or 2.");}
-  if(mode!=="dip"&&withAvg.length>=21){const r=mean(last(withAvg,7).map(s=>s.avg3)),p=mean(last(withAvg,7,14).map(s=>s.avg3));
-    if(Math.abs(r-p)/p<0.02){mode="plateau";reasons.push(`Last 7 sessions average ${fmt(r)}; three weeks ago it was ${fmt(p)}.`);}
+  if(mode!=="dip"&&withAvg.length>=21){const r=mean(last(withAvg,7).map(s=>s.avg3)),p=mean(last(withAvg,7,14).map(s=>s.avg3)),w=welch(last(withAvg,7).map(s=>s.avg3),last(withAvg,7,14).map(s=>s.avg3));
+    if(Math.abs(r-p)/p<0.02&&(!w||Math.abs(w.t)<1)){mode="plateau";reasons.push(`Last 7 sessions average ${fmt(r)}; three weeks ago it was ${fmt(p)}.`);}
     else if(r>p*1.03){mode="climb";reasons.push(`Up ${fmt((r/p-1)*100,0)}% on three weeks ago.`);}}
   const retest=latest?(Date.parse(todayISO())-Date.parse(latest.date))/864e5>=28:false;
   const pd=aggPd([...ss,...bs]);
@@ -696,7 +768,12 @@ function buildPlan(A,tpl0){
     if(give&&take){give.m-=5;take.m+=5;take.tag=(take.tag?take.tag+" · ":"")+"+5 min focus";}
   }
   const F=(!isBase&&!dip)?activeFocus():null,pinOnly=isCheck;
-  if(F&&F.drill&&D[F.drill]&&!pinOnly){
+  if(F&&F.cx&&D[F.cx]&&!pinOnly){
+    let need=D[F.cx].custom.min,got=0;
+    while(need>0){const give=blocks.filter(b=>b.m-5>=10&&!NOSTEAL.includes(b.k)).sort((a,b)=>b.m-a.m)[0];if(!give)break;give.m-=5;need-=5;got+=5;}
+    if(got>=5){const at=blocks.findIndex(b=>b.k==="review");blocks.splice(at>=0?at:blocks.length,0,{k:F.cx,m:got,tag:"Coach drill"});}
+  }
+  else if(F&&F.drill&&D[F.drill]&&!pinOnly){
     const i=blocks.findIndex(b=>b.k===F.drill);
     if(i>=0){const give=blocks.filter((b,j)=>j!==i&&b.m>=10&&!NOSTEAL.includes(b.k)).sort((a,b)=>b.m-a.m)[0];if(give){give.m-=5;blocks[i].m+=5;blocks[i].tag=(blocks[i].tag?blocks[i].tag+" · ":"")+"Coach focus";}}
     else{const give=blocks.filter(b=>b.m>=15&&!NOSTEAL.includes(b.k)).sort((a,b)=>b.m-a.m)[0];if(give){give.m-=10;const at=blocks.findIndex(b=>b.k==="review");blocks.splice(at>=0?at:blocks.length,0,{k:F.drill,m:10,tag:"Coach focus"});}}
@@ -723,7 +800,7 @@ function initData(k,L,pd){
       return {q,i:0,darts:[],score:27,hits:0};}
     case "split":return {round:0,t:16,inRound:0,wins:0,darts:[]};
     case "co":{if(e.mode==="ladder"){const s=D[k].start[L];return {mode:"ladder",round:0,target:s,start:s,best:0,results:[],att:newAtt(s,9)};}
-      const list=e.fixed||(e.gen==="big"?pickBig(10):pickTwoDart(10));return {mode:"list",list,idx:0,results:[],att:newAtt(list[0],e.allowed||3)};}
+      const list=e.fixed||(e.gen==="big"?pickBig(10):e.pool?pickPool(e.pool,e.count||10):pickTwoDart(10));return {mode:"list",list,idx:0,results:[],att:newAtt(list[0],e.allowed||3)};}
     case "bull":return {darts:[]};
     case "halve":return {round:0,score:40,cur:[],rounds:[]};
     case "leg":return {legs:[],cur:newLeg(),vs:e.vs?newVs():null};
@@ -782,6 +859,7 @@ function inCo(b,code){
     else{d.idx++;if(d.idx<d.list.length)d.att=newAtt(d.list[d.idx],D[b.k].eng.allowed||3);}
   }
 }
+function pickPool(pool,n){const out=[];let bag=[];while(out.length<n){if(!bag.length){bag=pool.slice();for(let i=bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]];}}out.push(bag.pop());}return out;}
 function pickBig(n){const c=range(101,170).filter(x=>!BOGEY.includes(x));for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}return c.slice(0,n).sort((a,b)=>a-b);}
 const HALVE=[{t:20,l:"20s"},{t:19,l:"19s"},{t:"D",l:"Any double"},{t:18,l:"18s"},{t:"T",l:"Any treble"},{t:17,l:"17s"},{t:"B",l:"Bull"},{t:20,l:"20s"}];
 const halveHit=(c,t)=>t==="D"?isDbl(c):t==="T"?c[0]==="T":t==="B"?(c==="SB"||c==="DB"):(numOf(c)===t&&c!=="SB"&&c!=="DB");
@@ -974,7 +1052,7 @@ function summarise(R){
     const raw=e.type==="aim"?d.visits.map(v=>v.d.join(" ")).join(" | "):(e.type==="dbl"||e.type==="split"||e.type==="atc")?d.darts.map(x=>x.t+x.r).join(" "):e.type==="bull"?d.darts.map(x=>x.r).join(" "):e.type==="halve"?d.rounds.map(r=>r.darts.join(" ")).join(" | "):e.type==="leg"?d.legs.map(g=>g.c).join(" | "):e.type==="co"?d.results.map(r=>r.t+":"+r.c).join(" | "):"";
     const touched=e.type==="timer"||(d.vs&&d.vs.cfg)||(d.visits&&d.visits.length)||(e.type==="aim"&&d.cur&&d.cur.length)||(d.darts&&d.darts.length)||(d.results&&d.results.length)||(d.rounds&&d.rounds.length)||(d.legs&&d.legs.length)||(d.cur&&d.cur.darts&&d.cur.darts.length)||(d.att&&d.att.darts&&d.att.darts.length);
     if(!touched)txt="Skipped";
-    drills.push({k:b.k,m:b.m,L:b.L,txt,raw});
+    drills.push({k:b.k,n:D[b.k].name,m:b.m,L:b.L,txt,raw});
   }
   const legDd=[...M.legs.flatMap(g=>g.dd),...M.extraDd];
   const m={visits:M.visits,tons:M.tons,t140:M.t140,n180:M.n180,tPct:pctf(M.tH,M.tD),bedPct:pctf(M.bedH,M.tD),sd:sdev(M.vs),mL:M.mL,mR:M.mR,aim20:M.aim20,pd:M.pd,
@@ -1011,7 +1089,7 @@ function chooserHTML(R){
     <div class="rtop"><button type="button" class="icon-btn" data-act="close" aria-label="Close and keep free play">×</button><div class="rprog">${R.blocks.map(x=>`<span class="c-${D[x.k].cat} done"></span>`).join("")||`<span></span>`}</div><span class="rcount">${R.blocks.length} drill${R.blocks.length===1?"":"s"}</span></div>
     <div class="glass pad-lg stack"><span class="eyebrow">Free play</span><h2>${R.blocks.length?"Add another drill":"Pick a drill"}</h2>
       <p class="small muted">Extra darts are saved and count towards your maps, milestones and streak, but not your levels or trend charts, so tired darts don't drag your form down.</p>
-      <div class="row">${AF&&AF.drill?`<button type="button" class="btn primary" data-free="${AF.drill}">Coach focus: ${esc(D[AF.drill].name)}</button>`:""}<button type="button" class="btn ${AF&&AF.drill?"":"primary"}" data-act="freeRandom">Surprise me</button></div></div>
+      <div class="row">${AF&&AF.cx&&D[AF.cx]?`<button type="button" class="btn primary" data-free="${AF.cx}">${esc(D[AF.cx].name)}</button>`:AF&&AF.drill?`<button type="button" class="btn primary" data-free="${AF.drill}">Coach focus: ${esc(D[AF.drill].name)}</button>`:""}<button type="button" class="btn ${AF&&(AF.drill||AF.cx)?"":"primary"}" data-act="freeRandom">Surprise me</button></div></div>
     <div class="glass pad stack"><span class="eyebrow">Or choose any drill</span>
       ${groups.map(g=>`<div class="stack" style="gap:8px"><span class="cat c-${g}">${CATNAME[g]}</span><div class="row" style="gap:8px">${FREE_DRILLS.filter(k=>D[k].cat===g).map(k=>`<button type="button" class="btn sm" data-free="${k}">${esc(D[k].name)}</button>`).join("")}</div></div>`).join("")}</div>
     ${R.blocks.length?`<div class="glass pad stack"><span class="eyebrow">Played so far</span><ul class="small muted" style="margin:0;padding-left:18px">${R.blocks.map(b=>`<li>${esc(D[b.k].name)}</li>`).join("")}</ul><button type="button" class="btn primary big" data-act="freeFinish">Finish free play</button></div>`:""}
@@ -1061,7 +1139,7 @@ function trail(items){return items.length?`<div class="trail">${items.slice(-24)
 function engineView(b){
   const R=S.run,e=D[b.k].eng,d=b.data,done=blockDone(b);
   const doneBadge=done?`<div class="done-badge">✓ Block complete. Tap Next.</div>`:"";
-  if(e.type==="timer")return `<div class="glass live"><p class="muted">${esc(D[b.k].how)}</p><p class="small faint">Nothing to score here. Use the timer, then move on.</p></div>`;
+  if(e.type==="timer")return `<div class="glass live"><p class="muted">${esc(D[b.k].how)}</p>${b.k==="form"?`<div class="row"><button type="button" class="btn primary" data-act="openFormTab">Open form review</button></div><p class="small faint">Your session waits while you review the clip. Come back to it from the Today tab.</p>`:`<p class="small faint">Nothing to score here. Use the timer, then move on.</p>`}</div>`;
   if(e.type==="aim"){
     const t=e.target(d.visits.length),vt=d.visits.map(v=>sum(v.d.map(val))),all=d.visits.flatMap(v=>v.d.map(c=>[c,v.t]));
     const avg=vt.length?mean(vt):null,tr=all.filter(([c,tt])=>c==="T"+tt).length,bed=all.filter(([c,tt])=>numOf(c)===tt&&c!=="SB"&&c!=="DB").length;
@@ -1229,7 +1307,7 @@ function renderHome(A){
   if(weak.length)parts.push(`Weak doubles right now: <b>${weak.map(dName).join(", ")}</b>. They're built into Match doubles.`);
   if(A.calibrated&&A.sL!==A.dL)parts.push(`${A.sL<A.dL?"Scoring":"Doubles"} is your weaker side, so it gets five extra minutes on most days.`);
   const lastCoach=A.ss.slice().reverse().find(x=>x.coach&&x.coach.text),AF=A.mode==="dip"?null:activeFocus();
-  const afHtml=AF?`<div class="coach-note"><span class="eyebrow">Coach focus · ${fmtDate(isoOf(new Date(AF.at)))}</span><p>${esc(AF.focus)}</p><p class="small muted">${AF.drill?(S.day===6?`On check-in days the plan stays fixed so your weekly numbers compare; ${esc(D[AF.drill].name)} gets extra time on the other days.`:`${esc(D[AF.drill].name)} gets extra time in your plan until the next review.`):"No drill was named, so the plan is unchanged."}</p><div class="row"><button type="button" class="btn sm" data-act="clearFocus">Clear focus</button></div></div>`:"";
+  const afHtml=AF?`<div class="coach-note"><span class="eyebrow">Coach focus · ${fmtDate(isoOf(new Date(AF.at)))}</span><p>${esc(AF.focus)}</p><p class="small muted">${AF.cx&&D[AF.cx]?(S.day===6?`On check-in days the plan stays fixed; ${esc(D[AF.cx].name)} is added on the other days.`:`${esc(D[AF.cx].name)} (${D[AF.cx].custom.min} min) is added to your plan until the next review. ${esc(D[AF.cx].how)}`):AF.drill?(S.day===6?`On check-in days the plan stays fixed so your weekly numbers compare; ${esc(D[AF.drill].name)} gets extra time on the other days.`:`${esc(D[AF.drill].name)} gets extra time in your plan until the next review.`):"No drill was named, so the plan is unchanged."}</p><div class="row"><button type="button" class="btn sm" data-act="clearFocus">Clear focus</button></div></div>`:"";
   if(parts.length||lastCoach||AF)html+=`<div class="glass pad stack"><span class="eyebrow">Focus</span>${afHtml}${parts.map(p=>`<p class="small">${p}</p>`).join("")}${lastCoach?`<details class="how"><summary>Latest coach feedback · ${fmtDate(lastCoach.date)} ${esc(typeName(lastCoach.type))}</summary><p class="coach-text" style="color:var(--ink)">${esc(lastCoach.coach.text)}</p></details>`:""}</div>`;
   html+=`<div class="row between"><h2>${DAYS[S.day]} · ${total} minutes</h2><span class="muted small">Targets set by your levels</span></div>
     <ol class="blocks">${plan.blocks.map(b=>{const d=D[b.k];return `<li class="glass blk c-${d.cat}"><div class="min">${b.m}<small>MIN</small></div><h3>${esc(d.name)}${b.tag?`<span class="tag">${esc(b.tag)}</span>`:""}</h3><p>${esc(d.how)}</p>${targetLine(b)}</li>`;}).join("")}</ol>`;
@@ -1259,6 +1337,8 @@ function chart(M,pts,baseVal){
   let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(M.label)} by session">`;
   ticks.forEach(t=>{s+=`<line class="ax" x1="${L}" x2="${W-R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axt" x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}${M.unit}</text>`;});
   if(pts.length>1)s+=`<path class="area" d="${line} L${X(pts.length-1).toFixed(1)} ${H-B} L${X(0).toFixed(1)} ${H-B}Z"/>`;
+  {const se=pts.map((p,i)=>{const w=pts.slice(Math.max(0,i-4),i+1).map(q=>q.y);return w.length>=3?sdS(w)/Math.sqrt(w.length):null;});const idx=se.map((v,i)=>v!=null?i:-1).filter(i=>i>=0);
+   if(idx.length>=2){const up=idx.map(i=>X(i).toFixed(1)+" "+Y(Math.min(hi,roll[i]+2*se[i])).toFixed(1)),dn=idx.slice().reverse().map(i=>X(i).toFixed(1)+" "+Y(Math.max(lo,roll[i]-2*se[i])).toFixed(1));s+=`<path class="cband" d="M${up.join(" L")} L${dn.join(" L")}Z"/>`;}}
   if(baseVal!=null)s+=`<line class="base" x1="${L}" x2="${W-R}" y1="${Y(baseVal)}" y2="${Y(baseVal)}"/><text class="baset" x="${W-R}" y="${Y(baseVal)-6}" text-anchor="end">Baseline ${fmt(baseVal,M.d)}${M.unit}</text>`;
   pts.forEach((p,i)=>{s+=`<circle class="raw" cx="${X(i)}" cy="${Y(p.y)}" r="2.6"/>`;});
   if(pts.length>1)s+=`<path class="ln" d="${line}"/>`;
@@ -1296,9 +1376,11 @@ function renderInsights(A){
     const vals=rows.map(M.get).filter(v=>v!=null),cur=k==="dpct"&&A.dPct!=null?A.dPct:mean(vals.slice(-7)),b=A.first?M.base(A.first):null;let d;
     if(cur!=null&&b!=null){const diff=cur-b,good=M.dir==="up"?diff>0:diff<0,cls=Math.abs(diff)<(M.d?0.05:0.5)?"flat":good?"good":"bad";d=`<span class="d ${cls}">${diff>0?"+":""}${fmt(diff,M.d)}${M.unit} vs baseline</span>`;}
     else d=`<span class="d faint">${b!=null?"Baseline "+fmt(b,M.d)+M.unit:vals.length?vals.length+" session"+(vals.length>1?"s":""):"No data yet"}</span>`;
-    return `<div class="glass tile"><span class="eyebrow">${M.label}</span><span class="v">${cur==null?"–":fmt(cur,M.d)+M.unit}</span>${spark(vals.slice(-12))}${d}</div>`;}).join("");
+    const ch=recentChange(k,A),up=ch.r&&ch.r.diff>0,good=ch.r&&(M.dir==="up"?up:!up);
+    const chip=ch.r?`<span class="vchip v-${ch.v.k} ${ch.v.k==="real"?(good?"good":"bad"):""}" title="Last 7 sessions against ${ch.basis}">${Math.abs(ch.r.diff)<1e-9?"→":up?"↑":"↓"} ${ch.v.l}</span>`:`<span class="vchip v-early">${ch.v.l}</span>`;
+    return `<div class="glass tile"><span class="eyebrow">${M.label}</span><span class="v">${cur==null?"–":fmt(cur,M.d)+M.unit}</span>${spark(vals.slice(-12))}${d}${chip}</div>`;}).join("");
   const M=METRICS[S.metric],pts=rows.map(s=>({y:M.get(s),date:s.date})).filter(p=>p.y!=null),bv=A.first?M.base(A.first):null;
-  const chartHtml=pts.length?`<div class="chartbox">${chart(M,pts,bv)}</div><p class="faint small">Dots are single sessions; the line is a 5-session rolling average; dashed green is your first baseline.</p>`:`<div class="empty"><b>No ${esc(M.label.toLowerCase())} data yet</b><span>Play a session with the live scorer and it plots here.</span></div>`;
+  const chartHtml=pts.length?`<div class="chartbox">${chart(M,pts,bv)}</div><p class="faint small">Dots are single sessions; the line is a 5-session rolling average; dashed green is your first baseline. The shaded band is how far the average could wobble by chance: a move that stays outside it is likely real.</p>`:`<div class="empty"><b>No ${esc(M.label.toLowerCase())} data yet</b><span>Play a session with the live scorer and it plots here.</span></div>`;
   const recent=(f,n=7)=>{const x=v2.map(f).filter(v=>v!=null);return x.length?mean(x.slice(-n)):null;};
   const legCo=(()=>{const a=sum(v2.map(s=>s.m.coAtt||0)),h=sum(v2.map(s=>s.m.coHits||0));return a>=5?h/a*100:(A.latest&&A.latest.coPct!=null?A.latest.coPct:null);})();
   const tp=recent(s=>s.m.tPct)??(A.latest?A.latest.tPct:null),sdv=recent(s=>s.m.sd);
@@ -1374,9 +1456,13 @@ function renderInsights(A){
     goals:()=>goalsCard(A),
     ladder:()=>ladderCard(A),
     cal:()=>calCard(A),
-    ms:()=>milestonesCard()
+    ms:()=>milestonesCard(),
+    fhead:()=>formHeadCard(),
+    fchart:()=>formChartCard(),
+    fcmp:()=>formCmpCard(),
+    flist:()=>formListCard()
   };
-  const TABS=[["overview","Overview",["tiles","chart","web","ins"]],["scoring","Scoring",["t20","grpAim","each","dbd","spread"]],["doubles","Doubles & finishing",["group","dmap","cogrid","bobs"]],["matches","Matches",["vs","worm"]],["progress","Progress",["goals","ladder","cal","ms"]]];
+  const TABS=[["overview","Overview",["tiles","chart","web","ins"]],["scoring","Scoring",["t20","grpAim","each","dbd","spread"]],["doubles","Doubles & finishing",["group","dmap","cogrid","bobs"]],["matches","Matches",["vs","worm"]],["progress","Progress",["goals","ladder","cal","ms"]],["form","Form",["fhead","fchart","fcmp","flist"]]];
   const cur=TABS.find(t=>t[0]===tab)||TABS[0];
   el.innerHTML=`<div class="row between"><h2>Insights</h2><span class="muted small">${rows.length} session${rows.length===1?"":"s"} · ${A.bs.length} baseline${A.bs.length===1?"":"s"}</span></div>
    <div class="seg itabs" role="tablist" aria-label="Insights sections">${TABS.map(t=>`<button type="button" role="tab" data-itab="${t[0]}" aria-pressed="${t[0]===cur[0]}" aria-selected="${t[0]===cur[0]}">${t[1]}</button>`).join("")}</div>
@@ -1598,7 +1684,7 @@ function periodText(r){
   const cur=periodStats(rows),prv=periodStats(prows);
   P("");P(`HEADLINE NUMBERS (this ${word} · previous ${word} · first baseline)`);
   ["avg3","f9","tpct","sd","dpct","co","bobs","dpl"].forEach(k=>{const M=METRICS[k];if(cur[k]==null&&prv[k]==null)return;const bv=A.first?M.base(A.first):null,f=v=>v==null?"–":fmt(v,M.d)+M.unit;
-    P(`- ${M.label}: ${f(cur[k])} · ${f(prv[k])} · ${f(bv)}${M.dir==="down"?" (lower is better)":""}`);});
+    const vv=verdict(compareRows(k,rows,prows));P(`- ${M.label}: ${f(cur[k])} · ${f(prv[k])} · ${f(bv)}${M.dir==="down"?" (lower is better)":""}${cur[k]!=null&&prv[k]!=null?` — change ${vv.l.toLowerCase()}`:""}`);});
   const pd=aggPd(rows),ppd=aggPd(prows),dl=Object.entries(pd).filter(([,a])=>a[0]>=5).sort((a,b)=>b[1][0]-a[1][0]);
   if(dl.length)P("Per double this "+word+" (hits/darts, previous "+word+" %): "+dl.map(([t,a])=>{const q=ppd[t];return `${dName(+t)} ${a[1]}/${a[0]}${q&&q[0]>=5?` (prev ${fmt(q[1]/q[0]*100,0)}%)`:""}`;}).join(", "));
   const pos=[[0,0,0,0],[0,0,0,0],[0,0,0,0]],seg={};rows.forEach(x=>{const m=x.m||{};if(m.pos)m.pos.forEach((q,j)=>q.forEach((v,k)=>pos[j][k]+=v));if(m.seg)for(const k in m.seg){const a=seg[k]||(seg[k]=[0,0]);a[0]+=m.seg[k][0];a[1]+=m.seg[k][1];}});
@@ -1652,7 +1738,7 @@ function renderHistory(A){
         <div class="row"><button type="button" class="btn sm" data-paste="${esc(s.id)}">Paste</button><button type="button" class="btn primary sm" data-coach-save="${esc(s.id)}">Save feedback</button>${s.coach?`<button type="button" class="btn sm" data-coach-cancel="${esc(s.id)}">Cancel</button>`:""}</div>`}
         <span class="status" id="cs-${esc(s.id)}" role="status"></span></div>`;
     return `<details class="glass hcard" data-id="${esc(s.id)}" ${S.open.has(s.id)?"open":""}><summary><b>${fmtDate(s.date)} · ${esc(typeName(s.type))}</b><span class="faint small">${s.coach?"Reviewed · ":""}${s.v===2?"Live":"Manual"}</span><div class="stats">${st.map(x=>`<span>${esc(x)}</span>`).join("")}</div></summary>
-      ${s.drills?`<ul>${s.drills.map(x=>`<li><b style="color:var(--ink)">${esc((D[x.k]||{name:x.k}).name)}</b> — ${esc(x.txt)}</li>`).join("")}</ul>`:""}
+      ${s.drills?`<ul>${s.drills.map(x=>`<li><b style="color:var(--ink)">${esc((D[x.k]||{name:x.n||x.k}).name)}</b> — ${esc(x.txt)}</li>`).join("")}</ul>`:""}
       ${s.notes?`<p class="small muted" style="margin-top:10px">${esc(s.notes)}</p>`:""}
       ${coach}
       <div class="row" style="margin-top:12px"><button type="button" class="btn sm danger" data-del="${esc(key)}">${S.pendingDel===key?"Tap again to delete":"Delete"}</button></div></details>`;}).join("");
@@ -1787,9 +1873,12 @@ function goalStatus(g,A){
   if(pts.length<5)text="Not enough sessions yet for a projection";
   else{const mx=mean(pts.map(p=>p.x)),my=mean(pts.map(p=>p.y)),den=sum(pts.map(p=>(p.x-mx)**2)),slope=den?sum(pts.map(p=>(p.x-mx)*(p.y-my)))/den:0;
     const today=Date.parse(todayISO()+"T12:00:00")/864e5,curT=my+slope*(today-mx);
+    const res=pts.map(p=>p.y-(my+slope*(p.x-mx))),s2=pts.length>2?sum(res.map(r=>r*r))/(pts.length-2):0,seS=den?Math.sqrt(s2/den):0;
     if(up?slope<=0.01:slope>=-0.01)text="Trend isn't moving towards this yet";
+    else if(seS&&Math.abs(slope)<seS)text="Trend not clear yet: it could be noise";
     else{const days=(g.target-curT)/slope;proj=new Date((today+Math.max(0,days))*864e5);const by=Date.parse(g.by+"T12:00:00");
-      const onTrack=proj.getTime()<=by;cls=onTrack?"good":"bad";text=`${onTrack?"On track":"Behind"}: at this rate about ${proj.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:proj.getFullYear()!==new Date().getFullYear()?"numeric":undefined})}`;}}
+      const sl2=Math.abs(slope)-seS,dHi=sl2>0?(g.target-curT)/(Math.sign(slope)*sl2):null,dLo=(g.target-curT)/(Math.sign(slope)*(Math.abs(slope)+seS)),pm=dHi!=null?Math.round((dHi-dLo)/2):null;
+      const onTrack=proj.getTime()<=by;cls=onTrack?"good":"bad";text=`${onTrack?"On track":"Behind"}: at this rate about ${proj.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:proj.getFullYear()!==new Date().getFullYear()?"numeric":undefined})}${pm!=null?` (± about ${pm} day${pm===1?"":"s"})`:" (or later; the trend is uncertain)"}`;}}
   return {cur,frac,met,text,cls,proj};
 }
 
@@ -1797,9 +1886,11 @@ function goalStatus(g,A){
 function coachText(s){
   const A=analyse(),i=A.ss.findIndex(x=>x.id===s.id),prev=A.ss.slice(Math.max(0,i-5),i<0?A.ss.length:i),m=s.m||{},L=[],P=x=>L.push(x);
   const day=new Date(s.date+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
-  P("Review this darts practice session as my coach: how it compares with my recent form and baseline, what went well, the one or two biggest things holding back my scoring and doubles (with the likely technical cause), and one specific focus with a drill for my next session. Be honest, use the numbers, don't invent stats and flag small samples. Under 250 words, British English, plain text. End with two lines: FOCUS: (one sentence) and DRILL: (one of "+FOCUS_DRILLS.map(k=>D[k].name).join(", ")+").");
+  P("Review this darts practice session as my coach: how it compares with my recent form and baseline, what went well, the one or two biggest things holding back my scoring and doubles (with the likely technical cause), and one specific focus with a drill for my next session. Be honest, use the numbers, don't invent stats and flag small samples. Under 250 words, British English, plain text. End with two lines: FOCUS: (one sentence) and DRILL: (one of "+FOCUS_DRILLS.map(k=>D[k].name).join(", ")+"). If a specific drill would help more, add CUSTOM: type | targets | amount | minutes (types: doubles, scoring, checkouts, bull).");
   P("");P("SESSION");
   P(`${day} · ${typeName(s.type)} · ${s.mins||"?"} min · felt ${s.feel??"?"}/5 · ${s.v===2?"scored dart by dart":"entered by hand, totals only"}`);
+  {const a7=A.core.filter(x=>x.avg3!=null).slice(-7).map(x=>x.avg3),d7=A.core.filter(x=>x.dAtt>0).slice(-7),dh=sum(d7.map(x=>x.dHits)),dn=sum(d7.map(x=>x.dAtt)),pp=dn?dh/dn:0;
+   if(a7.length>=3||dn>=20)P(`Recent form (last 7 sessions, ± one standard error): `+[a7.length>=3?`3-dart avg ${fmt(mean(a7))} ± ${fmt(sdS(a7)/Math.sqrt(a7.length))}`:null,dn>=20?`double rate ${fmt(pp*100,0)}% ± ${fmt(Math.sqrt(pp*(1-pp)/dn)*100,0)}%`:null].filter(Boolean).join(", ")+". A single session inside that range is normal variation.");}
   if(A.calibrated)P(`Current levels: scoring L${A.sL+1} ${LEVELS[A.sL].name} (rolling 3-dart avg ${fmt(A.sAvg)}), doubles L${A.dL+1} ${LEVELS[A.dL].name} (rolling double rate ${fmt(A.dPct,0)}%). Plan mode: ${MODE[A.mode][1]}.`);
   if(A.first){const b=A.first;P(`First baseline (${fmtDate(b.date)}): avg ${fmt(b.avg3)}, T20 rate ${b.tPct==null?"–":fmt(b.tPct,0)+"%"}, double rate ${fmt(b.dPct,0)}%, Bob's 27 ${b.bobs??"–"}, darts per leg ${fmt(b.dpl)}, checkout ${b.coPct==null?"–":fmt(b.coPct,0)+"%"}.`);}
   const LF=activeFocus(s.created||Date.now());
@@ -1843,15 +1934,153 @@ function setStatus(id,cls,msg){const el=document.getElementById(id);if(el){el.cl
 function saveCoach(id){
   const ta=document.getElementById("cf-"+id),text=(ta?ta.value:"").trim(),row=S.sessions.find(x=>x.id===id);if(!row)return;
   if(!text){setStatus("cs-"+id,"err","Paste Claude's reply into the box first.");return;}
-  const pf=parseFocus(text);
-  row.coach={text,date:todayISO(),at:Date.now(),focus:pf.focus,drill:pf.drill};delete S.coachDraft[id];S.editCoach=null;S.open.add(id);saveLocal();render();
-  toast(pf.focus?(pf.drill?`Saved. ${D[pf.drill].name} gets extra time next session.`:"Saved. Focus set; no drill named."):"Saved. No FOCUS line found, so the plan is unchanged.");
+  const pf=parseFocus(text),cs=parseCustom(text),good=cs&&!cs.bad?cs:null;
+  row.coach={text,date:todayISO(),at:Date.now(),focus:pf.focus||(good?customName(good):null),drill:pf.drill,custom:good};const cx=good?registerCustom(good,row.id):null;
+  delete S.coachDraft[id];S.editCoach=null;S.open.add(id);saveLocal();render();toast(coachToast(pf,cx,cs&&cs.bad,"Feedback"));
+}
+
+/* ================= form review ================= */
+const IMGC={};let idbP=null;
+function idb(){if(idbP)return idbP;idbP=new Promise((res,rej)=>{try{const r=indexedDB.open("oche-media",1);r.onupgradeneeded=()=>r.result.createObjectStore("img");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}catch(e){rej(e);}});return idbP;}
+async function imgPut(id,data){IMGC[id]=data;try{const db=await idb();await new Promise((res,rej)=>{const tx=db.transaction("img","readwrite");tx.objectStore("img").put(data,id);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}catch(e){try{localStorage.setItem("oche-img-"+id,data);}catch(_){throw e;}}}
+async function imgGet(id){if(IMGC[id])return IMGC[id];try{const db=await idb();const v=await new Promise((res,rej)=>{const r=db.transaction("img").objectStore("img").get(id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});if(v){IMGC[id]=v;return v;}}catch(e){}try{const v=localStorage.getItem("oche-img-"+id);if(v)IMGC[id]=v;return v;}catch(e){return null;}}
+async function imgDel(id){delete IMGC[id];try{const db=await idb();db.transaction("img","readwrite").objectStore("img").delete(id);}catch(e){}try{localStorage.removeItem("oche-img-"+id);}catch(e){}}
+function hydrateImgs(){document.querySelectorAll("[data-imgid]").forEach(el=>{if(el.dataset.ok)return;const id=el.dataset.imgid;imgGet(id).then(d=>{if(!d)return;el.dataset.ok="1";if(el.tagName.toLowerCase()==="image")el.setAttribute("href",d);else el.src=d;});});}
+const SLOTS=[["setup","Set-up"],["release","Release"],["follow","Follow-through"]];
+const slotName=k=>(SLOTS.find(x=>x[0]===k)||[k,k])[1];
+function armAngles(p){if(!p||!p.S||!p.E||!p.H)return null;const v1=[p.S.x-p.E.x,p.S.y-p.E.y],v2=[p.H.x-p.E.x,p.H.y-p.E.y],c=(v1[0]*v2[0]+v1[1]*v2[1])/((Math.hypot(...v1)*Math.hypot(...v2))||1);
+  return {elbow:Math.acos(clamp(c,-1,1))*180/Math.PI,upper:Math.atan2(p.S.y-p.E.y,Math.abs(p.E.x-p.S.x))*180/Math.PI,fore:Math.atan2(Math.abs(p.H.x-p.E.x),p.E.y-p.H.y)*180/Math.PI};}
+const angTxt=a=>a?`elbow ${fmt(a.elbow,0)}°, upper arm ${fmt(a.upper,0)}° ${a.upper>=0?"above":"below"} horizontal, forearm ${fmt(a.fore,0)}° from vertical`:"points not marked";
+function armOverlay(pts,w){const r=w*.017,lw=w*.009,fs=w*.04;let g="";const P=pts||{};
+  if(P.S&&P.E)g+=`<line class="fxln" stroke-width="${lw}" x1="${P.S.x}" y1="${P.S.y}" x2="${P.E.x}" y2="${P.E.y}"/>`;if(P.E&&P.H)g+=`<line class="fxln" stroke-width="${lw}" x1="${P.E.x}" y1="${P.E.y}" x2="${P.H.x}" y2="${P.H.y}"/>`;
+  ["S","E","H"].forEach(k=>{if(P[k])g+=`<circle class="fxpt" stroke-width="${lw*.5}" cx="${P[k].x}" cy="${P[k].y}" r="${r}"/><text class="fxlbl" stroke-width="${lw*.6}" font-size="${fs}" x="${P[k].x+r*1.6}" y="${P[k].y-r*1.2}">${k}</text>`;});return g;}
+function stillSVG(fr,id){return `<svg class="fx-still" viewBox="0 0 ${fr.w} ${fr.h}" role="img" aria-label="Still with arm markings"><image ${id?`data-imgid="${id}" href="${IMGC[id]||""}"`:`href="${fr.img}"`} width="${fr.w}" height="${fr.h}"/>${armOverlay(fr.pts,fr.w)}</svg>`;}
+let FX=null;
+function openFX(){FX={url:null,slots:{},cur:null,notes:"",confirm:false};const el=$("#formx");el.hidden=false;document.body.classList.add("lock");
+  el.innerHTML=`<div class="rwrap">
+    <div class="rtop"><button type="button" class="icon-btn" data-act="fxClose" aria-label="Close form review">×</button><b style="flex:1">Form review</b><span class="faint small">2D estimates</span></div>
+    <div class="glass pad stack" id="fx-load"><p class="small muted">Film side-on from your throwing-arm side, with the phone at shoulder height about 2–3 m away and your whole arm in frame. Use slow motion if your phone has it. The clip isn't saved; only the stills you grab are kept.</p>
+      <div class="row"><label class="btn primary" for="fx-rec">Record a clip</label><label class="btn" for="fx-pick">Choose a video</label></div>
+      <input type="file" id="fx-rec" class="vh" accept="video/*" capture="environment"><input type="file" id="fx-pick" class="vh" accept="video/*"></div>
+    <div class="glass pad stack" id="fx-player" hidden>
+      <video id="fx-video" class="fx-video" playsinline muted preload="auto"></video>
+      <input type="range" id="fx-scrub" min="0" max="1" step="0.001" value="0" aria-label="Scrub through the clip">
+      <div class="row between"><div class="row" style="gap:6px"><button type="button" class="btn sm" data-act="fxBack" aria-label="Back one frame">−1</button><button type="button" class="btn sm" data-act="fxPlay" id="fx-playbtn">Play</button><button type="button" class="btn sm" data-act="fxFwd" aria-label="Forward one frame">+1</button></div>
+        <div class="seg" role="group" aria-label="Playback speed">${[.25,.5,1].map(r=>`<button type="button" data-fxrate="${r}" aria-pressed="${r===.25}">${r}×</button>`).join("")}</div></div>
+      <span class="mono small muted" id="fx-time">0.00 s</span>
+      <span class="small" style="font-weight:600">Grab this frame as</span>
+      <div class="row">${SLOTS.map(([k,l])=>`<button type="button" class="btn sm" data-fxgrab="${k}">${l}</button>`).join("")}</div></div>
+    <div id="fx-panel" class="stack" style="gap:12px"></div></div>`;
+  const v=$("#fx-video"),sc=$("#fx-scrub");v.playbackRate=.25;
+  const load=f=>{if(!f)return;if(FX.url)URL.revokeObjectURL(FX.url);FX.url=URL.createObjectURL(f);v.src=FX.url;v.load();};
+  $("#fx-rec").addEventListener("change",e=>load(e.target.files[0]));$("#fx-pick").addEventListener("change",e=>load(e.target.files[0]));
+  v.addEventListener("loadedmetadata",()=>{$("#fx-player").hidden=false;sc.max=String(v.duration||1);v.currentTime=0;});
+  v.addEventListener("timeupdate",()=>{sc.value=String(v.currentTime);$("#fx-time").textContent=v.currentTime.toFixed(2)+" s";});
+  v.addEventListener("seeked",()=>{$("#fx-time").textContent=v.currentTime.toFixed(2)+" s";});
+  v.addEventListener("pause",()=>{$("#fx-playbtn").textContent="Play";});v.addEventListener("play",()=>{$("#fx-playbtn").textContent="Pause";});
+  sc.addEventListener("input",()=>{v.pause();v.currentTime=+sc.value;});
+  renderFXPanel();
+}
+function closeFX(){if(FX&&FX.url)URL.revokeObjectURL(FX.url);FX=null;const el=$("#formx");el.hidden=true;el.innerHTML="";if($("#runner").hidden)document.body.classList.remove("lock");render();}
+function fxGrab(k){const v=$("#fx-video");if(!v||!v.videoWidth)return;const w=Math.min(540,v.videoWidth),h=Math.round(w*v.videoHeight/v.videoWidth),c=document.createElement("canvas");c.width=w;c.height=h;
+  c.getContext("2d").drawImage(v,0,0,w,h);let img;try{img=c.toDataURL("image/jpeg",.72);}catch(e){toast("Couldn't grab that frame");return;}
+  FX.slots[k]={img,w,h,pts:{},t:v.currentTime};FX.cur=k;renderFXPanel();$("#fx-panel").scrollIntoView({block:"start",behavior:"smooth"});}
+function renderFXPanel(){
+  const el=$("#fx-panel");if(!el||!FX)return;const ks=SLOTS.map(x=>x[0]).filter(k=>FX.slots[k]);
+  if(!ks.length){el.innerHTML=`<p class="faint small" style="text-align:center">Step to the moment the dart leaves your hand and grab it as Release. Set-up and Follow-through are optional but help Claude.</p>`;return;}
+  if(!FX.cur||!FX.slots[FX.cur])FX.cur=ks[0];const fr=FX.slots[FX.cur],a=armAngles(fr.pts),next=["S","E","H"].find(k=>!fr.pts[k]);
+  el.innerHTML=`<div class="glass pad stack"><div class="seg" role="group" aria-label="Still">${ks.map(k=>`<button type="button" data-fxslot="${k}" aria-pressed="${k===FX.cur}">${slotName(k)}${armAngles(FX.slots[k].pts)?" ✓":""}</button>`).join("")}</div>
+    <div id="fx-still-wrap">${stillSVG(fr)}</div>
+    <p class="small">${next?`Tap your <b>${({S:"shoulder",E:"elbow",H:"hand (where you grip the dart)"})[next]}</b>.`:"Drag any point to adjust it."}</p>
+    <p class="small muted" id="fx-ang">${a?angTxt(a):"Mark shoulder, elbow and hand to measure the arm."}</p>
+    <div class="row"><button type="button" class="btn sm" data-act="fxClear">Clear points</button></div></div>
+    <div class="glass pad stack"><label class="f">Notes<textarea id="fx-notes" placeholder="How did the throws feel? Anything you were trying?">${esc(FX.notes)}</textarea></label>
+      <div class="row"><button type="button" class="btn primary" data-act="fxSave">Save review</button><span class="status" id="fx-status" role="status"></span></div></div>`;
+  $("#fx-notes").addEventListener("input",e=>{FX.notes=e.target.value;});bindStill();
+}
+function bindStill(){
+  const svg=$("#fx-still-wrap svg");if(!svg)return;const fr=FX.slots[FX.cur];let drag=null;
+  const toPx=ev=>{const pt=svg.createSVGPoint();pt.x=ev.clientX;pt.y=ev.clientY;const m=pt.matrixTransform(svg.getScreenCTM().inverse());return {x:clamp(m.x,0,fr.w),y:clamp(m.y,0,fr.h)};};
+  const redraw=()=>{svg.querySelectorAll(".fxln,.fxpt,.fxlbl").forEach(n=>n.remove());svg.insertAdjacentHTML("beforeend",armOverlay(fr.pts,fr.w));const a=armAngles(fr.pts);$("#fx-ang").textContent=a?angTxt(a):"Mark shoulder, elbow and hand to measure the arm.";};
+  svg.addEventListener("pointerdown",ev=>{ev.preventDefault();const q=toPx(ev),near=["S","E","H"].filter(k=>fr.pts[k]).map(k=>({k,d:Math.hypot(fr.pts[k].x-q.x,fr.pts[k].y-q.y)})).sort((a,b)=>a.d-b.d)[0];
+    const next=["S","E","H"].find(k=>!fr.pts[k]);const k=near&&(near.d<fr.w*.06||!next)?near.k:next;fr.pts[k]=q;drag=k;redraw();try{svg.setPointerCapture(ev.pointerId);}catch(e){}});
+  svg.addEventListener("pointermove",ev=>{if(!drag)return;fr.pts[drag]=toPx(ev);redraw();});
+  svg.addEventListener("pointerup",()=>{if(!drag)return;drag=null;renderFXPanel();});
+}
+async function fxSave(){
+  const ks=Object.keys(FX.slots);if(!ks.length){setStatus("fx-status","err","Grab at least the release frame first.");return;}
+  const id="fm"+Date.now().toString(36),frames={},A=analyse(),todays=A.ss.filter(x=>x.date===todayISO()).slice(-1)[0];
+  try{for(const k of ks){const fr=FX.slots[k],iid=id+"-"+k;await imgPut(iid,fr.img);frames[k]={img:iid,w:fr.w,h:fr.h,pts:fr.pts,angles:armAngles(fr.pts),t:fr.t};}}
+  catch(e){setStatus("fx-status","err","Couldn't store the stills on this phone. Free up some space and try again.");return;}
+  S.forms=S.forms||[];S.forms.push({id,date:todayISO(),created:Date.now(),sessionId:todays?todays.id:null,notes:(FX.notes||"").trim(),frames});saveLocal();
+  S.itab="form";store.set("oche-itab","form");S.openForm=id;closeFX();location.hash="insights";toast("Form review saved");
+}
+function formRecs(){return (S.forms||[]).slice().sort((a,b)=>(a.created||0)-(b.created||0));}
+function formHeadCard(){const n=(S.forms||[]).length;
+  return `<div class="glass pad-lg stack"><span class="eyebrow">Form check</span><h2>Film your throw</h2><p class="small muted">Record a few throws side-on, grab the set-up, release and follow-through, and mark your shoulder, elbow and hand. Comparing reviews shows whether your release is repeatable, and the stills can go to Claude for technique feedback.</p>
+    <div class="row"><button type="button" class="btn primary" data-act="fxOpen">New form review</button>${S.run?`<button type="button" class="btn" data-act="resume">Back to your session</button>`:""}<span class="faint small">${n} review${n===1?"":"s"}</span></div></div>`;}
+function formChartCard(){
+  const rs=formRecs().filter(f=>f.frames&&f.frames.release&&f.frames.release.angles);if(rs.length<2)return "";
+  const ys=rs.map(f=>f.frames.release.angles.elbow),W=420,H=170,L=36,Rr=12,T=14,B=24,lo=Math.min(...ys)-5,hi=Math.max(...ys)+5,X=i=>L+i*(W-L-Rr)/(rs.length-1),Y=v=>T+(hi-v)/(hi-lo)*(H-T-B);
+  let g=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Release elbow angle by review" style="min-width:0">`;niceTicks(lo,hi,3).forEach(t=>{g+=`<line class="ax" x1="${L}" x2="${W-Rr}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axt" x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}°</text>`;});
+  g+=`<path class="ln" d="${ys.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ")}"/>`;ys.forEach((v,i)=>{g+=`<circle class="dotlast" cx="${X(i)}" cy="${Y(v)}" r="4"/>`;});
+  g+=`<text class="axt" x="${L}" y="${H-6}">${fmtDate(rs[0].date)}</text><text class="axt" x="${W-Rr}" y="${H-6}" text-anchor="end">${fmtDate(rs[rs.length-1].date)}</text></svg>`;
+  return `<div class="glass pad stack"><span class="eyebrow">Release elbow angle</span><div class="chartbox">${g}</div><p class="small muted">Across ${rs.length} reviews your release elbow varies by about <b class="mono" style="color:var(--ink)">±${fmt(sdS(ys),0)}°</b>. Smaller is more repeatable; a few degrees is normal measurement wobble.</p></div>`;
+}
+function formCmpCard(){
+  const rs=formRecs();if(rs.length<2)return "";const ia=S.fcmpA&&rs.find(f=>f.id===S.fcmpA)?S.fcmpA:rs[rs.length-2].id,ib=S.fcmpB&&rs.find(f=>f.id===S.fcmpB)?S.fcmpB:rs[rs.length-1].id,A1=rs.find(f=>f.id===ia),B1=rs.find(f=>f.id===ib);
+  const opt=sel=>rs.map(f=>`<option value="${f.id}" ${f.id===sel?"selected":""}>${fmtDate(f.date)}${f.notes?" · "+esc(f.notes.slice(0,20)):""}</option>`).join("");
+  const rows=SLOTS.map(([k,l])=>{const a=A1.frames[k]&&A1.frames[k].angles,b=B1.frames[k]&&B1.frames[k].angles;if(!a&&!b)return "";const c=(x,y)=>x!=null&&y!=null?`${y-x>=0?"+":"−"}${fmt(Math.abs(y-x),0)}°`:"–";
+    const cell=key=>`<td class="num">${b?fmt(b[key],0)+"°":"–"}${a&&b?`<br><span class="faint small">${c(a[key],b[key])}</span>`:""}</td>`;
+    return `<tr><td>${k==="follow"?"Follow":l}</td>${cell("elbow")}${cell("upper")}${cell("fore")}</tr>`;}).join("");
+  const pic=(f,k)=>f.frames[k]?stillSVG(f.frames[k],f.frames[k].img):`<div class="empty small">No ${slotName(k).toLowerCase()}</div>`;
+  return `<div class="glass pad stack"><span class="eyebrow">Compare two reviews</span><div class="fgrid2"><select id="fcmp-a" aria-label="First review">${opt(ia)}</select><select id="fcmp-b" aria-label="Second review">${opt(ib)}</select></div>
+    <div class="fgrid2">${pic(A1,"release")}${pic(B1,"release")}</div><div class="fgrid2">${pic(A1,"follow")}${pic(B1,"follow")}</div>
+    <div class="tablebox"><table><thead><tr><th>Still</th><th>Elbow</th><th>Upper arm</th><th>Forearm</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="faint small">Each cell shows the second review's angle and the change from the first. Angles are 2D estimates from side-on stills. Film from the same spot each time so the comparison is fair.</p></div>`;
+}
+function formListCard(){
+  const rs=formRecs().reverse();if(!rs.length)return `<div class="glass pad stack"><span class="eyebrow">Your reviews</span><div class="empty"><b>No form reviews yet</b><span>Your first review appears here, and the comparison and trend fill in from the second.</span></div></div>`;
+  return `<div class="glass pad stack"><span class="eyebrow">Your reviews</span>${rs.map(f=>{const rel=f.frames.release,k="forms:"+f.id,cd=S.coachDraft["fm:"+f.id],editing=!f.coach||S.editCoach==="fm:"+f.id;
+    return `<details class="hcard glass" ${S.openForm===f.id?"open":""}><summary><div class="row" style="flex-wrap:nowrap;gap:12px">${rel?`<img class="fthumb" data-imgid="${rel.img}" src="${IMGC[rel.img]||""}" alt="Release still from ${fmtDate(f.date)}">`:""}<div style="min-width:0"><b>${fmtDate(f.date)}</b>${f.coach?` <span class="faint small">· Reviewed</span>`:""}<br><span class="small muted">${rel&&rel.angles?`Release elbow ${fmt(rel.angles.elbow,0)}°, forearm ${fmt(rel.angles.fore,0)}°`:"Release not measured"}</span></div></div></summary>
+      <div class="stack" style="margin-top:12px"><div class="fgrid3">${SLOTS.map(([s2,l])=>f.frames[s2]?`<div class="stack" style="gap:4px">${stillSVG(f.frames[s2],f.frames[s2].img)}<span class="faint small">${l}</span></div>`:"").join("")}</div>
+        <ul class="small muted" style="margin:0;padding-left:18px">${SLOTS.map(([s2,l])=>f.frames[s2]?`<li><b style="color:var(--ink)">${l}:</b> ${angTxt(f.frames[s2].angles)}</li>`:"").join("")}</ul>
+        ${f.notes?`<p class="small muted">${esc(f.notes)}</p>`:""}
+        <div class="row"><button type="button" class="btn primary sm" data-fshare="${f.id}">Share stills</button><button type="button" class="btn sm" data-fcopy="${f.id}">Copy for Claude</button></div>
+        <p class="faint small">Copy the text, paste it into your Darts coach project, then attach the shared stills.</p>
+        ${f.coach&&!editing?`<div class="coach-note"><span class="eyebrow">Coach feedback · ${fmtDate(f.coach.date)}</span><div class="coach-text">${esc(f.coach.text)}</div><div class="row"><button type="button" class="btn sm" data-fcoachedit="${f.id}">Edit</button></div></div>`:
+        `<label class="f">Coach feedback<textarea id="fc-${f.id}" data-cf="fm:${f.id}" rows="4" placeholder="Paste Claude's reply here">${esc(cd!=null?cd:(f.coach?f.coach.text:""))}</textarea></label><div class="row"><button type="button" class="btn primary sm" data-fcoachsave="${f.id}">Save feedback</button></div>`}
+        <span class="status" id="fs-${f.id}" role="status"></span>
+        <div class="row"><button type="button" class="btn sm danger" data-del="${esc(k)}">${S.pendingDel===k?"Tap again to delete":"Delete review"}</button></div></div></details>`;}).join("")}</div>`;
+}
+function formText(f){
+  const rs=formRecs(),i=rs.findIndex(x=>x.id===f.id),prev=i>0?rs[i-1]:null,L=[],P=x=>L.push(x);
+  P("FORM REVIEW. I'm attaching side-on stills of my darts throw (set-up, release and follow-through where I have them). Review my technique as my coach: what looks repeatable, the one or two things most likely to cause the miss pattern below, and one specific cue or drill to fix it. Be honest, and say if a still is too unclear to judge. Under 250 words, British English, plain text. End with the FOCUS: and DRILL: lines (and CUSTOM: if useful) from your instructions.");
+  P("");P(`DATE ${fmtDate(f.date)}`);P("MEASUREMENTS (2D estimates from side-on stills, so treat them as approximate)");
+  SLOTS.forEach(([k,l])=>{const fr=f.frames[k];if(fr)P(`- ${l}: ${angTxt(fr.angles)}`);});
+  if(prev){P("");P(`CHANGE SINCE MY PREVIOUS REVIEW (${fmtDate(prev.date)})`);SLOTS.forEach(([k,l])=>{const a=prev.frames[k]&&prev.frames[k].angles,b=f.frames[k]&&f.frames[k].angles;if(a&&b)P(`- ${l}: elbow ${b.elbow-a.elbow>=0?"+":""}${fmt(b.elbow-a.elbow,0)}°, upper arm ${b.upper-a.upper>=0?"+":""}${fmt(b.upper-a.upper,0)}°, forearm ${b.fore-a.fore>=0?"+":""}${fmt(b.fore-a.fore,0)}°`);});}
+  const all=[...S.sessions,...S.baselines].filter(x=>x.m),pb=[],pd=[];let mL=0,mR=0;all.forEach(x=>{const q=x.m.pins;if(q){pb.push(...q.bull);pd.push(...q.dbl.map(z=>[z[0],z[1]]));}mL+=x.m.mL||0;mR+=x.m.mR||0;});
+  const sd=pinStats(pd),sb=pinStats(pb);P("");P("MY MISS PATTERN");
+  if(sd&&sd.n>=10)P(`- Doubles (${sd.n} pinned darts): average miss ${pinDir(sd.mx,sd.my)}, ${fmt(sd.low,0)}% low, ${fmt(sd.left,0)}% left`);
+  if(sb&&sb.n>=10)P(`- Bull (${sb.n} pinned darts): average miss ${pinDir(sb.mx,sb.my)}, half within ${fmt(sb.r50,0)} mm`);
+  if(mL+mR>=10)P(`- Scoring misses into neighbouring numbers: ${mL} left, ${mR} right`);
+  if(L[L.length-1]==="MY MISS PATTERN")P("- Not enough pinned darts yet.");
+  if(f.notes){P("");P("MY NOTES");P(f.notes);}
+  return L.join("\n");
+}
+async function shareStills(f){
+  const files=[];for(const [k,l] of SLOTS){const fr=f.frames[k];if(!fr)continue;const d=await imgGet(fr.img);if(!d)continue;const bin=atob(d.split(",")[1]),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);files.push(new File([u],`oche-${f.date}-${k}.jpg`,{type:"image/jpeg"}));}
+  if(!files.length){setStatus("fs-"+f.id,"err","No stills found on this phone.");return;}
+  try{if(navigator.canShare&&navigator.canShare({files})){await navigator.share({files,title:"Oche form stills"});setStatus("fs-"+f.id,"ok","Shared. Attach them in your Claude chat.");return;}}catch(e){if(e&&e.name==="AbortError")return;}
+  files.forEach(fl=>{const url=URL.createObjectURL(fl),a=document.createElement("a");a.href=url;a.download=fl.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);});
+  setStatus("fs-"+f.id,"ok","Saved the stills. Attach them in your Claude chat.");
 }
 
 /* ================= backup ================= */
 function bkStatus(cls,msg){const el=$("#bk-status");el.className="status "+cls;el.textContent=msg;}
 async function exportBackup(){
-  const data={app:"oche",format:3,exported:new Date().toISOString(),sessions:S.sessions,baselines:S.baselines,reviews:S.reviews,goals:S.goals,milestones:S.milestones,meta:S.meta};
+  const images={};for(const f of (S.forms||[]))for(const fr of Object.values(f.frames||{})){if(fr&&fr.img){const d=await imgGet(fr.img);if(d)images[fr.img]=d;}}
+  const data={app:"oche",format:4,exported:new Date().toISOString(),sessions:S.sessions,baselines:S.baselines,reviews:S.reviews,goals:S.goals,milestones:S.milestones,meta:S.meta,forms:S.forms||[],images};
   const name=`oche-backup-${todayISO()}.json`,text=JSON.stringify(data);
   const blob=new Blob([text],{type:"application/json"});
   try{const file=new File([blob],name,{type:"application/json"});
@@ -1864,12 +2093,14 @@ async function exportBackup(){
 function importBackup(file){
   const rd=new FileReader();
   rd.onload=()=>{try{const j=JSON.parse(rd.result);if(!j||!Array.isArray(j.sessions)||!Array.isArray(j.baselines))throw 0;
-      const have=new Set([...S.sessions,...S.baselines,...S.reviews,...S.goals,...S.milestones].map(r=>r.id));let a=0,b=0;
+      const have=new Set([...S.sessions,...S.baselines,...S.reviews,...S.goals,...S.milestones,...(S.forms||[])].map(r=>r.id));let a=0,b=0;
       j.sessions.forEach(r=>{if(r&&r.id&&!have.has(r.id)){S.sessions.push(r);a++;}});
       j.baselines.forEach(r=>{if(r&&r.id&&!have.has(r.id)){S.baselines.push(r);b++;}});
-      let o=0;["reviews","goals","milestones"].forEach(k=>{if(Array.isArray(j[k]))j[k].forEach(r=>{if(r&&r.id&&!have.has(r.id)){S[k].push(r);o++;}});});
+      let im=0;if(j.images&&typeof j.images==="object")for(const k in j.images){const d=j.images[k];if(typeof d==="string"&&d.startsWith("data:image/")){IMGC[k]=d;imgPut(k,d).catch(()=>{});im++;}}
+      let o=0,fm=0;S.forms=S.forms||[];["reviews","goals","milestones","forms"].forEach(k=>{if(Array.isArray(j[k]))j[k].forEach(r=>{if(r&&r.id&&!have.has(r.id)){S[k].push(r);if(k==="forms")fm++;else o++;}});});
+      registerAllCustom();
       if(j.meta&&typeof j.meta==="object")for(const k in j.meta)if(!(k in S.meta))S.meta[k]=j.meta[k];
-      saveLocal();render();bkStatus("ok",a||b||o?`Added ${a} session${a===1?"":"s"}, ${b} baseline${b===1?"":"s"}${o?` and ${o} goal${o===1?"":"s"}, review${o===1?"":"s"} or milestone${o===1?"":"s"}`:""}.`:"Nothing new in that backup. Your data already has all of it.");}
+      saveLocal();render();const pl=(n,w)=>`${n} ${w}${n===1?"":"s"}`;bkStatus("ok",a||b||o||fm?`Added ${pl(a,"session")}, ${pl(b,"baseline")}${o?`, ${o} goal${o===1?"":"s"}, review${o===1?"":"s"} or milestone${o===1?"":"s"}`:""}${fm?` and ${pl(fm,"form review")} (${pl(im,"still")})`:""}.`:"Nothing new in that backup. Your data already has all of it.");}
     catch(e){bkStatus("err","That file isn't an Oche backup. Pick the .json file you exported.");}};
   rd.onerror=()=>bkStatus("err","Couldn't read that file.");rd.readAsText(file);
 }
@@ -1881,7 +2112,7 @@ function routeView(){const h=location.hash.replace("#","");const v=VIEWS.include
   document.querySelectorAll("#nav a").forEach(a=>a.getAttribute("href")==="#"+v?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));window.scrollTo(0,0);}
 function render(){
   {const ps=$("#pin-setting");if(ps)ps.innerHTML=`<div class="row between" style="margin-top:6px"><span class="small"><b>Pin board for doubles and the bull</b><br><span class="muted">Turn off to use the old buttons everywhere.</span></span><button type="button" class="btn sm ${S.meta.pinDoubles!==false?"primary":""}" data-act="togglePinDoubles" aria-pressed="${S.meta.pinDoubles!==false}">${S.meta.pinDoubles!==false?"On":"Off"}</button></div><div class="row between" style="margin-top:6px"><span class="small"><b>Precise pins for T20 and T19 scoring</b><br><span class="muted">Slower to enter, but shows your scoring grouping too.</span></span><button type="button" class="btn sm ${S.meta.pinScoring?"primary":""}" data-act="togglePinScoring" aria-pressed="${!!S.meta.pinScoring}">${S.meta.pinScoring?"On":"Off"}</button></div>`;}
-  const A=analyse();renderHome(A);renderInsights(A);renderHistory(A);renderReviews(A);renderBaseline(A);
+  const A=analyse();renderHome(A);renderInsights(A);renderHistory(A);renderReviews(A);renderBaseline(A);try{hydrateImgs();}catch(e){}
   const sy=$("#sync");sy.textContent=S.note||"Saved on this phone";sy.classList.toggle("off",!!S.note);
 }
 
@@ -1913,6 +2144,23 @@ document.addEventListener("click",e=>{
   if(a==="togglePinScoring"){S.meta.pinScoring=!S.meta.pinScoring;saveLocal();render();return;}
   if(ds.grpmode){S.grpMode=ds.grpmode;render();return;}
   if(ds.cosel){S.coSel=S.coSel===+ds.cosel?null:+ds.cosel;render();return;}
+  if(a==="fxOpen"){openFX();return;}
+  if(a==="openFormTab"){closeRunner();S.itab="form";store.set("oche-itab","form");location.hash="insights";render();openFX();return;}
+  if(FX){const v=$("#fx-video");
+    if(a==="fxClose"){if(Object.keys(FX.slots).length&&!FX.confirm){FX.confirm=true;t.setAttribute("aria-label","Tap again to discard");toast("Tap × again to discard this review");return;}closeFX();return;}
+    if(a==="fxPlay"&&v){v.paused?v.play().catch(()=>{}):v.pause();return;}
+    if((a==="fxBack"||a==="fxFwd")&&v){v.pause();v.currentTime=clamp(v.currentTime+(a==="fxFwd"?1:-1)/60,0,v.duration||0);return;}
+    if(ds.fxrate&&v){v.playbackRate=+ds.fxrate;document.querySelectorAll("[data-fxrate]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.fxrate===ds.fxrate));return;}
+    if(ds.fxgrab){fxGrab(ds.fxgrab);return;}
+    if(ds.fxslot){FX.cur=ds.fxslot;renderFXPanel();return;}
+    if(a==="fxClear"&&FX.cur){FX.slots[FX.cur].pts={};renderFXPanel();return;}
+    if(a==="fxSave"){fxSave();return;}}
+  if(ds.fcopy){const f=(S.forms||[]).find(x=>x.id===ds.fcopy);if(f)copyText(formText(f)).then(ok=>setStatus("fs-"+f.id,ok?"ok":"err",ok?"Copied. Paste it into your Darts coach project, then attach the stills.":"Couldn't copy on this device."));return;}
+  if(ds.fshare){const f=(S.forms||[]).find(x=>x.id===ds.fshare);if(f)shareStills(f);return;}
+  if(ds.fcoachedit){S.editCoach="fm:"+ds.fcoachedit;S.openForm=ds.fcoachedit;render();return;}
+  if(ds.fcoachsave){const f=(S.forms||[]).find(x=>x.id===ds.fcoachsave);if(!f)return;const ta=document.getElementById("fc-"+f.id),tx=(ta?ta.value:"").trim();if(!tx){setStatus("fs-"+f.id,"err","Paste Claude's reply into the box first.");return;}
+    const pf=parseFocus(tx),cs=parseCustom(tx),good=cs&&!cs.bad?cs:null;f.coach={text:tx,date:todayISO(),at:Date.now(),focus:pf.focus||(good?customName(good):null),drill:pf.drill,custom:good};const cx=good?registerCustom(good,f.id):null;
+    delete S.coachDraft["fm:"+f.id];S.editCoach=null;S.openForm=f.id;saveLocal();render();toast(coachToast(pf,cx,cs&&cs.bad,"Form feedback"));return;}
   if(ds.itab){S.itab=ds.itab;store.set("oche-itab",ds.itab);render();return;}
   if(ds.aimt){S.aimT=+ds.aimt;render();return;}
   if(ds.vhmode){S.vhMode=ds.vhmode;render();return;}
@@ -1925,8 +2173,9 @@ document.addEventListener("click",e=>{
   if(a==="rvPaste"){const r=periodRange(S.rev.kind,S.rev.off),dk="rv:"+r.key;try{navigator.clipboard.readText().then(tx=>{const ta=$("#rv-text");if(ta&&tx){ta.value=tx;S.coachDraft[dk]=tx;setStatus("rv-status","ok","Pasted. Tap Save review.");}else setStatus("rv-status","err","Clipboard is empty.");}).catch(()=>setStatus("rv-status","err","Press and hold in the box, then choose Paste."));}catch(e){setStatus("rv-status","err","Press and hold in the box, then choose Paste.");}return;}
   if(a==="rvSave"){const r=periodRange(S.rev.kind,S.rev.off),dk="rv:"+r.key,tx=($("#rv-text")?$("#rv-text").value:"").trim();if(!tx){setStatus("rv-status","err","Paste Claude's reply into the box first.");return;}
     const pf=parseFocus(tx);let rec=S.reviews.find(x=>x.key===r.key);if(!rec){rec={id:"rv"+Date.now().toString(36),kind:r.kind,key:r.key,start:r.start,end:r.end,created:Date.now()};S.reviews.push(rec);}
-    rec.coach={text:tx,date:todayISO(),at:Date.now(),focus:pf.focus,drill:pf.drill};delete S.coachDraft[dk];S.editCoach=null;saveLocal();render();
-    toast(pf.focus?(pf.drill?`Review saved. ${D[pf.drill].name} gets extra time next session.`:"Review saved. Focus set."):"Review saved. No FOCUS line found.");return;}
+    const cs=parseCustom(tx),good=cs&&!cs.bad?cs:null;
+    rec.coach={text:tx,date:todayISO(),at:Date.now(),focus:pf.focus||(good?customName(good):null),drill:pf.drill,custom:good};const cx=good?registerCustom(good,rec.id):null;
+    delete S.coachDraft[dk];S.editCoach=null;saveLocal();render();toast(coachToast(pf,cx,cs&&cs.bad,"Review"));return;}
   if(a==="rvEdit"){S.editCoach="rv:"+periodRange(S.rev.kind,S.rev.off).key;render();return;}
   if(a==="rvCancel"){const dk="rv:"+periodRange(S.rev.kind,S.rev.off).key;S.editCoach=null;delete S.coachDraft[dk];render();return;}
   if(a==="saveGoal"){const gd=S.goalDraft,M=METRICS[gd.metric],tg=num(gd.target);
@@ -1970,7 +2219,7 @@ document.addEventListener("click",e=>{
   if(ds.bull){const r=ds.bull;act(b=>inBull(b,r));return;}
   if(ds.atc){const r=ds.atc;act(b=>inAtc(b,r));return;}
 });
-document.addEventListener("change",e=>{if(e.target.id==="rv-period"){S.rev.off=+e.target.value;render();}if(e.target.id==="web-base"){S.webBase=+e.target.value;render();}if(e.target.id==="worm-leg"){S.wormIdx=+e.target.value;render();}});
+document.addEventListener("change",e=>{if(e.target.id==="fcmp-a"){S.fcmpA=e.target.value;render();}if(e.target.id==="fcmp-b"){S.fcmpB=e.target.value;render();}if(e.target.id==="rv-period"){S.rev.off=+e.target.value;render();}if(e.target.id==="web-base"){S.webBase=+e.target.value;render();}if(e.target.id==="worm-leg"){S.wormIdx=+e.target.value;render();}});
 document.addEventListener("change",e=>{const t=e.target;if(t.dataset&&t.dataset.gd){(S.goalDraft||(S.goalDraft={metric:"avg3",target:"",by:""}))[t.dataset.gd]=t.value;S.goalDraft.open=true;if(t.dataset.gd==="metric")render();}});
 document.addEventListener("input",e=>{const t=e.target;if(t.dataset&&t.dataset.gd){(S.goalDraft||(S.goalDraft={metric:"avg3",target:"",by:""}))[t.dataset.gd]=t.value;S.goalDraft.open=true;}if(t.dataset&&t.dataset.md){(S.msDraft||(S.msDraft={date:todayISO(),text:""}))[t.dataset.md]=t.value;}});
 document.addEventListener("input",e=>{if(e.target.id==="rs-notes"&&S.run){S.run.notes=e.target.value;persistRun();}if(e.target.dataset&&e.target.dataset.cf)S.coachDraft[e.target.dataset.cf]=e.target.value;});
